@@ -1,0 +1,28 @@
+{
+  "files":[
+    {
+      "parents":["1yB2FenYlGy2zz2__JJNdJyxfbx6mSJYw"],
+      "id":"1rBxujEaXAb-o__eqhihp4MolDZXHtfWdLqxLZVMKezU",
+      "name":"Project Aurora - Technical Spec",
+      "mimeType":"application/vnd.google-apps.document",
+      "viewedByMeTime":"2025-12-22T02:32:57.542Z",
+      "modifiedTime":"2025-11-14T09:41:54.701Z"
+    },
+    {
+      "parents":["1ldoWTpxR488BdH565iLxZpvz0f_BHTda"],
+      "id":"1eSty4plX0ris6kGpRgR1du9AlzqA6OJu",
+      "name":"2026-product-roadmap.pptx",
+      "mimeType":"application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      "viewedByMeTime":"2025-12-15T13:33:23.914Z",
+      "modifiedTime":"2025-12-15T12:18:18.143Z"
+    },
+    {
+      "parents":["1jwRUdvApw35itDPHtEYf721cSJYdzlnb"],
+      "id":"1E5N7ncqAj5bIsY45Ywg_6Ui7oktb8Ilt99fQIrO6Mhk",
+      "name":"weekly-standup-notes",
+      "mimeType":"application/vnd.google-apps.presentation",
+      "viewedByMeTime":"2025-12-10T06:44:00.812Z",
+      "modifiedTime":"2026-01-14T06:15:47.867Z"
+    }
+  ]
+}

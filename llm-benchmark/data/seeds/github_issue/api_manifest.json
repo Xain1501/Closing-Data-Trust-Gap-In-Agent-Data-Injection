@@ -1,0 +1,80 @@
+{
+  "repository": "pytorch/pytorch",
+  "collection_info": {
+    "collected_at": "2026-01-10T00:54:22.168805Z",
+    "total_issues": 10,
+    "anonymized": true
+  },
+  "files": [
+    {
+      "index": 1,
+      "issue_number": 172146,
+      "issue_file": "api_001_issue_broken_link.json",
+      "issue_endpoint": "GET /repos/pytorch/pytorch/issues",
+      "issue_url": "https://api.github.com/repos/pytorch/pytorch/issues/172146"
+    },
+    {
+      "index": 2,
+      "issue_number": 172091,
+      "issue_file": "api_002_issue_disabled_test_autocast_cuda_fl.json",
+      "issue_endpoint": "GET /repos/pytorch/pytorch/issues",
+      "issue_url": "https://api.github.com/repos/pytorch/pytorch/issues/172091"
+    },
+    {
+      "index": 3,
+      "issue_number": 172113,
+      "issue_file": "api_003_issue_add_sbsa_install_instructions_.json",
+      "issue_endpoint": "GET /repos/pytorch/pytorch/issues",
+      "issue_url": "https://api.github.com/repos/pytorch/pytorch/issues/172113"
+    },
+    {
+      "index": 4,
+      "issue_number": 172102,
+      "issue_file": "api_004_issue_dtensor_fails_at_sharding_prop.json",
+      "issue_endpoint": "GET /repos/pytorch/pytorch/issues",
+      "issue_url": "https://api.github.com/repos/pytorch/pytorch/issues/172102"
+    },
+    {
+      "index": 5,
+      "issue_number": 172139,
+      "issue_file": "api_005_issue_skip_logic_in_test_gpu_cpp_wra.json",
+      "issue_endpoint": "GET /repos/pytorch/pytorch/issues",
+      "issue_url": "https://api.github.com/repos/pytorch/pytorch/issues/172139"
+    },
+    {
+      "index": 6,
+      "issue_number": 172088,
+      "issue_file": "api_006_issue_torchfunctionmode_shouldn_t_be.json",
+      "issue_endpoint": "GET /repos/pytorch/pytorch/issues",
+      "issue_url": "https://api.github.com/repos/pytorch/pytorch/issues/172088"
+    },
+    {
+      "index": 7,
+      "issue_number": 172085,
+      "issue_file": "api_007_issue_many_test_failures_when_gpu_do.json",
+      "issue_endpoint": "GET /repos/pytorch/pytorch/issues",
+      "issue_url": "https://api.github.com/repos/pytorch/pytorch/issues/172085"
+    },
+    {
+      "index": 8,
+      "issue_number": 172082,
+      "issue_file": "api_008_issue_torch_ao_quantization_observer.json",
+      "issue_endpoint": "GET /repos/pytorch/pytorch/issues",
+      "issue_url": "https://api.github.com/repos/pytorch/pytorch/issues/172082"
+    },
+    {
+      "index": 9,
+      "issue_number": 172073,
+      "issue_file": "api_009_issue_inductor_backend_crashes_when_.json",
+      "issue_endpoint": "GET /repos/pytorch/pytorch/issues",
+      "issue_url": "https://api.github.com/repos/pytorch/pytorch/issues/172073"
+    },
+    {
+      "index": 10,
+      "issue_number": 172071,
+      "issue_file": "api_010_issue__inconsistency_inductor_backen.json",
+      "issue_endpoint": "GET /repos/pytorch/pytorch/issues",
+      "issue_url": "https://api.github.com/repos/pytorch/pytorch/issues/172071"
+    }
+  ]
+}

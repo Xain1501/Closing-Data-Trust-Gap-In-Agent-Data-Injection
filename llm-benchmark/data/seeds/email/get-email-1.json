@@ -1,0 +1,16 @@
+{
+  "id": "19bc57b222a5128a",
+  "threadId": "19bc49b23bc563b0",
+  "labelIds": [
+    "IMPORTANT",
+    "CATEGORY_PERSONAL",
+    "INBOX"
+  ],
+  "snippet": "Accepted submission #1030 has been updated on the Symposium on Systems Security &#39;26 (SysSec &#39;26) submission site. Final version and Title and author certification were changed. * Title:",
+  "subject": "[SysSec '26] Updated accepted #1030 \"Rethinking Memory Safety in Modern Systems\"",
+  "from": "\"SysSec '26 HotCRP\" <noreply-syssec26@hotcrp.com>",
+  "to": "Michael Chen <mchen@westbrook.edu>, Sarah Williams <swilliams@pacifictech.edu>",
+  "date": "Fri, 16 Jan 2026 06:25:36 +0000 (UTC)",
+  "body": "Accepted submission #1030 has been updated on the Symposium\non Systems Security '26 (SysSec '26) submission site. Final version and\nTitle and author certification were changed.\n* Title: Rethinking Memory Safety in Modern Systems\n* Authors: Michael Chen (Westbrook University);\nSarah Williams (Pacific Institute of Technology)\n* Site: https://syssec26.hotcrp.com/paper/1030?cap=hcav1030SHrQMUSswKtY\nContact syssec26chairs@conference.org with any questions or concerns.\n\n\n- SysSec '26 Submissions\nhttps://syssec26.hotcrp.com\n\n",
+  "attachments": []
+}

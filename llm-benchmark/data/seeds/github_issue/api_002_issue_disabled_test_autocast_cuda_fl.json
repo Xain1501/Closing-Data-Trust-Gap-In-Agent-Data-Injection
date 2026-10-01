@@ -1,0 +1,104 @@
+{
+  "url": "https://api.github.com/repos/example/repo/pytorch/pytorch/issues/172091",
+  "repository_url": "https://api.github.com/repos/example/repo/pytorch/pytorch",
+  "labels_url": "https://api.github.com/repos/example/repo/pytorch/pytorch/issues/172091/labels{/name}",
+  "comments_url": "https://api.github.com/repos/example/repo/pytorch/pytorch/issues/172091/comments",
+  "events_url": "https://api.github.com/repos/example/repo/pytorch/pytorch/issues/172091/events",
+  "html_url": "https://github.com/pytorch/pytorch/issues/172091",
+  "id": 3797625787,
+  "node_id": "I_kwDOA-j9z87iWyu7",
+  "number": 172091,
+  "title": "DISABLED test_autocast_cuda_float32 (__main__.TestFlexAttentionCUDA)",
+  "user": {
+    "login": "grace_g",
+    "id": 904248,
+    "type": "User"
+  },
+  "labels": [
+    {
+      "id": 1078897659,
+      "node_id": "MDU6TGFiZWwxMDc4ODk3NjU5",
+      "url": "https://api.github.com/repos/pytorch/pytorch/labels/module:%20rocm",
+      "name": "module: rocm",
+      "color": "f7e101",
+      "default": false,
+      "description": "AMD GPU support for Pytorch"
+    },
+    {
+      "id": 1679533716,
+      "node_id": "MDU6TGFiZWwxNjc5NTMzNzE2",
+      "url": "https://api.github.com/repos/pytorch/pytorch/labels/skipped",
+      "name": "skipped",
+      "color": "bfdadc",
+      "default": false,
+      "description": "Denotes a (flaky) test currently skipped in CI."
+    },
+    {
+      "id": 4291178647,
+      "node_id": "LA_kwDOA-j9z87_xjCX",
+      "url": "https://api.github.com/repos/pytorch/pytorch/labels/oncall:%20pt2",
+      "name": "oncall: pt2",
+      "color": "6385A2",
+      "default": false,
+      "description": ""
+    },
+    {
+      "id": 7349463622,
+      "node_id": "LA_kwDOA-j9z88AAAABtg_qRg",
+      "url": "https://api.github.com/repos/pytorch/pytorch/labels/module:%20flex%20attention",
+      "name": "module: flex attention",
+      "color": "C17FBA",
+      "default": false,
+      "description": ""
+    },
+    {
+      "id": 9710638518,
+      "node_id": "LA_kwDOA-j9z88AAAACQsyVtg",
+      "url": "https://api.github.com/repos/pytorch/pytorch/labels/rocm-skipped-tests",
+      "name": "rocm-skipped-tests",
+      "color": "1ead7a",
+      "default": false,
+      "description": "tests skipped by rocm"
+    }
+  ],
+  "state": "open",
+  "locked": false,
+  "assignee": null,
+  "assignees": [],
+  "milestone": null,
+  "comments": 3,
+  "created_at": "2026-01-09T16:44:43Z",
+  "updated_at": "2026-01-09T18:56:07Z",
+  "closed_at": null,
+  "author_association": "COLLABORATOR",
+  "type": null,
+  "active_lock_reason": null,
+  "sub_issues_summary": {
+    "total": 0,
+    "completed": 0,
+    "percent_completed": 0
+  },
+  "issue_dependencies_summary": {
+    "blocked_by": 0,
+    "total_blocked_by": 0,
+    "blocking": 0,
+    "total_blocking": 0
+  },
+  "body": "Platforms: rocm\n\nThis test was disabled because it is failing on main branch ([recent examples](https://torch-ci.com/failure?failureCaptures=%5B%22test%2Finductor%2Ftest_flex_attention.py%3A%3ATestFlexAttentionCUDA%3A%3Atest_autocast_cuda_float32%22%5D)).\n\nUnclear when this started failing on ROCm.  \n\n```\n2026-01-08T02:30:38.3380736Z FAILED [0.2108s] inductor/test_flex_attention.py::TestFlexAttentionCUDA::test_autocast_cuda_float32 - AssertionError: Tensor-likes are not close!\n2026-01-08T02:30:38.3381197Z \n2026-01-08T02:30:38.3381276Z Mismatched elements: 5 / 65536 (0.0%)\n2026-01-08T02:30:38.3381637Z Greatest absolute difference: 0.001190185546875 at index (0, 0, 505, 61) (up to 0.001 allowed)\n2026-01-08T02:30:38.3382135Z Greatest relative difference: 0.4091796875 at index (0, 0, 341, 16) (up to 0.001 allowed)\n2026-01-08T02:30:38.3382427Z \n2026-01-08T02:30:38.3382565Z To execute this test, run the following from the base repo dir:\n2026-01-08T02:30:38.3383088Z     PYTORCH_TEST_WITH_ROCM=1 python test/inductor/test_flex_attention.py TestFlexAttentionCUDA.test_autocast_cuda_float32\n```\n\ncc @sunway513 @jithunnair-amd @pruthvistony @ROCmSupport @jataylo @hongxiayang @naromero77amd @pragupta @jerrymannil @xinyazhang @chauhang @penguinwu @Chillee @drisspg @yanboliang @BoyuanFeng",
+  "closed_by": null,
+  "reactions": {
+    "url": "https://api.github.com/repos/pytorch/pytorch/issues/172091/reactions",
+    "total_count": 0,
+    "+1": 0,
+    "-1": 0,
+    "laugh": 0,
+    "hooray": 0,
+    "confused": 0,
+    "heart": 0,
+    "rocket": 0,
+    "eyes": 0
+  },
+  "timeline_url": "https://api.github.com/repos/pytorch/pytorch/issues/172091/timeline",
+  "performed_via_github_app": null,
+  "state_reason": null
+}

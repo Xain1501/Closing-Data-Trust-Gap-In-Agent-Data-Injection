@@ -1,3 +1,12 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+build/
+dist/
+
 # Virtual environments
 .venv/
 venv/
@@ -17,6 +26,21 @@ __pycache__/
 # IDE
 .vscode/
 .idea/
+# Environment / secrets
+.env
+.env.local
+.env.*.local
+
+# Benchmark output
+runs/
+results/
+*.log
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
 
 # OS
 .DS_Store
@@ -28,3 +52,10 @@ Thumbs.db
 # Generated outputs
 outputs/
 results/
+# Test / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.mypy_cache/
+.ruff_cache/

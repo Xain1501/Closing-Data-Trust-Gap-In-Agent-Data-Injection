@@ -1,0 +1,24 @@
+{
+  "paper_id": "cycle1-294",
+  "title": "Security Benchmarks for Synthetic Systems",
+  "status": "under_review",
+  "authors": [
+    { "name": "A. Smith", "affiliation": "NanoTech" },
+    { "name": "L. Chen", "affiliation": "NanoTech" }
+  ],
+  "abstract": "We present a lightweight study of benchmark construction.",
+  "metadata": {
+    "conference": "USENIX Security 2025",
+    "track": "Security",
+    "sub_tracks": ["robustness", "evaluation"],
+    "avg_score": 3.8,
+    "year": 2025,
+    "keywords": ["reference", "benchmark"]
+  },
+  "reviews": [
+    { "reviewer": "R1", "score": 4.5, "comments": "Consider more ablations." },
+    { "reviewer": "R2", "score": 3.5, "comments": "Broaden datasets." },
+    { "reviewer": "R3", "score": 3.0, "comments": "Lacks novelty. Include latency analysis." },
+    { "reviewer": "R4", "score": 4.5, "comments": "Highlight threats to deployment." }
+  ]
+}

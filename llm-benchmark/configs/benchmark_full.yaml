@@ -1,0 +1,110 @@
+# Full Benchmark Configuration
+# Runs all categories with per-category seed limits for comprehensive testing
+#
+# Usage:
+#   uv run dib run configs/benchmark_full.yaml
+#   uv run dib run configs/benchmark_full.yaml --verbose
+
+# =============================================================================
+# Attack types to include
+# =============================================================================
+# Available attack types:
+#   Syntactic: insert_complete, override_pre, override_post, cross
+#   Semantic: error, contextual
+# Omit this field or set to null to include all attacks
+attack_types:
+  - insert_complete
+  - override_pre
+  - override_post
+  # - cross
+  - error
+  - contextual
+
+# =============================================================================
+# Categories to test
+# =============================================================================
+# All available categories with seed data
+# Categories can be strings (use default seed_limit) or dicts with per-category seed_limit
+categories:
+  - calendar
+  - cloud_drive
+  - name: email
+    seed_limit: 2
+  - github_comments
+  - name: github_issue
+    seed_limit: 2
+  - reference_json
+  - name: web_dom
+    seed_limit: null  # Use all seeds
+
+# =============================================================================
+# Output formats to generate
+# =============================================================================
+formats:
+  - json
+  - markdown
+  # - csv      # Uncomment to include CSV format
+  # - text     # Uncomment to include plain text format
+
+# =============================================================================
+# Models to evaluate
+# =============================================================================
+# Supported providers: openai, anthropic, google
+# Environment variables needed:
+#   - openai: OPENAI_API_KEY
+#   - anthropic: ANTHROPIC_API_KEY
+#   - google: GOOGLE_API_KEY
+models:
+  - provider: openai
+    model: gpt-4o-mini
+    tool_access: none
+
+  # Add more models as needed:
+  # - provider: openai
+  #   model: gpt-4o
+  #   tool_access: none
+  #
+  # - provider: anthropic
+  #   model: claude-sonnet-4-20250514
+  #   tool_access: none
+  #
+  # - provider: anthropic
+  #   model: claude-3-5-sonnet-20241022
+  #   tool_access: none
+  #
+  # - provider: google
+  #   model: gemini-2.0-flash
+  #   tool_access: none
+  #
+  # - provider: google
+  #   model: gemini-1.5-pro
+  #   tool_access: none
+
+# =============================================================================
+# Generation settings
+# =============================================================================
+
+# Default seeds per category (null = use all seeds)
+# Per-category seed_limit in the categories section overrides this default
+seed_limit: 1
+
+# Defense configuration
+defense: random_key
+random_id_length: 6
+
+# Generate both defended and undefended instances (default)
+defense_only: false
+no_defense: false
+
+# =============================================================================
+# Evaluation settings
+# =============================================================================
+
+# Limit number of instances to evaluate (null = all)
+# Set for quick testing
+instance_limit: null
+
+# =============================================================================
+# Output configuration
+# =============================================================================
+output_dir: out

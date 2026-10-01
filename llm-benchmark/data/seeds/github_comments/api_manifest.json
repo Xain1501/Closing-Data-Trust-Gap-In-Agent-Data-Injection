@@ -1,0 +1,42 @@
+{
+  "repository": "pytorch/pytorch",
+  "collection_info": {
+    "collected_at": "2026-01-10T00:54:22.168805Z",
+    "total_comments_files": 4,
+    "anonymized": true
+  },
+  "files": [
+    {
+      "index": 1,
+      "issue_number": 172102,
+      "comments_file": "api_004_comments_dtensor_fails_at_sharding_prop.json",
+      "comments_endpoint": "GET /repos/pytorch/pytorch/issues/172102/comments",
+      "comments_url": "https://api.github.com/repos/pytorch/pytorch/issues/172102/comments",
+      "comments_count": 2
+    },
+    {
+      "index": 2,
+      "issue_number": 172091,
+      "comments_file": "api_005_comments_disabled_test_autocast_cuda_fl.json",
+      "comments_endpoint": "GET /repos/pytorch/pytorch/issues/172091/comments",
+      "comments_url": "https://api.github.com/repos/pytorch/pytorch/issues/172091/comments",
+      "comments_count": 3
+    },
+    {
+      "index": 3,
+      "issue_number": 172085,
+      "comments_file": "api_007_comments_many_test_failures_when_gpu_do.json",
+      "comments_endpoint": "GET /repos/pytorch/pytorch/issues/172085/comments",
+      "comments_url": "https://api.github.com/repos/pytorch/pytorch/issues/172085/comments",
+      "comments_count": 1
+    },
+    {
+      "index": 4,
+      "issue_number": 172082,
+      "comments_file": "api_008_comments_torch_ao_quantization_observer.json",
+      "comments_endpoint": "GET /repos/pytorch/pytorch/issues/172082/comments",
+      "comments_url": "https://api.github.com/repos/pytorch/pytorch/issues/172082/comments",
+      "comments_count": 1
+    }
+  ]
+}

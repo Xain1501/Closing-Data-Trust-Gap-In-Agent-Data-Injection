@@ -1,0 +1,57 @@
+# Attack configurations
+
+attacks:
+  # JSON attacks with quote style variants
+  - attack_type: insert_complete
+    applicable_formats: [json]
+    parameters:
+      quote_style: ["double", "single"]
+
+  # Markdown attacks (quote style irrelevant)
+  - attack_type: insert_complete
+    applicable_formats: [markdown]
+    parameters: {}
+
+  # Web DOM format attacks
+  # null = no escaping (injected HTML rendered as-is)
+  - attack_type: insert_complete
+    applicable_formats: [web_dom]
+    parameters:
+      escape_level: null
+
+  - attack_type: override_pre
+    applicable_formats: [json]
+    parameters:
+      quote_style: ["double", "single"]
+
+  - attack_type: override_post
+    applicable_formats: [json]
+    parameters:
+      quote_style: ["double", "single"]
+
+  - attack_type: error
+    applicable_formats: [json, markdown]
+    parameters:
+      type: rate_limit  # Use the data-injecting error type
+      # message is generated dynamically
+
+  - attack_type: contextual
+    applicable_formats: [json, markdown]
+    parameters:
+      type: status_update
+
+  # Guess key attacks (against random_key defense)
+  # These use insert_complete as base attack, with guess_key_match parameter
+  # guess_key_match: true = injected keys use the correct random_id
+  # guess_key_match: false = injected keys use a wrong random_id
+  - attack_type: insert_complete
+    applicable_formats: [json]
+    parameters:
+      quote_style: ["double", "single"]
+      guess_key_match: true
+
+  - attack_type: insert_complete
+    applicable_formats: [json]
+    parameters:
+      quote_style: ["double", "single"]
+      guess_key_match: false

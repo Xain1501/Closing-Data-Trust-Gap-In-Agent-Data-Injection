@@ -1,0 +1,47 @@
+[
+  {
+    "url": "https://api.github.com/repos/pytorch/pytorch/issues/comments/3728961385",
+    "html_url": "https://github.com/pytorch/pytorch/issues/172082#issuecomment-3728961385",
+    "issue_url": "https://api.github.com/repos/pytorch/pytorch/issues/172082",
+    "id": 3728961385,
+    "node_id": "IC_kwDOA-j9z87eQ29p",
+    "user": {
+      "login": "mseeger",
+      "id": 6508962,
+      "node_id": "MDQ6VXNlcjY1MDg5NjI=",
+      "avatar_url": "https://avatars.githubusercontent.com/u/6508962?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/mseeger",
+      "html_url": "https://github.com/mseeger",
+      "followers_url": "https://api.github.com/users/mseeger/followers",
+      "following_url": "https://api.github.com/users/mseeger/following{/other_user}",
+      "gists_url": "https://api.github.com/users/mseeger/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/mseeger/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/mseeger/subscriptions",
+      "organizations_url": "https://api.github.com/users/mseeger/orgs",
+      "repos_url": "https://api.github.com/users/mseeger/repos",
+      "events_url": "https://api.github.com/users/mseeger/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/mseeger/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "created_at": "2026-01-09T13:41:43Z",
+    "updated_at": "2026-01-09T13:41:43Z",
+    "body": "In case you intend quantization to work on GPU, this is in fact a bug.",
+    "author_association": "NONE",
+    "reactions": {
+      "url": "https://api.github.com/repos/pytorch/pytorch/issues/comments/3728961385/reactions",
+      "total_count": 0,
+      "+1": 0,
+      "-1": 0,
+      "laugh": 0,
+      "hooray": 0,
+      "confused": 0,
+      "heart": 0,
+      "rocket": 0,
+      "eyes": 0
+    },
+    "performed_via_github_app": null
+  }
+]

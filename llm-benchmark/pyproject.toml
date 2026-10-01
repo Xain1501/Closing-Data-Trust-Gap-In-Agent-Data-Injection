@@ -1,0 +1,34 @@
+[project]
+name = "data-injection-bench"
+version = "0.1.0"
+description = "Data Injection Benchmark - Evaluate LLM parsing robustness under adversarial tool outputs"
+readme = "README.md"
+authors = [
+    { name = "Juhee Kim", email = "kimjuhi96@snu.ac.kr" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "anthropic>=0.75.0",
+    "beautifulsoup4>=4.14.3",
+    "google-api-python-client>=2.149.0",
+    "google-auth-httplib2>=0.2.0",
+    "google-auth-oauthlib>=1.2.1",
+    "google-genai>=1.0.0",
+    "jinja2>=3.1.4",
+    "lxml>=6.0.2",
+    "mcp>=1.25.0",
+    "openai>=2.14.0",
+    "pydantic>=2.12.5",
+    "pytest>=9.0.2",
+    "pyyaml>=6.0.3",
+    "requests>=2.32.5",
+    "rich>=14.0.0",
+    "typer>=0.21.1",
+]
+
+[project.scripts]
+dib = "data_injection_bench.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.9.13,<0.10.0"]
+build-backend = "uv_build"

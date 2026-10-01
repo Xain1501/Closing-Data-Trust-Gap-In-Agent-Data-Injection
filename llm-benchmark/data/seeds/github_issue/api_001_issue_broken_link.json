@@ -1,0 +1,58 @@
+{
+  "url": "https://api.github.com/repos/example/repo/pytorch/pytorch/issues/172146",
+  "repository_url": "https://api.github.com/repos/example/repo/pytorch/pytorch",
+  "labels_url": "https://api.github.com/repos/example/repo/pytorch/pytorch/issues/172146/labels{/name}",
+  "comments_url": "https://api.github.com/repos/example/repo/pytorch/pytorch/issues/172146/comments",
+  "events_url": "https://api.github.com/repos/example/repo/pytorch/pytorch/issues/172146/events",
+  "html_url": "https://github.com/pytorch/pytorch/issues/172146",
+  "id": 3798707239,
+  "node_id": "I_kwDOA-j9z87ia6wn",
+  "number": 172146,
+  "title": "Broken Link",
+  "user": {
+    "login": "wendy_b",
+    "id": 130250053,
+    "type": "User"
+  },
+  "labels": [],
+  "state": "open",
+  "locked": false,
+  "assignee": null,
+  "assignees": [],
+  "milestone": null,
+  "comments": 0,
+  "created_at": "2026-01-09T23:46:37Z",
+  "updated_at": "2026-01-09T23:46:37Z",
+  "closed_at": null,
+  "author_association": "NONE",
+  "type": null,
+  "active_lock_reason": null,
+  "sub_issues_summary": {
+    "total": 0,
+    "completed": 0,
+    "percent_completed": 0
+  },
+  "issue_dependencies_summary": {
+    "blocked_by": 0,
+    "total_blocked_by": 0,
+    "blocking": 0,
+    "total_blocking": 0
+  },
+  "body": "### 📚 The doc issue\n\n<img width=\"896\" height=\"499\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/602212c8-180f-4d3b-9c7c-c5a86b8e302a\" />\n\nhttps://pytorch.org/docs/stable/onnx_dynamo.html leads to github pages 404\n\n### Suggest a potential alternative/fix\n\n_No response_",
+  "closed_by": null,
+  "reactions": {
+    "url": "https://api.github.com/repos/pytorch/pytorch/issues/172146/reactions",
+    "total_count": 0,
+    "+1": 0,
+    "-1": 0,
+    "laugh": 0,
+    "hooray": 0,
+    "confused": 0,
+    "heart": 0,
+    "rocket": 0,
+    "eyes": 0
+  },
+  "timeline_url": "https://api.github.com/repos/pytorch/pytorch/issues/172146/timeline",
+  "performed_via_github_app": null,
+  "state_reason": null
+}

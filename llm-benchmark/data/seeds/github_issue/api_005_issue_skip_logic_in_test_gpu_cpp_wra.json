@@ -1,0 +1,58 @@
+{
+  "url": "https://api.github.com/repos/example/repo/pytorch/pytorch/issues/172139",
+  "repository_url": "https://api.github.com/repos/example/repo/pytorch/pytorch",
+  "labels_url": "https://api.github.com/repos/example/repo/pytorch/pytorch/issues/172139/labels{/name}",
+  "comments_url": "https://api.github.com/repos/example/repo/pytorch/pytorch/issues/172139/comments",
+  "events_url": "https://api.github.com/repos/example/repo/pytorch/pytorch/issues/172139/events",
+  "html_url": "https://github.com/pytorch/pytorch/issues/172139",
+  "id": 3798529384,
+  "node_id": "I_kwDOA-j9z87iaPVo",
+  "number": 172139,
+  "title": "Skip logic in test_gpu_cpp_wrapper.py never skips tests",
+  "user": {
+    "login": "jack_t",
+    "id": 8990659,
+    "type": "User"
+  },
+  "labels": [],
+  "state": "open",
+  "locked": false,
+  "assignee": null,
+  "assignees": [],
+  "milestone": null,
+  "comments": 0,
+  "created_at": "2026-01-09T22:25:02Z",
+  "updated_at": "2026-01-09T22:25:02Z",
+  "closed_at": null,
+  "author_association": "CONTRIBUTOR",
+  "type": null,
+  "active_lock_reason": null,
+  "sub_issues_summary": {
+    "total": 0,
+    "completed": 0,
+    "percent_completed": 0
+  },
+  "issue_dependencies_summary": {
+    "blocked_by": 0,
+    "total_blocked_by": 0,
+    "blocking": 0,
+    "total_blocking": 0
+  },
+  "body": "### 🐛 Describe the bug\n\nComments in test_gpu_cpp_wrapper.py indicate that `test_addmm` and `test_linear_relu` tests should be skipped on GPUs with insufficient SMs:\n```python\n# skip if not enough SMs\nBaseTest(\n    \"test_addmm\",\n    device=None,\n    tests=test_select_algorithm.TestSelectAlgorithm(),\n),\n# skip if not enough SMs\nBaseTest(\n    \"test_linear_relu\",\n    device=None,\n    tests=test_select_algorithm.TestSelectAlgorithm(),\n)\n```\n\nLogic for skipping these tests on small GPUs exists below, but is not doing what it intends to, since the condition checks for `is_big_gpu() == True` instead of `is_big_gpu() == False`. \n```python\nif GPU_TYPE in (\"cuda\", \"xpu\") and is_big_gpu():\n    skip_list = [\"test_addmm\", \"test_linear_relu\"]\n    # need to skip instead of omit, otherwise fbcode ci can be flaky\n    for test_name in skip_list:\n        test_failures_gpu_wrapper[f\"{test_name}_{device_type}\"] = (\n            test_torchinductor.TestFailure((\"gpu_wrapper\",), is_skip=True)\n        )\n        test_failures_gpu_wrapper[f\"{test_name}_gpu_dynamic_shapes\"] = (\n            test_torchinductor.TestFailure((\"gpu_wrapper\",), is_skip=True)\n        )\n```\n\nHowever, on small GPUs these tests still get skipped because of an additional check in `test_select_algorithm.py`: \n```python\nclass TestSelectAlgorithm(TestCase):\n    def setUp(self):\n        super().setUp()\n        if not is_big_gpu():\n            return self.skipTest(\"Need a big GPU to run max_autotune=True\")\n```\nAdditionally, no tests actually get skipped when `is_big_gpu() == True` because the dictionary uses keys that don't match any existing function names- should use `f\"{test_name}\"` and `f\"{test_name}_dynamic_shapes\"` respectively.\n\nI'm happy to open a PR to update this, but wanted to check whether it would be preferable to update this conditional (probably safer in terms of avoiding unintended effects on XPU?) or remove it entirely given the existing check in TestSelectAlgorithm, and just update comments to make it clear those tests will get skipped via that check on small GPUs.\n\n### Versions\n\nRTX Pro 6000 (big gpu) and Thor (small gpu) on source build of current main",
+  "closed_by": null,
+  "reactions": {
+    "url": "https://api.github.com/repos/pytorch/pytorch/issues/172139/reactions",
+    "total_count": 0,
+    "+1": 0,
+    "-1": 0,
+    "laugh": 0,
+    "hooray": 0,
+    "confused": 0,
+    "heart": 0,
+    "rocket": 0,
+    "eyes": 0
+  },
+  "timeline_url": "https://api.github.com/repos/pytorch/pytorch/issues/172139/timeline",
+  "performed_via_github_app": null,
+  "state_reason": null
+}

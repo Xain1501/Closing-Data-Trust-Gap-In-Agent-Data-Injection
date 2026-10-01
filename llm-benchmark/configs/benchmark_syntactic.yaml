@@ -1,0 +1,129 @@
+# Syntactic-Only Benchmark Configuration
+# Balanced evaluation across OpenAI, Anthropic, and Google models (2026)
+# For academic paper evaluation
+#
+# Usage:
+#   uv run dib run configs/benchmark_syntactic.yaml
+#   uv run dib run configs/benchmark_syntactic.yaml --verbose
+#
+# Required environment variables:
+#   - OPENAI_API_KEY
+#   - ANTHROPIC_API_KEY
+#   - GOOGLE_API_KEY
+
+# =============================================================================
+# Attack types to include (syntactic only)
+# =============================================================================
+# Available attack types:
+#   Syntactic: insert_complete, override_pre, override_post, cross
+#   Semantic: error, contextual
+attack_types:
+  - insert_complete
+  - override_pre
+  - override_post
+
+# =============================================================================
+# Categories to test
+# =============================================================================
+categories:
+  - calendar
+  - cloud_drive
+  - name: email
+    seed_limit: 2
+  - github_comments
+  - name: github_issue
+    seed_limit: 2
+  - reference_json
+  - name: web_dom
+    seed_limit: null  # Use all seeds
+    subcategories:
+      - dom_id
+      - dom_id-rand
+
+# =============================================================================
+# Output formats to generate
+# =============================================================================
+# Note: web_dom category always uses web_dom format (not configurable here)
+formats:
+  - json
+  - markdown
+
+# =============================================================================
+# Models to evaluate (February 2026)
+# =============================================================================
+# Balanced selection across providers for academic comparison:
+#
+# Model tiers:
+#   Tier 1 (Flagship/Reasoning): GPT-5.2, Claude Opus 4.5, Gemini 3 Pro
+#   Tier 2 (Balanced):           GPT-5.1, Claude Sonnet 4.5, Gemini 3 Flash
+#   Tier 3 (Efficient):          Claude Haiku 4.5, Gemini 2.5 Flash
+#
+# Note: GPT-4o and GPT-4.1 were retired on Jan 29, 2026
+# Note: Gemini 2.0 Flash deprecated, retiring March 2026
+
+models:
+  # ---------------------------------------------------------------------------
+  # OpenAI Models
+  # ---------------------------------------------------------------------------
+  # GPT-5.2 (latest flagship)
+  - provider: openai
+    model: gpt-5.2
+    tool_access: none
+
+  # GPT-5 Mini (efficient)
+  - provider: openai
+    model: gpt-5-mini
+    tool_access: none
+
+  # ---------------------------------------------------------------------------
+  # Anthropic Models
+  # ---------------------------------------------------------------------------
+  # Claude Opus 4.5 (flagship)
+  - provider: anthropic
+    model: claude-opus-4-5-20251101
+    tool_access: none
+
+  # Claude Sonnet 4.5 (balanced, recommended)
+  - provider: anthropic
+    model: claude-sonnet-4-5-20250929
+    tool_access: none
+
+  # ---------------------------------------------------------------------------
+  # Google Models
+  # ---------------------------------------------------------------------------
+  # Gemini 3 Pro (flagship)
+  - provider: google
+    model: gemini-3-pro-preview
+    tool_access: none
+
+  # Gemini 3 Flash (efficient)
+  - provider: google
+    model: gemini-3-flash-preview
+    tool_access: none
+
+# =============================================================================
+# Generation settings
+# =============================================================================
+
+# Default seeds per category (null = use all seeds)
+seed_limit: 1
+
+# Defense configuration
+defense: random_key
+random_id_length: 6
+
+# Generate both defended and undefended instances
+defense_only: false
+no_defense: false
+
+# =============================================================================
+# Evaluation settings
+# =============================================================================
+
+# Limit number of instances to evaluate (null = all)
+instance_limit: null
+
+# =============================================================================
+# Output configuration
+# =============================================================================
+output_dir: out-0203

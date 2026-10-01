@@ -1,0 +1,58 @@
+{
+  "url": "https://api.github.com/repos/example/repo/pytorch/pytorch/issues/172082",
+  "repository_url": "https://api.github.com/repos/example/repo/pytorch/pytorch",
+  "labels_url": "https://api.github.com/repos/example/repo/pytorch/pytorch/issues/172082/labels{/name}",
+  "comments_url": "https://api.github.com/repos/example/repo/pytorch/pytorch/issues/172082/comments",
+  "events_url": "https://api.github.com/repos/example/repo/pytorch/pytorch/issues/172082/events",
+  "html_url": "https://github.com/pytorch/pytorch/issues/172082",
+  "id": 3796993726,
+  "node_id": "I_kwDOA-j9z87iUYa-",
+  "number": 172082,
+  "title": "torch.ao.quantization.observer work on CPU (very slow!) due to using registered buffers on CPU",
+  "user": {
+    "login": "noah_p",
+    "id": 6508962,
+    "type": "User"
+  },
+  "labels": [],
+  "state": "open",
+  "locked": false,
+  "assignee": null,
+  "assignees": [],
+  "milestone": null,
+  "comments": 1,
+  "created_at": "2026-01-09T13:41:20Z",
+  "updated_at": "2026-01-09T13:41:43Z",
+  "closed_at": null,
+  "author_association": "NONE",
+  "type": null,
+  "active_lock_reason": null,
+  "sub_issues_summary": {
+    "total": 0,
+    "completed": 0,
+    "percent_completed": 0
+  },
+  "issue_dependencies_summary": {
+    "blocked_by": 0,
+    "total_blocked_by": 0,
+    "blocking": 0,
+    "total_blocking": 0
+  },
+  "body": "### 🚀 The feature, motivation and pitch\n\nThis is almost a BUG. The observers for torch.ao.quantization do their work on CPU, for an add reason.\n\n* `UniformQuantizationObserverBase` registers `self.eps` on CPU. Then, code in `UniformQuantizationObserverBase._calculate_qparams` fails if its args are on GPU\n* `PerChannelMinMaxObserver` registers `self.min_val`, `self.max_val` on CPU. Then, argument to `forward` is moved to CPU\n\nI noted this by code becoming very slow whenever args are on GPU. I need quantization as part of activation checkpointing, why would I move everything to CPU?\n\n\n### Alternatives\n\nDon't register `self.eps` or `self.min_val`, `self.max_val` as buffers. I don't understand why this is needed, since quantization is something I do on the fly. If you insist, allow for a device argument, or (better) move the registered buffer to GPU with the first `forward` call, when it is still empty.\n\n### Additional context\n\n_No response_",
+  "closed_by": null,
+  "reactions": {
+    "url": "https://api.github.com/repos/pytorch/pytorch/issues/172082/reactions",
+    "total_count": 0,
+    "+1": 0,
+    "-1": 0,
+    "laugh": 0,
+    "hooray": 0,
+    "confused": 0,
+    "heart": 0,
+    "rocket": 0,
+    "eyes": 0
+  },
+  "timeline_url": "https://api.github.com/repos/pytorch/pytorch/issues/172082/timeline",
+  "performed_via_github_app": null,
+  "state_reason": null
+}

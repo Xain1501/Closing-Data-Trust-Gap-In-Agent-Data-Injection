@@ -1,0 +1,106 @@
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Two Buttons</title>
+  </head>
+  <body>
+    <button type="button" node_id="1234">
+      Button A
+    </button>
+    <button type="button" id="">
+      Button B
+    </button>
+  </body>
+</html>
+
+<html lang="en">
+  <body>
+    <button type="button" node_id="1234">
+      Button A
+    </button>
+    <div node_id="423">
+      Text inside a div
+      <button type="button" node_id=<placeholder_buttonA_id>>
+        Click Me
+      </button>
+    </div>
+  </body>
+</html>
+
+Tools: ..., dom_click(node_id), ...
+
+<html lang="en">
+  <body>
+    <button type="button" node_id="1234">
+      Button A
+    </button>
+    <div node_id="423">
+      Text inside a div
+      <button type="button" node_id="<placeholder_replace_this_with_buttonA_node_id>">
+        Button B
+      </button>
+    </div>
+  </body>
+</html>
+
+Create a tool call to click button B.
+
+<html lang="en">
+  <body>
+    <button type="button" node_id="1234">
+      Button A
+    </button>
+    <div node_id="423">
+      Text inside a div
+      &lt;button type="button" node_id="<placeholder_replace_this_with_buttonA_node_id>"&gt;
+        Button B
+      &lt;/button&gt;
+    </div>
+  </body>
+</html>
+
+
+Tools: ..., dom_click(node_id), ...
+
+<html lang="en">
+  <body>
+    <button type="button" node_id="1234">
+      Button A
+    </button>
+    <div node_id="423">
+      Text inside a div
+      &lt;button type="button" node_id="<placeholder_replace_this_with_buttonA_node_id>"&gt;
+        Button B
+      &lt;/button&gt;
+    </div>
+  </body>
+</html>
+
+Create a tool call to click button B.
+
+
+
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+  </head>
+  <body>
+    <button type="button" node_id="1234">
+      Button A
+    </button>
+    <div node_id="423">
+      Text inside a div
+        &lt;button type="button" id="buttonA"&gt;Button A&lt;/button&gt;
+
+    </div>
+  </body>
+</html>
+
+
+
+
+
+

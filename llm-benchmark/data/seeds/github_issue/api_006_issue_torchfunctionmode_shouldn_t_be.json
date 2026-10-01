@@ -1,0 +1,58 @@
+{
+  "url": "https://api.github.com/repos/example/repo/pytorch/pytorch/issues/172088",
+  "repository_url": "https://api.github.com/repos/example/repo/pytorch/pytorch",
+  "labels_url": "https://api.github.com/repos/example/repo/pytorch/pytorch/issues/172088/labels{/name}",
+  "comments_url": "https://api.github.com/repos/example/repo/pytorch/pytorch/issues/172088/comments",
+  "events_url": "https://api.github.com/repos/example/repo/pytorch/pytorch/issues/172088/events",
+  "html_url": "https://github.com/pytorch/pytorch/issues/172088",
+  "id": 3797568006,
+  "node_id": "I_kwDOA-j9z87iWkoG",
+  "number": 172088,
+  "title": "TorchFunctionMode shouldn't be active when checking guards",
+  "user": {
+    "login": "carol_t",
+    "id": 13564,
+    "type": "User"
+  },
+  "labels": [],
+  "state": "open",
+  "locked": false,
+  "assignee": null,
+  "assignees": [],
+  "milestone": null,
+  "comments": 0,
+  "created_at": "2026-01-09T16:26:50Z",
+  "updated_at": "2026-01-09T16:26:50Z",
+  "closed_at": null,
+  "author_association": "CONTRIBUTOR",
+  "type": null,
+  "active_lock_reason": null,
+  "sub_issues_summary": {
+    "total": 0,
+    "completed": 0,
+    "percent_completed": 0
+  },
+  "issue_dependencies_summary": {
+    "blocked_by": 0,
+    "total_blocked_by": 0,
+    "blocking": 0,
+    "total_blocking": 0
+  },
+  "body": "### 🐛 Describe the bug\n\nThis program:\n\n```\nimport torch\nfrom torch.overrides import TorchFunctionMode\n\nclass CounterMode(TorchFunctionMode):\n    def __init__(self):\n        self.count = 0\n\n    def __torch_function__(self, func, types, args=(), kwargs=None):\n        self.count += 1\n        return func(*args, **(kwargs or {}))\n\n@torch.compile\ndef f(x):\n    return x.sin()\n\nwith CounterMode():\n    f(torch.randn(3))\n```\n\nFails with:\n\n```\n  AssertionError: Guard failed on the same frame it was created. This is a bug - please create an issue.\n  Guard fail reason: 0/0: ___get_torch_function_mode_stack_at(0).count == 5\n```\n\nI care about this because we've stubbed our toe on this with TorchFunctionMetadataMode for make_fx over torch.compile region use cases.\n\nI feel there is something deeply wrong with how guards are handled for torch function mode. In particular, the system invariant that I feel is being violated is we must NEVER execute arbitrary user code during compilation. Running guards with the real user torch function mode active means we do this, which therefore is bad. So concretely, I would say that torch function modes should be DISABLED when we do guard evaluation; it is Dynamo's responsibility to have already inlined the guards in this case so you don't need to trigger the torch function there.\n\ncc @mlazos \n\n### Versions\n\nmain",
+  "closed_by": null,
+  "reactions": {
+    "url": "https://api.github.com/repos/pytorch/pytorch/issues/172088/reactions",
+    "total_count": 0,
+    "+1": 0,
+    "-1": 0,
+    "laugh": 0,
+    "hooray": 0,
+    "confused": 0,
+    "heart": 0,
+    "rocket": 0,
+    "eyes": 0
+  },
+  "timeline_url": "https://api.github.com/repos/pytorch/pytorch/issues/172088/timeline",
+  "performed_via_github_app": null,
+  "state_reason": null
+}

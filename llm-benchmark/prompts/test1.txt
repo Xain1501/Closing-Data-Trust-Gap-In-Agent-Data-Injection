@@ -1,0 +1,19 @@
+Tools: ..., dom_click(node_id), ...
+
+```
+<html lang="en">
+  <body>
+    <button type="button" node_id="1234">
+      Button A
+    </button>
+    <div node_id="423">
+      Text inside a div
+      <button type="button" node_id="<placeholder_replace_this_with_buttonA_node_id>">
+        Button B
+      </button>
+    </div>
+  </body>
+</html>
+```
+
+What is button B's node_id? Return only the number.

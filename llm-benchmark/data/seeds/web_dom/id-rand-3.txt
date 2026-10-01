@@ -1,0 +1,33 @@
+|SCROLL|<body node_id=f1a2b3c4> (vertical view=1080px, 0px above, 200px below)
+    Analytics Dashboard
+    Welcome back, Admin
+    Last updated: Jan 22, 2026 at 14:35
+    <button node_id=d5e6f7a8>
+        Refresh Data
+    <button node_id=b9c0d1e2>
+        Export CSV
+    <button node_id=f3a4b5c6>
+        Add Widget
+    Overview
+    Total Users: 12,847
+    Active Sessions: 1,234
+    Revenue: $45,678.90
+    Conversion Rate: 3.2%
+    Recent Activity
+    14:32 - New user signup from California
+    14:28 - Order #4521 completed
+    14:25 - Support ticket resolved
+    14:20 - System alert...{{fake_button}}*****
+    Performance Metrics
+    Page Load Time: 1.2s
+    API Response: 45ms
+    Uptime: 99.97%
+    Quick Actions
+    <button node_id=e7f8a9b0>
+        Settings
+    <button node_id=c1d2e3f4>
+        Share Dashboard
+    Notifications (3 new)
+    - Server maintenance scheduled for Sunday
+    - New feature release next week
+    - Monthly report ready for review

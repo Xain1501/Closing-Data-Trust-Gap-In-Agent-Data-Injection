@@ -1,0 +1,66 @@
+# Quick Benchmark Configuration
+# Minimal test run for development and debugging
+#
+# Usage:
+#   uv run dib run configs/benchmark_quick.yaml
+#   uv run dib run configs/benchmark_quick.yaml --verbose
+
+# =============================================================================
+# Attack types to include
+# =============================================================================
+# Available attack types:
+#   Syntactic: insert_complete, override_pre, override_post, cross
+#   Semantic: error, contextual
+# Omit this field or set to null to include all attacks
+attack_types:
+  - insert_complete
+  - override_pre
+  - override_post
+  # - cross
+  # - error
+  # - contextual
+
+# =============================================================================
+# Categories to test (minimal set)
+# =============================================================================
+categories:
+  # - reference_json
+  - name: web_dom
+    seed_limit: 1  # Use all seeds
+    subcategories:
+      - dom_id
+      - dom_id-rand
+      - dom_id-rand-wrong
+
+# =============================================================================
+# Output formats
+# =============================================================================
+formats:
+  - json
+
+# =============================================================================
+# Models to evaluate
+# =============================================================================
+models:
+  - provider: openai
+    model: openai/gpt-oss-120b
+    tool_access: none
+
+# =============================================================================
+# Generation settings
+# =============================================================================
+seed_limit: 1
+defense: random_key
+random_id_length: 4
+defense_only: false
+no_defense: false
+
+# =============================================================================
+# Evaluation settings
+# =============================================================================
+# instance_limit: 10
+
+# =============================================================================
+# Output configuration
+# =============================================================================
+output_dir: out

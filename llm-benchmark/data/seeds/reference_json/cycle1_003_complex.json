@@ -1,0 +1,25 @@
+{
+  "paper_id": "cycle1-294",
+  "title": "Comprehensive Benchmarking of Data Injection Defenses",
+  "status": "submitted",
+  "authors": [
+    { "name": "D. Patel", "affiliation": "SecureAI", "email": "d.patel@example.test" },
+    { "name": "E. Gomez", "affiliation": "SecureAI" }
+  ],
+  "abstract": "We benchmark defenses against data injection across tasks and models.",
+  "metadata": {
+    "conference": "ACM CCS 2025",
+    "track": "Security",
+    "sub_tracks": ["robustness", "evaluation", "systems"],
+    "avg_score": 3.8,
+    "decision": "major_revision",
+    "submitted_at": "2025-01-05T10:00:00Z",
+    "revised_at": "2025-02-10T12:30:00Z"
+  },
+  "reviews": [
+    { "reviewer": "R1", "score": 4.5, "comments": "Consider more ablations." },
+    { "reviewer": "R2", "score": 3.5, "comments": "Broaden datasets." },
+    { "reviewer": "R3", "score": 3.0, "comments": "Lacks novelty. Include latency analysis." },
+    { "reviewer": "R4", "score": 4.5, "comments": "Highlight threats to deployment." }
+  ]
+}

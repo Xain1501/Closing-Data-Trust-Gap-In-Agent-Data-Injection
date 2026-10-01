@@ -1,0 +1,95 @@
+{
+  "url": "https://api.github.com/repos/example/repo/pytorch/pytorch/issues/172085",
+  "repository_url": "https://api.github.com/repos/example/repo/pytorch/pytorch",
+  "labels_url": "https://api.github.com/repos/example/repo/pytorch/pytorch/issues/172085/labels{/name}",
+  "comments_url": "https://api.github.com/repos/example/repo/pytorch/pytorch/issues/172085/comments",
+  "events_url": "https://api.github.com/repos/example/repo/pytorch/pytorch/issues/172085/events",
+  "html_url": "https://github.com/pytorch/pytorch/issues/172085",
+  "id": 3797256416,
+  "node_id": "I_kwDOA-j9z87iVYjg",
+  "number": 172085,
+  "title": "Many test failures when GPU does not support BF16",
+  "user": {
+    "login": "yara_g",
+    "id": 309017,
+    "type": "User"
+  },
+  "labels": [
+    {
+      "id": 1076930055,
+      "node_id": "MDU6TGFiZWwxMDc2OTMwMDU1",
+      "url": "https://api.github.com/repos/pytorch/pytorch/labels/module:%20cuda",
+      "name": "module: cuda",
+      "color": "f7e101",
+      "default": false,
+      "description": "Related to torch.cuda, and CUDA support in general"
+    },
+    {
+      "id": 1300933336,
+      "node_id": "MDU6TGFiZWwxMzAwOTMzMzM2",
+      "url": "https://api.github.com/repos/pytorch/pytorch/labels/module:%20tests",
+      "name": "module: tests",
+      "color": "f7e101",
+      "default": false,
+      "description": "Issues related to tests (not the torch.testing module)"
+    },
+    {
+      "id": 1301347167,
+      "node_id": "MDU6TGFiZWwxMzAxMzQ3MTY3",
+      "url": "https://api.github.com/repos/pytorch/pytorch/labels/triaged",
+      "name": "triaged",
+      "color": "006b75",
+      "default": false,
+      "description": "This issue has been looked at a team member, and triaged and prioritized into an appropriate module"
+    },
+    {
+      "id": 1445194887,
+      "node_id": "MDU6TGFiZWwxNDQ1MTk0ODg3",
+      "url": "https://api.github.com/repos/pytorch/pytorch/labels/module:%20bfloat16",
+      "name": "module: bfloat16",
+      "color": "f7e101",
+      "default": false,
+      "description": ""
+    }
+  ],
+  "state": "open",
+  "locked": false,
+  "assignee": null,
+  "assignees": [],
+  "milestone": null,
+  "comments": 1,
+  "created_at": "2026-01-09T14:59:45Z",
+  "updated_at": "2026-01-09T21:17:56Z",
+  "closed_at": null,
+  "author_association": "COLLABORATOR",
+  "type": null,
+  "active_lock_reason": null,
+  "sub_issues_summary": {
+    "total": 0,
+    "completed": 0,
+    "percent_completed": 0
+  },
+  "issue_dependencies_summary": {
+    "blocked_by": 0,
+    "total_blocked_by": 0,
+    "blocking": 0,
+    "total_blocking": 0
+  },
+  "body": "### 🐛 Describe the bug\n\nWe are running the PyTorch test suite on multiple architectures to verify the installation.\n\nOn Volta GPUs many tests fail with a similar cause: Using `bfloat16`.\n\nE.g. `python test/inductor/test_online_softmax.py TestOnlineSoftmax.test_split_reduction`\n> >       act, (code,) = run_and_get_code(torch.compile(torch.softmax), x, dim=-1)\n> E       ValueError: not enough values to unpack (expected 1, got 0)\n\nAnd prior to that warnings:\n```\nOnline softmax is disabled on the fly since Inductor decides to\nsplit the reduction. Cut an issue to PyTorch if this is an\nimportant use case and you want to speed it up with online\nsoftmax.\n\n  warnings.warn(\n/tmp/eb-sx0ralf9/tmpn8q57wph/lib/python3.12/site-packages/torch/_inductor/compile_fx.py:2177: UserWarning: Tesla V100-SXM2-32GB does not support bfloat16 compilation natively, skipping\n```\n\nMostly the inductor tests are affected.\n\n`test_adaptive_avg_pool2d_low_prec` contains some checks like `if not self.is_dtype_supported(dtype): continue` which likely fix that.   \nIt seems that this needs to be broadly done for any test using `torch.bfloat16`\n\n### Versions\n\nPyTorch 2.7.1 & 2.9.1\n\ncc @ptrblck @msaroufim @eqy @jerryzh168 @tinglvv @nWEIdia @seemethere @malfet @pytorch/pytorch-dev-infra @mruberry",
+  "closed_by": null,
+  "reactions": {
+    "url": "https://api.github.com/repos/pytorch/pytorch/issues/172085/reactions",
+    "total_count": 0,
+    "+1": 0,
+    "-1": 0,
+    "laugh": 0,
+    "hooray": 0,
+    "confused": 0,
+    "heart": 0,
+    "rocket": 0,
+    "eyes": 0
+  },
+  "timeline_url": "https://api.github.com/repos/pytorch/pytorch/issues/172085/timeline",
+  "performed_via_github_app": null,
+  "state_reason": null
+}

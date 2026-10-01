@@ -1,0 +1,88 @@
+{
+  "url": "https://api.github.com/repos/example/repo/pytorch/pytorch/issues/172102",
+  "repository_url": "https://api.github.com/repos/example/repo/pytorch/pytorch",
+  "labels_url": "https://api.github.com/repos/example/repo/pytorch/pytorch/issues/172102/labels{/name}",
+  "comments_url": "https://api.github.com/repos/example/repo/pytorch/pytorch/issues/172102/comments",
+  "events_url": "https://api.github.com/repos/example/repo/pytorch/pytorch/issues/172102/events",
+  "html_url": "https://github.com/pytorch/pytorch/issues/172102",
+  "id": 3797833071,
+  "node_id": "I_kwDOA-j9z87iXlVv",
+  "number": 172102,
+  "title": "DTensor fails at sharding propagation with aten.view",
+  "user": {
+    "login": "blake_h",
+    "id": 152360507,
+    "type": "User"
+  },
+  "labels": [
+    {
+      "id": 4747495732,
+      "node_id": "LA_kwDOA-j9z88AAAABGvkJNA",
+      "url": "https://api.github.com/repos/pytorch/pytorch/labels/module:%20dtensor",
+      "name": "module: dtensor",
+      "color": "fbca04",
+      "default": false,
+      "description": "distributed tensor tag"
+    }
+  ],
+  "state": "closed",
+  "locked": false,
+  "assignee": null,
+  "assignees": [],
+  "milestone": null,
+  "comments": 2,
+  "created_at": "2026-01-09T17:53:05Z",
+  "updated_at": "2026-01-09T22:51:38Z",
+  "closed_at": "2026-01-09T22:51:38Z",
+  "author_association": "NONE",
+  "type": null,
+  "active_lock_reason": null,
+  "sub_issues_summary": {
+    "total": 0,
+    "completed": 0,
+    "percent_completed": 0
+  },
+  "issue_dependencies_summary": {
+    "blocked_by": 0,
+    "total_blocked_by": 0,
+    "blocking": 0,
+    "total_blocking": 0
+  },
+  "body": "### 🐛 Describe the bug\n\nDTensor fails at sharding propagation on a linear projection with replicate weight placement and sharded input placement.\n\nHere is a minimal reproducible example.\n```\nimport torch\nimport torch.distributed as dist\nimport torch.nn.functional as F\nfrom torch.distributed.tensor import DeviceMesh, Replicate, Shard, distribute_tensor\n\n\ndef run_repro():\n    # 1. Setup distributed environment\n    dist.init_process_group(\"gloo\")\n\n    rank = dist.get_rank()\n    world_size = dist.get_world_size()\n\n    device = \"cpu\"\n    # Create a simple 1D mesh\n    mesh = DeviceMesh(device, torch.arange(world_size))\n\n    # 2. Define shapes and placements\n    batch_size = 2\n    seq_len = 8\n    in_features = 4\n    out_features = 4\n\n    # Shard sequence dimension\n    input_placements = [Shard(1)]\n\n    # 3. Create global tensors\n    torch.manual_seed(42)\n    x_global = torch.randn(batch_size, seq_len, in_features, requires_grad=True)\n    weight_global = torch.ones(out_features, in_features, requires_grad=True)\n    bias_global = torch.ones(out_features, requires_grad=True)\n\n    # 4. Create DTensors\n    x_dtensor = distribute_tensor(x_global.detach().clone(), mesh, input_placements)\n    x_dtensor.requires_grad = True\n\n    weight_dtensor = distribute_tensor(weight_global.detach().clone(), mesh, [Replicate()])\n    weight_dtensor.requires_grad = True\n\n    bias_dtensor = distribute_tensor(bias_global.detach().clone(), mesh, [Replicate()])\n    bias_dtensor.requires_grad = True\n\n    # 5. Forward Pass\n    try:\n        # Use functional linear with ones\n        y_dtensor = F.linear(x_dtensor, weight_dtensor, bias_dtensor)\n\n        # Emulate the redistribute pattern that often fails\n        y_dtensor = y_dtensor.redistribute(mesh, input_placements)\n\n        if rank == 0:\n            print(f\"Rank {rank}: Forward pass completed.\")\n\n    except Exception as e:\n        print(f\"Rank {rank}: Forward pass failed: {e}\")\n        dist.destroy_process_group()\n        return\n\n    # 6. Backward Pass\n    try:\n        grad_out_global = torch.randn(batch_size, seq_len, out_features)\n        grad_out_dtensor = distribute_tensor(grad_out_global, mesh, input_placements)\n\n        y_dtensor.backward(grad_out_dtensor)\n\n        if rank == 0:\n            print(f\"Rank {rank}: Backward pass completed.\")\n\n    except Exception as e:\n        print(f\"Rank {rank}: Backward pass failed: {e}\")\n\n    dist.destroy_process_group()\n\n\nif __name__ == \"__main__\":\n    run_repro()\n```\n\n```\ntorchrun --nproc_per_node=2 reproduce_dtensor_bug.py\nW0109 09:49:33.143000 1486 torch/distributed/run.py:851] \nW0109 09:49:33.143000 1486 torch/distributed/run.py:851] *****************************************\nW0109 09:49:33.143000 1486 torch/distributed/run.py:851] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. \nW0109 09:49:33.143000 1486 torch/distributed/run.py:851] *****************************************\nRank 1: Forward pass failed: ('Attempted to flatten multiple dimensions, with dimension 1 being sharded. ', 'It cannot be performed without redistribution, which is disallowed by the current operator.')\n\nSharding propagation failed for aten.view.default(Spec(f32[2, 8, 4](S(1))), [16, 4]) on DeviceMesh((2,), 'cpu', stride=(1,)))\nRank 0: Forward pass failed: ('Attempted to flatten multiple dimensions, with dimension 1 being sharded. ', 'It cannot be performed without redistribution, which is disallowed by the current operator.')\n\nSharding propagation failed for aten.view.default(Spec(f32[2, 8, 4](S(1))), [16, 4]) on DeviceMesh((2,), 'cpu', stride=(1,)))\n```\n\nVersion info:\nWe observe this failure on NGC container 25.10. Previously on NGC container 25.02 we don't see this error.\n\n\n### Versions\n\n```\nCollecting environment information...\nPyTorch version: 2.11.0a0+git617507e\nIs debug build: False\nCUDA used to build PyTorch: 13.1\nROCM used to build PyTorch: N/A\n\nOS: Ubuntu 24.04.3 LTS (x86_64)\nGCC version: (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0\nClang version: Could not collect\nCMake version: version 3.31.6\nLibc version: glibc-2.39\n\nPython version: 3.12.3 (main, Nov  6 2025, 13:44:16) [GCC 13.3.0] (64-bit runtime)\nPython platform: Linux-6.14.0-1018-oracle-x86_64-with-glibc2.39\nIs CUDA available: True\nCUDA runtime version: 13.1.115\nCUDA_MODULE_LOADING set to: LAZY\nGPU models and configuration: \nGPU 0: NVIDIA B300 SXM6 AC\nGPU 1: NVIDIA B300 SXM6 AC\nGPU 2: NVIDIA B300 SXM6 AC\nGPU 3: NVIDIA B300 SXM6 AC\nGPU 4: NVIDIA B300 SXM6 AC\nGPU 5: NVIDIA B300 SXM6 AC\nGPU 6: NVIDIA B300 SXM6 AC\nGPU 7: NVIDIA B300 SXM6 AC\n\nNvidia driver version: 580.105.08\ncuDNN version: Probably one of the following:\n/usr/lib/x86_64-linux-gnu/libcudnn.so.9.18.0\n/usr/lib/x86_64-linux-gnu/libcudnn_adv.so.9.18.0\n/usr/lib/x86_64-linux-gnu/libcudnn_cnn.so.9.18.0\n/usr/lib/x86_64-linux-gnu/libcudnn_engines_precompiled.so.9.18.0\n/usr/lib/x86_64-linux-gnu/libcudnn_engines_runtime_compiled.so.9.18.0\n/usr/lib/x86_64-linux-gnu/libcudnn_graph.so.9.18.0\n/usr/lib/x86_64-linux-gnu/libcudnn_heuristic.so.9.18.0\n/usr/lib/x86_64-linux-gnu/libcudnn_ops.so.9.18.0\nIs XPU available: False\nHIP runtime version: N/A\nMIOpen runtime version: N/A\nIs XNNPACK available: True\nCaching allocator config: N/A\n\n\nCPU:\nArchitecture:                            x86_64\nCPU op-mode(s):                          32-bit, 64-bit\nAddress sizes:                           52 bits physical, 57 bits virtual\nByte Order:                              Little Endian\nCPU(s):                                  256\nOn-line CPU(s) list:                     0-255\nVendor ID:                               GenuineIntel\nModel name:                              Intel(R) Xeon(R) 6776P\nCPU family:                              6\nModel:                                   173\nThread(s) per core:                      2\nCore(s) per socket:                      64\nSocket(s):                               2\nStepping:                                1\nCPU(s) scaling MHz:                      20%\nCPU max MHz:                             4600.0000\nCPU min MHz:                             800.0000\nBogoMIPS:                                4600.00\nFlags:                                   fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf tsc_known_freq pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid dca sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault epb cat_l3 cat_l2 cdp_l3 intel_ppin cdp_l2 ssbd mba ibrs ibpb stibp ibrs_enhanced tpr_shadow flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a avx512f avx512dq rdseed adx smap avx512ifma clflushopt clwb intel_pt avx512cd sha_ni avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local split_lock_detect user_shstk avx_vnni avx512_bf16 wbnoinvd dtherm ida arat pln pts hwp hwp_act_window hwp_epp hwp_pkg_req hfi vnmi avx512vbmi umip pku ospke waitpkg avx512_vbmi2 gfni vaes vpclmulqdq avx512_vnni avx512_bitalg avx512_vpopcntdq la57 rdpid bus_lock_detect cldemote movdiri movdir64b enqcmd fsrm md_clear serialize tsxldtrk pconfig arch_lbr ibt amx_bf16 avx512_fp16 amx_tile amx_int8 flush_l1d arch_capabilities\nVirtualization:                          VT-x\nL1d cache:                               6 MiB (128 instances)\nL1i cache:                               8 MiB (128 instances)\nL2 cache:                                256 MiB (128 instances)\nL3 cache:                                672 MiB (2 instances)\nNUMA node(s):                            2\nNUMA node0 CPU(s):                       0-63,128-191\nNUMA node1 CPU(s):                       64-127,192-255\nVulnerability Gather data sampling:      Not affected\nVulnerability Ghostwrite:                Not affected\nVulnerability Indirect target selection: Not affected\nVulnerability Itlb multihit:             Not affected\nVulnerability L1tf:                      Not affected\nVulnerability Mds:                       Not affected\nVulnerability Meltdown:                  Not affected\nVulnerability Mmio stale data:           Not affected\nVulnerability Reg file data sampling:    Not affected\nVulnerability Retbleed:                  Not affected\nVulnerability Spec rstack overflow:      Not affected\nVulnerability Spec store bypass:         Mitigation; Speculative Store Bypass disabled via prctl\nVulnerability Spectre v1:                Mitigation; usercopy/swapgs barriers and __user pointer sanitization\nVulnerability Spectre v2:                Mitigation; Enhanced / Automatic IBRS; IBPB conditional; PBRSB-eIBRS Not affected; BHI BHI_DIS_S\nVulnerability Srbds:                     Not affected\nVulnerability Tsa:                       Not affected\nVulnerability Tsx async abort:           Not affected\nVulnerability Vmscape:                   Mitigation; IBPB before exit to userspace\n\nVersions of relevant libraries:\n[pip3] cudnn_fmha==0.0.0\n[pip3] intel-openmp==2021.4.0\n[pip3] mkl==2021.1.1\n[pip3] mkl-devel==2021.1.1\n[pip3] mkl-include==2021.1.1\n[pip3] mypy==1.16.0\n[pip3] mypy_extensions==1.1.0\n[pip3] numpy==1.26.4\n[pip3] nvidia-cudnn-frontend==1.17.0\n[pip3] onnx==1.20.0\n[pip3] onnx-ir==0.1.12\n[pip3] onnxscript==0.5.4\n[pip3] optree==0.13.0\n[pip3] pytorch-lightning==2.6.0\n[pip3] tbb==2021.13.1\n[pip3] torch==2.11.0a0+git617507e\n[pip3] torchmetrics==1.8.2\n[pip3] torchvision==0.25.0a0+269805e\n[pip3] triton==3.6.0+git9844da95\n[conda] Could not collect\n```\n\ncc @wanchaol @tianyu-l @wz337 @XilunWu @d4l3k @pragupta @SherlockNoMad @ppwwyyxx",
+  "closed_by": {
+    "login": "ngimel",
+    "id": 15841449,
+    "node_id": "MDQ6VXNlcjE1ODQxNDQ5",
+    "avatar_url": "https://avatars.githubusercontent.com/u/15841449?v=4",
+    "gravatar_id": "",
+    "url": "https://api.github.com/users/ngimel",
+    "html_url": "https://github.com/ngimel",
+    "followers_url": "https://api.github.com/users/ngimel/followers",
+    "following_url": "https://api.github.com/users/ngimel/following{/other_user}",
+    "gists_url": "https://api.github.com/users/ngimel/gists{/gist_id}",
+    "starred_url": "https://api.github.com/users/ngimel/starred{/owner}{/repo}",
+    "subscriptions_url": "https://api.github.com/users/ngimel/subscriptions",
+    "organizations_url": "https://api.github.com/users/ngimel/orgs",
+    "repos_url": "https://api.github.com/users/ngimel/repos",
+    "events_url": "https://api.github.com/users/ngimel/events{/privacy}",
+    "received_events_url": "https://api.github.com/users/ngimel/received_events",
+    "type": "User",
+    "user_view_type": "public",
+    "site_admin": false
+  },
+  "reactions": {
+    "url": "https://api.github.com/repos/pytorch/pytorch/issues/172102/reactions",
+    "total_count": 0,
+    "+1": 0,
+    "-1": 0,
+    "laugh": 0,
+    "hooray": 0,
+    "confused": 0,
+    "heart": 0,
+    "rocket": 0,
+    "eyes": 0
+  },
+  "timeline_url": "https://api.github.com/repos/pytorch/pytorch/issues/172102/timeline",
+  "performed_via_github_app": null,
+  "state_reason": "duplicate"
+}
