@@ -1,0 +1,68 @@
+flowchart TD
+
+subgraph L1["1. Agent Interaction Layer"]
+    direction LR
+    U["User<br/>(Prompt / Request)"] --> LLM["Main LLM<br/>(Reasoning / Planning)"]
+    LLM --> AG["Agent<br/>(Decides next action)"]
+    AG -->|"Proposed Tool call (outgoing)"| OTC["Original Tool Call<br/>(JSON payload)"]
+end
+
+subgraph L2["2. Detector Agent (Intercepts Both Directions)"]
+    TC["Tool Call (Clone)"]
+    TVM["Transitive Verification Matrix"]
+
+    subgraph PIPE["Detection Pipeline"]
+        direction LR
+        P1["1. Deterministic Parser<br/>- Parse JSON<br/>- Check delimiters<br/>- Structural compliance<br/>Output: Structural Score (S)"]
+        P2["2. Tagging Module<br/>- Tag system fields (Trusted)<br/>- Tag user fields (Untrusted)"]
+        P3["3. Trust-Provenance Mapping<br/>- Build field-level graph<br/>- Label with /<br/>- Check nested call / mimicry"]
+        P4["4. WL Kernel<br/>- Subgraph features<br/>- Histogram vector"]
+        P5["5. SVM Classifier + Platt Scaling<br/>- C-SVC<br/>- Calibrate to 0-1<br/>Output: Classifier Score (M)"]
+        P1 --> P2 --> P3 --> P4 --> P5
+    end
+
+    OUT["Outgoing Tool Call<br/>(allowed / modified)<br/>-> External Tool"]
+    SS["Structural Score (S)<br/>(0-1)"]
+    CS["Classifier Score (M)<br/>(0-1)"]
+
+    subgraph L3["3. Risk Execution Gate"]
+        direction LR
+        RC["Risk Calculation<br/>Risk = Confidence x Impact<br/>(Impact from tool severity matrix)"]
+        RL["Risk Level<br/>(Low) | (Moderate) | (High)"]
+        RC --> RL
+    end
+
+    TC --> P1
+    TC --> TVM
+    P1 --> SS
+    P5 --> CS
+    P5 --> OUT
+    SS --> RC
+    CS --> RC
+end
+
+subgraph L4["4. Triple-Lane Policy Selection"]
+    LOW["LOW RISK<br/>Auto Approval<br/>-> Execute tool call"]
+    MOD["MODERATE RISK<br/>Human Review Options:<br/>- Allow<br/>- Deny<br/>- Evidence Only"]
+    HIGH["HIGH RISK<br/>Human Review Options:<br/>- Deny<br/>- Evidence Only<br/>(Execution Blocked)"]
+    EB["Execution Block<br/>(Allowed / Modified Call)"]
+    EXT["External Tool / System"]
+    ITR["Incoming Tool Response<br/>(JSON / Structured Data)"]
+
+    MOD -->|"Allow"| LOW
+    LOW --> EB
+    EB --> EXT
+    EXT --> ITR
+    HIGH --> ITR
+end
+
+LOG["Decision Log & Audit Trail<br/>- Tool call details<br/>- Graph snapshot<br/>- Classifier score<br/>- Risk level<br/>- Decision<br/>- Timestamp<br/>- Provenance data<br/>- Human review outcome"]
+
+OTC --> TC
+RL --> LOW
+RL --> MOD
+RL --> HIGH
+ITR -->|"incoming response intercepted"| TC
+ITR --> LOG
+OUT --> LOG
+LOG --> AG
