@@ -1,11 +1,22 @@
+"""Stage 1 - Deterministic JSON parser (proposal sections 6.2 / 8.4.1).
 
+parse() is PURE PARSING: it turns a payload into addressable fields and a
+status. It computes no score and makes no trust judgment. Structural flags
+live in structural.py and only receive the already-parsed result.
+
+stdlib `json` does the tokenising (so duplicate keys stay visible; Pydantic
+would silently collapse them). Pydantic validates the outputs.
+"""
 from __future__ import annotations
 
 import json
 import re
 from typing import Any
 
-from models import Finding, ParsedField, ParseResult, ParseStatus, ToolTraffic
+try:
+    from .models import Finding, ParsedField, ParseResult, ParseStatus, ToolTraffic
+except ImportError:  # flat-folder layout
+    from models import Finding, ParsedField, ParseResult, ParseStatus, ToolTraffic
 
 MAX_BYTES = 1_000_000
 MAX_DEPTH = 32
@@ -68,7 +79,7 @@ def _walk(node: Any, path: str, parent: str | None, key: str | None, depth: int,
 
 
 def parse(traffic: ToolTraffic) -> ParseResult:
-    raw = payload_text(traffic)
+    raw = payload_text(traffic).lstrip("\ufeff")   # a leading BOM is not an attack
     ctx = _Ctx()
     status = ParseStatus.OK
 

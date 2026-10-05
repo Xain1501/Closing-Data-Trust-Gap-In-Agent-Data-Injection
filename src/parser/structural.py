@@ -1,42 +1,79 @@
+"""Stage 1b - Structural flags and S (proposal 6.2 / 8.4.3 "structural flag").
 
+Takes an ALREADY-PARSED ParseResult and looks for STRUCTURE hiding inside string
+values AND key names. Instruction words ("ignore", "system:") are never used.
+
+The patterns come from the paper's table of "inexact delimiters": an attacker
+forges  {"k":"v"}  using look-alike characters, e.g.
+    {\\"k\\":\\"v\\"}   {'k':'v'}   {"k":"v"} (curly)   {$k$:$v$}   (\\"k\\":\\"v\\")
+so the main signal is a forged  <quote>key<quote> : value  pair, whatever the
+quote/brace characters are. Text is also normalised before scanning (HTML
+entities, %-encoding, fullwidth forms, zero-width characters).
+
+HEURISTIC. Known limits are written as tests in test_structural.py.
+"""
 from __future__ import annotations
 
+import html
 import json
 import re
+import unicodedata
 from collections.abc import Sequence
 from typing import Any
+from urllib.parse import unquote
 
 from pydantic import TypeAdapter, ValidationError
 
-from models import Finding, ParseResult, ParseStatus, StructuralReport, ToolTraffic
-from parser import _child_path, payload_text
+try:
+    from .models import Finding, ParseResult, ParseStatus, StructuralReport, ToolTraffic
+    from .parser import _child_path, payload_text
+except ImportError:  # flat-folder layout
+    from models import Finding, ParseResult, ParseStatus, StructuralReport, ToolTraffic
+    from parser import _child_path, payload_text
 
-_Q = "\"'\u201c\u201d\u2018\u2019`"          # ASCII + smart quotes + backtick
-_CLOSE = r"}\]\uff5d\uff3d"                    # } ] and fullwidth look-alikes
-_OPEN = r"{\[\uff5b\uff3b"
+_Q = "\"'\u201c\u201d\u2018\u2019`"      # quote look-alikes
+_QK = _Q + "$"                            # '$' is used as a quote in the paper ({$k$:$v$}) - key/value shape only
 
-# COUNTED toward S
+# COUNTED toward S (one finding per pattern per field)
 _COUNTED: dict[str, re.Pattern[str]] = {
-    "quote_close_structure": re.compile(rf"[{_Q}]\s*[{_CLOSE}]"),                       # ..."}  ...”］
-    "key_injection":         re.compile(rf"[{_Q}]\s*[,\uff0c]\s*[{_Q}][^{_Q}\n]{{1,64}}[{_Q}]\s*[:\uff1a=]"),
-    "object_reopen":         re.compile(rf"[}}\uff5d]\s*[,\uff0c]\s*[{{\uff5b]"),        # }, {
-    "array_close_object":    re.compile(r"[\]\uff3d]\s*[}\uff5d]"),                      # ]}
+    # quote then } , or quote then ] followed by , } ]   (bare  "]  is too common in prose)
+    "quote_close_structure": re.compile(rf"[{_Q}]\s*(?:[}}\uff5d]|[\]\uff3d]\s*[,}}\]\uff5d\uff3d])"),
+    # a value ending and a new key starting:   ", "role":
+    "key_injection": re.compile(rf"[{_Q}]\s*[,\uff0c]\s*[{_Q}][^{_Q}\n]{{1,64}}[{_Q}]\s*[:\uff1a=]"),
+    "object_reopen": re.compile(r"[}\uff5d]\s*[,\uff0c]\s*[{\uff5b]"),                # }, {
+    "array_close_object": re.compile(r"[\]\uff3d]\s*[}\uff5d]"),                       # ]}
+    # forged key:value pair with ANY quote look-alike, optionally backslash-escaped
+    "kv_forgery": re.compile(
+        rf"\\?[{_QK}]\s*[\w\-. ]{{1,40}}?\s*\\?[{_QK}]\s*[:\uff1a]\s*(?:\\?[{_QK}]|[{{\[\d-]|true|false|null)"),
 }
-# NOT counted: plausible in benign content (code in emails, quoted chat logs)
+# NOT counted: plausible in benign content
 _WEAK: dict[str, re.Pattern[str]] = {
-    "code_fence":          re.compile(r"```"),
+    "code_fence": re.compile(r"```"),
     "chat_template_token": re.compile(r"<\|[a-z_]+\|>|\[/?INST\]|</?(?:system|tool_response|function_results)>", re.I),
 }
 
+_INVISIBLE = re.compile("[\u200b-\u200f\u202a-\u202e\u2060-\u2064\ufeff\u00ad]")
+
+
+def _variants(s: str) -> list[str]:
+    """The text as written + a normalised copy (entities, %-encoding, fullwidth, zero-width)."""
+    t = s
+    for _ in range(2):                       # twice, to catch double encoding
+        t = html.unescape(t)
+        if "%" in t:
+            t = unquote(t)
+    t = _INVISIBLE.sub("", unicodedata.normalize("NFKC", t))
+    return [s] if t == s else [s, t]
+
 
 def _scan_string(s: str, path: str, counted: list[Finding], weak: list[Finding]) -> None:
-    # one finding per pattern per field, so a single long string can't inflate S by repetition
-    for name, pat in _COUNTED.items():
-        if m := pat.search(s):
-            counted.append(Finding(kind="illegal_delimiter", path=path, detail=f"{name}: {m.group(0)!r}"))
-    for name, pat in _WEAK.items():
-        if m := pat.search(s):
-            weak.append(Finding(kind="weak_signal", path=path, detail=f"{name}: {m.group(0)!r}"))
+    variants = _variants(s)
+    for table, out, kind in ((_COUNTED, counted, "illegal_delimiter"), (_WEAK, weak, "weak_signal")):
+        for name, pat in table.items():
+            for v in variants:
+                if m := pat.search(v):        # one finding per pattern per field
+                    out.append(Finding(kind=kind, path=path, detail=f"{name}: {m.group(0)!r}"))  # type: ignore[arg-type]
+                    break
     t = s.strip()
     if t[:1] in ("{", "["):
         try:
@@ -59,7 +96,7 @@ def check_schema(traffic: ToolTraffic, expected: Any) -> list[Finding]:
     Register models with ConfigDict(extra='forbid') so unknown keys are errors."""
     out: list[Finding] = []
     try:
-        TypeAdapter(expected).validate_python(json.loads(payload_text(traffic)))
+        TypeAdapter(expected).validate_python(json.loads(payload_text(traffic).lstrip("\ufeff")))
     except ValidationError as e:
         for err in e.errors():
             kind = "unexpected_key" if err["type"] == "extra_forbidden" else "schema_violation"
@@ -82,6 +119,8 @@ def structural_flags(result: ParseResult, schema_findings: Sequence[Finding] = (
     for f in result.fields:
         if f.value_type == "string" and isinstance(f.value, str):
             _scan_string(f.value, f.path, counted, weak)
+        if f.key:                                         # attacker-controlled key names too
+            _scan_string(f.key, f"{f.path}#key", counted, weak)
     for sf in schema_findings:
         (counted if sf.kind == "unexpected_key" else weak).append(sf)
 
