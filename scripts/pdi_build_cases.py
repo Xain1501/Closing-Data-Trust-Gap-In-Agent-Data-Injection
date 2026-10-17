@@ -1,4 +1,3 @@
-#probablistic delimeter injection custom build 
 #!/usr/bin/env python3
 """Build detector test cases from llm-benchmark generated instances.
 
@@ -23,15 +22,23 @@ Read the results back with load_cases() below (always UTF-8).
 """
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
-# Extra delimiter variants made by us (NOT produced by llm-benchmark, which only
-# has double/single quotes). Each maps a name -> (character to replace, replacement).
-# UNVERIFIED against the ADI paper: confirm what counts as a probabilistic
-# delimiter before using these in reports.
+# Extra delimiter variants made by us (llm-benchmark itself only has the escaped
+# double quote and the single quote). They follow the JSON rows of Figure 8 in the
+# ADI paper (Choi et al., arXiv 2607.05120, GPT-5.2): the injected fake object is
+# rewritten with a different delimiter. Each variant maps character -> replacement.
+#   curly_double  paper row: curly quote + real braces   {”k”:”v”}
+#   dollar        paper row: $ + real braces             {$k$:$v$}
+#   paren         paper row: escaped quote + parentheses (\"k\":\"v\")
+# The native llm-benchmark variants (double_quote, single_quote) cover the paper's
+# default escaped-quote row and the single-quote row.
 DELIMITER_VARIANTS = {
-    "curly_double": ('"', "\u201d"),
+    "curly_double": {'"': "\u201d"},
+    "dollar": {'"': "$"},
+    "paren": {"{": "(", "}": ")"},
 }
 
 # Delimiters present in llm-benchmark's own generator (attacks.yaml quote_style).
@@ -146,9 +153,11 @@ def build(instances, variants):
             if base and isinstance(body, str) and body.startswith(base):
                 span = body[len(base):]
                 for name in variants:
-                    old, new = DELIMITER_VARIANTS[name]
+                    new_span = span.translate(str.maketrans(DELIMITER_VARIANTS[name]))
+                    if new_span == span:  # e.g. paren on a span with no braces
+                        continue
                     obj2 = dict(obj)
-                    obj2[untrusted] = base + span.replace(old, new)
+                    obj2[untrusted] = base + new_span
                     payload = json.dumps(obj2, ensure_ascii=False)
                     vid = f"{i['instance_id']}__{name}"
                     cases.append(make_case(i, payload, name, untrusted, vid))
@@ -189,11 +198,15 @@ def validate(cases, keys):
         if str(parsed.get(target)) == k["targeted_output"]:
             problems.append(f"{cid}: target field {target!r} was really overwritten")
         # 3. delimiter under test must actually be in the payload
-        if c["delimiter"] in DELIMITER_VARIANTS and DELIMITER_VARIANTS[c["delimiter"]][1] not in c["payload"]:
-            problems.append(f"{cid}: delimiter {c['delimiter']} not present in payload")
+        if c["delimiter"] in DELIMITER_VARIANTS:
+            for new in DELIMITER_VARIANTS[c["delimiter"]].values():
+                if new not in c["payload"]:
+                    problems.append(f"{cid}: delimiter {c['delimiter']} ({new!r}) not present in payload")
         # 4. benign twin must exist (same seed/task prefix)
-        if c["id"].split("_ins_")[0].split("_ove_")[0] + "_benign" not in {x["id"] for x in cases}:
-            problems.append(f"{cid}: no benign twin found")
+        # ids look like <seed>_<task>_<target>_<3-letter tag>_v<N>[__variant]
+        twin = re.sub(r"_[a-z]{3}_v\d+.*$", "", cid) + "_benign"
+        if twin not in {x["id"] for x in cases}:
+            problems.append(f"{cid}: no benign twin found (looked for {twin})")
     return problems
 
 
