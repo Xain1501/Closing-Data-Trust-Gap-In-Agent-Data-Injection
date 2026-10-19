@@ -42,9 +42,10 @@ except ImportError:  # flat-folder layout
 
 _OPEN_TAG = re.compile(r"<([A-Za-z][\w:-]*)")           # opening tags only, not </x>
 # allowed stuff before a real element on its line:
-#   |SCROLL|  tabs  *  [idx]  *  (x,y)
+#   3->  |SCROLL|  tabs  *  [idx]  *  (x,y)
 _OK_PREFIX = re.compile(
-    r"^(?:\|\w+\|)?(?:\\t|\s)*\*?(?:\[\w+\])?\*?\s*"
+    r"^(?:\d+(?:\u2192|\u00e2\u2020\u2019))?"          # line-number prefix "3->" (or its mojibake)
+    r"(?:\|\w+\|)?(?:\\t|\s)*\*?(?:\[\w+\])?\*?\s*"
     r"(?:\(\s*-?\d+\s*,\s*-?\d+\s*\))?\s*$"
 )
 _REF = re.compile(r"\[(ref_\w+)\]")                      # accessibility-tree reference id

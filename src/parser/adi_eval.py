@@ -9,6 +9,7 @@ Usage:
   python adi_eval.py <file> --split dev        # tune rules only on this
   python adi_eval.py <file> --split heldout    # look rarely
   python adi_eval.py <file> --show <case id>   # print the findings of one case
+  python adi_eval.py <file> --diff <attack id> # show exactly what text the attack injected
 
 Routing:
   web_dom               -> dom_flags(text)
@@ -28,17 +29,19 @@ import uuid
 from collections import defaultdict
 
 try:  # package layout
-    from .models import ToolTraffic
+    from .models import StructuralReport, ToolTraffic
     from .parser import parse
     from .structural import structural_flags
+    from .md_flags import md_flags
     try:
         from .dom_flags import dom_flags
     except ImportError:
         from .dom_flag import dom_flags
 except ImportError:  # loose files
-    from models import ToolTraffic
+    from models import StructuralReport, ToolTraffic
     from parser import parse
     from structural import structural_flags
+    from md_flags import md_flags
     try:
         from dom_flags import dom_flags
     except ImportError:
@@ -46,6 +49,7 @@ except ImportError:  # loose files
 
 SYNTACTIC = {"insert_complete", "override_pre", "override_post", "cross"}
 SEMANTIC = {"error", "contextual"}
+_LOOKS_MD = re.compile(r"^\s*(?:\d+\.\s+)?-\s+\*\*[^*\n]+\*\*:", re.M)
 
 
 def load(path):
@@ -73,6 +77,7 @@ def norm(case):
                   "semantic" if atk in SEMANTIC else "-"),
         "delimiter": case.get("delimiter") or "-",
         "escape_level": params.get("escape_level") or "-",
+        "tricky": case.get("tricky") or "-",
         "defense": case.get("defense_type") or "-",
         "tool": case.get("tool") or case.get("category") or "tool",
         "direction": case.get("direction") or "post_hop",
@@ -109,11 +114,27 @@ def strip_preamble(text):
     return None
 
 
+def _md_combined(c, text):
+    """markdown = record-consistency checks (md_flags) + the JSON text rules run over the whole text
+    (catches a fake object dumped into a markdown field, e.g. a Python-dict style fake issue)."""
+    a = md_flags(text)
+    wrapped = parse(ToolTraffic(direction=c["direction"], tool_name=c["tool"],
+                                payload=json.dumps({"text": text}),
+                                internal_id=uuid.uuid5(uuid.NAMESPACE_URL, str(c["id"]))))
+    b = structural_flags(wrapped)
+    findings = list(a.findings) + list(b.findings)
+    bounds = max(1, a.boundary_count + b.boundary_count)
+    return StructuralReport(findings=findings, uncounted_findings=[], hit_count=len(findings),
+                            boundary_count=bounds, structural_score=min(1.0, len(findings) / bounds))
+
+
 def run(c):
     """Returns (report, parse_status, route)."""
     text = c["text"]
     if c["category"] == "web_dom" or c["format"] == "web_dom":
         return dom_flags(text), "text", "dom"
+    if c["format"] == "markdown" and isinstance(text, str):
+        return _md_combined(c, text), "text", "markdown"
 
     def traffic(payload):
         return ToolTraffic(direction=c["direction"], tool_name=c["tool"],
@@ -128,6 +149,8 @@ def run(c):
             res2 = parse(traffic(inner))
             st2 = getattr(res2.status, "value", str(res2.status))
             return structural_flags(res2), st2, "json_after_preamble"
+        if _LOOKS_MD.search(text):
+            return _md_combined(c, text), status, "markdown"
         wrapped = parse(traffic(json.dumps({"text": text})))
         return structural_flags(wrapped), status, "text_fallback"
     return structural_flags(res), status, "json"
@@ -158,6 +181,7 @@ def main():
     ap.add_argument("--split", choices=["all", "dev", "heldout"], default="all")
     ap.add_argument("--misses", action="store_true")
     ap.add_argument("--show", metavar="ID")
+    ap.add_argument("--diff", metavar="ID", help="show the text an attack injected (vs its benign twin)")
     args = ap.parse_args()
 
     cases = [norm(c) for c in load(args.path)]
@@ -174,8 +198,25 @@ def main():
         print(str(c["text"])[:3000].encode("ascii", "backslashreplace").decode())
         return
 
+    if args.diff:
+        import difflib
+        a = next(x for x in cases if x["id"] == args.diff)
+        twin = re.sub(r"_(?:ins|ove|err|con)_v\d+", "_benign", a["id"])
+        b = next((x for x in cases if x["id"] == twin), None)
+        if b is None:
+            print("no matching benign case found:", twin)
+            return
+        ta, tb = str(a["text"]), str(b["text"])
+        sm = difflib.SequenceMatcher(None, tb, ta, autojunk=False)
+        print(f"attack={a['id']}  benign twin={b['id']}\nchanged parts (benign -> attack):")
+        for tag, i1, i2, j1, j2 in sm.get_opcodes():
+            if tag != "equal":
+                out = f"  [{tag}] {tb[i1:i2][:300]!r} -> {ta[j1:j2][:900]!r}"
+                print(out.encode("ascii", "backslashreplace").decode())
+        return
+
     print(f"{len(cases)} cases (split={args.split})\n")
-    keys = ["scope", "attack_type", "category", "delimiter", "defense", "escape_level", "route"]
+    keys = ["scope", "attack_type", "category", "delimiter", "defense", "escape_level", "route", "tricky"]
     stats = {k: defaultdict(lambda: [0, 0, 0, 0, 0]) for k in keys}
     routes, bad_status, misses, fps = defaultdict(int), [], [], []
     tot = defaultdict(lambda: [0, 0])  # (route, scope) -> [attacks, caught]
