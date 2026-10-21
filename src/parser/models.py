@@ -28,6 +28,7 @@ class ParseStatus(str, Enum):
     mixed into the structural score. Any non-OK status => whole payload is
     Untrusted by default (6.2) and the risk gate must read the status itself."""
     OK = "ok"
+    NOT_JSON = "not_json"
     INVALID_JSON = "invalid_json"
     TOO_LARGE = "too_large"
     TOO_DEEP = "too_deep"
