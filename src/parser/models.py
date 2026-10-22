@@ -32,6 +32,7 @@ class ParseStatus(str, Enum):
     INVALID_JSON = "invalid_json"
     TOO_LARGE = "too_large"
     TOO_DEEP = "too_deep"
+    TOO_MANY_FIELDS = "too_many_fields"
 
 
 # ---------------------------------------------------------------- INPUT ----
@@ -51,7 +52,7 @@ class ToolTraffic(BaseModel):
 ValueType = Literal["object", "array", "string", "number", "boolean", "null"]
 
 FindingKind = Literal[
-    "parse_failure", "payload_too_large", "depth_exceeded",   # status-level
+    "parse_failure", "payload_too_large", "depth_exceeded", "field_limit_exceeded",  # status-level
     "duplicate_key",                                           # parse-level fact
     "illegal_delimiter", "embedded_json", "unexpected_key",    # counted toward S
     "weak_signal", "schema_violation",                         # NOT counted toward S

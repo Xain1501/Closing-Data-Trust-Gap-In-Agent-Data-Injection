@@ -57,9 +57,12 @@ uv run dib generate -C web_dom -c configs/benchmark_syntactic.yaml -n 3 -f web_d
 
 ## 3. How each part works
 
-**`parse()`** - strict JSON only (NaN/Infinity rejected, BOM tolerated), limits 1,000,000 bytes and depth 32.
+**`parse()`** - strict JSON only (NaN/Infinity rejected, BOM tolerated), limits 1,000,000 bytes,
+depth 32, and 100,000 parsed fields. Limit failures return an opaque untrusted field and an explicit status.
 Every field gets a path (`$.emails[0].body`) and a parent link; duplicate keys stay visible (`$.to`, `$.to#2`).
-Status is one of `ok`, `invalid_json`, `too_large`, `too_deep`. On failure the whole payload is one untrusted blob.
+Status is one of `ok`, `not_json`, `invalid_json`, `too_large`, `too_deep`, `too_many_fields`. `not_json` means
+plain text rather than malformed JSON syntax; `stage1.analyze()` still marks non-JSON input untrusted by default
+when JSON was requested. On malformed or over-limit JSON, the whole payload is one untrusted blob.
 
 **`structural_flags()`** - `S = min(1, counted signs / boundaries)`, boundaries = objects + arrays + keys.
 Counted signs: `quote_close_structure`, `key_injection`, `object_reopen`, `array_close_object`, `kv_forgery`
@@ -81,8 +84,15 @@ coverage.
 
 **`stage1.analyze()`** - verdict rule:
 - `untrusted_default`: JSON that does not parse (proposal 6.2: unparsed content is untrusted by default).
+- `untrusted_default`: empty DOM/markdown payload; non-empty DOM/markdown is processed as text because those formats do not have one strict grammar here.
 - `flagged`: parsed, and `hit_count >= min_hits` (default 1).
 - `clean`: otherwise.
+
+For JSON, pass a `ToolSchemaRegistry` to `analyze()` to validate against trusted, code-owned contracts.
+Register schemas by both tool name and direction (`pre_hop` or `post_hop`). The AgentDojo adapter passes
+each runtime function's argument model and return type to the parser bridge as trusted schemas. Unknown
+top-level keys are reported even when AgentDojo's generated model ignores extras; nested models should use
+`ConfigDict(extra="forbid")` to report nested extras. Unregistered tools remain parseable and receive no schema findings.
 
 The rule uses `hit_count`, not S, because S shrinks as messages grow. S is passed on unchanged as a feature
 for the classifier. **`min_hits = 1` is a design choice to confirm with the supervisor.**
@@ -95,7 +105,7 @@ traffic (proposal 6.1). Real benchmark data exists only for post_hop; pre_hop ha
 
 | Check | Result |
 |---|---|
-| Unit tests | Previous run reported 89 passed; current suite has not been re-run |
+| Unit tests | **106 passed** after the field-limit, schema-registry, and Stage 1 verdict changes; pytest could not write the workspace `.pytest_cache` directory (cache warning only) |
 | Current generated JSON snapshot, 6 categories (email, calendar, cloud_drive, github_comments, github_issue, reference_json), with and without `random_key` | syntactic attacks caught **400 / 400**; benign false positives **0 / 82** |
 | Current generated web_dom snapshot | attacks **20 / 20**, benign false positives **0 / 30** |
 | ADI semantic attacks (`error`, `contextual`) | **0 caught, by design** (wording only; classifier stage) |
@@ -130,7 +140,7 @@ traffic (proposal 6.1). Real benchmark data exists only for post_hop; pre_hop ha
 
 ## 6. Open work
 
-1. Re-run the unit suite and record the current count; unit tests were not run for this status update.
+1. Register trusted schemas for the AgentDojo tools in scope; schemas must match direction-specific call arguments and responses.
 2. Confirm `min_hits` / the verdict rule with the supervisor.
 3. Extend independent benign data, increase seeds per category, and freeze a held-out JSON set. Investigate the markdown false positives and the earlier backtick false positive using held-out data.
 4. Implement proposal 6.3 tagging, then the field trust-provenance graph, constrained classifier, risk scoring and review gate (sections 6.4–6.7). These do not belong to Stage 1 parsing and are not implemented here.

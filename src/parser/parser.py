@@ -20,6 +20,7 @@ except ImportError:  # flat-folder layout
 
 MAX_BYTES = 1_000_000
 MAX_DEPTH = 32
+MAX_FIELDS = 100_000
 _STRUCTURED_TEXT = re.compile(
     r"^\s*[A-Za-z_][\w.-]*\s*:\s*(?:$|[\[{\"'\d-]|true\b|false\b|null\b)",
     re.IGNORECASE,
@@ -31,6 +32,10 @@ class _Pairs(list):
 
 
 class _TooDeep(Exception):
+    pass
+
+
+class _TooManyFields(Exception):
     pass
 
 
@@ -65,6 +70,11 @@ class _Ctx:
         self.findings: list[Finding] = []
         self.boundaries = 0    # containers + keys
 
+    def add_field(self, field: ParsedField) -> None:
+        if len(self.fields) >= MAX_FIELDS:
+            raise _TooManyFields
+        self.fields.append(field)
+
 
 def _walk(node: Any, path: str, parent: str | None, key: str | None, depth: int, ctx: _Ctx) -> None:
     if depth > MAX_DEPTH:
@@ -72,7 +82,7 @@ def _walk(node: Any, path: str, parent: str | None, key: str | None, depth: int,
 
     if isinstance(node, _Pairs):
         ctx.boundaries += 1
-        ctx.fields.append(ParsedField(path=path, key=key, parent_path=parent, depth=depth, value_type="object"))
+        ctx.add_field(ParsedField(path=path, key=key, parent_path=parent, depth=depth, value_type="object"))
         counts: dict[str, int] = {}
         for k, v in node:
             n = counts[k] = counts.get(k, 0) + 1
@@ -84,14 +94,14 @@ def _walk(node: Any, path: str, parent: str | None, key: str | None, depth: int,
             _walk(v, base, path, k, depth + 1, ctx)
     elif isinstance(node, list):
         ctx.boundaries += 1
-        ctx.fields.append(ParsedField(path=path, key=key, parent_path=parent, depth=depth, value_type="array"))
+        ctx.add_field(ParsedField(path=path, key=key, parent_path=parent, depth=depth, value_type="array"))
         for i, v in enumerate(node):
             _walk(v, f"{path}[{i}]", path, None, depth + 1, ctx)
     else:
         vt = ("null" if node is None else "boolean" if isinstance(node, bool)
               else "string" if isinstance(node, str) else "number")
-        ctx.fields.append(ParsedField(path=path, key=key, parent_path=parent, depth=depth,
-                                      value_type=vt, value=node))  # type: ignore[arg-type]
+        ctx.add_field(ParsedField(path=path, key=key, parent_path=parent, depth=depth,
+                                  value_type=vt, value=node))  # type: ignore[arg-type]
 
 
 def parse(traffic: ToolTraffic) -> ParseResult:
@@ -110,6 +120,10 @@ def parse(traffic: ToolTraffic) -> ParseResult:
         except (_TooDeep, RecursionError):
             status = ParseStatus.TOO_DEEP
             ctx.findings.append(Finding(kind="depth_exceeded", path="$", detail=f"nesting deeper than {MAX_DEPTH}"))
+        except _TooManyFields:
+            status = ParseStatus.TOO_MANY_FIELDS
+            ctx.findings.append(Finding(kind="field_limit_exceeded", path="$",
+                                        detail=f"more than {MAX_FIELDS} parsed fields"))
         except ValueError as e:   # JSONDecodeError is a ValueError
             status = _parse_failure_status(raw)
             if status is ParseStatus.INVALID_JSON:

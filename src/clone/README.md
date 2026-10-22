@@ -33,7 +33,7 @@ The core resolves the tool against the matrix, captures the payload and canonica
 
 The adapter formats the tool result as a string and asks the core to inspect it before returning it to the model. The ledger captures the exact string and hashes its UTF-8 bytes. The detector receives a copy; strings are immutable, so copying a string need not allocate another string object. The original observation is released unchanged only when permitted. Otherwise the adapter returns the denial observation.
 
-`DetectorContext` contains direction (`"pre"` or `"post"`), tool name, tool-call ID, and the immutable matrix entry. It is trace/policy context; the parser bridge currently uses direction, tool name, and call ID, but does not use the matrix entry for schema validation or scoring.
+`DetectorContext` contains direction (`"pre"` or `"post"`), tool name, tool-call ID, the immutable matrix entry, and an optional trusted schema. The AgentDojo adapter supplies the function's Pydantic argument model on pre-hop and its declared return type on post-hop. The parser bridge validates against that schema; the matrix remains trace/policy context and is not used to infer value types.
 
 ## Detector contract
 
@@ -120,7 +120,7 @@ pipeline = AgentPipeline(
 )
 ```
 
-The parser bridge is only the current detector callback. It does not yet assemble tagging, dependency-graph, WL-kernel, SVM, or human-review stages. See [the pipeline handoff](../pipeline/README.md) before implementing the next stage.
+The parser bridge is the current detector callback. It now consumes AgentDojo runtime schemas on both paths, but does not yet assemble tagging, dependency-graph, WL-kernel, SVM, or human-review stages. See [the pipeline handoff](../pipeline/README.md) before implementing the next stage.
 
 ## Tests and validation
 

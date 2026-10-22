@@ -92,6 +92,7 @@ class TrustVerificationToolsExecutor(ToolsExecutor):
                 tool_call.function,
                 args,
                 expected_keys,
+                schema=definition.parameters if definition is not None else None,
             )
             if not call_verdict.allowed:
                 denial = call_verdict.denial_text or "Blocked"
@@ -127,6 +128,7 @@ class TrustVerificationToolsExecutor(ToolsExecutor):
                 tool_call.function,
                 result,
                 tool_error=error,
+                schema=definition.return_type if definition is not None else None,
             )
             observation = result if result_verdict.allowed else (
                 result_verdict.denial_text or "Blocked"

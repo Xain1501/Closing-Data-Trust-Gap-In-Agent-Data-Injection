@@ -27,12 +27,14 @@ try:
     from .structural import structural_flags
     from .dom_flag import dom_flags
     from .md_flags import md_flags
+    from .schema_registry import ToolSchemaRegistry
 except ImportError:  # flat-folder layout
     from models import StructuralReport, ToolTraffic
     from parser import parse
     from structural import structural_flags
     from dom_flag import dom_flags
     from md_flags import md_flags
+    from schema_registry import ToolSchemaRegistry
 
 
 @dataclass
@@ -60,15 +62,26 @@ def _markdown_report(traffic: ToolTraffic):
                             boundary_count=bounds, structural_score=min(1.0, len(findings) / bounds))
 
 
-def analyze(traffic: ToolTraffic, fmt: str = "json", min_hits: int = 1) -> Stage1Result:
+def analyze(traffic: ToolTraffic, fmt: str = "json", min_hits: int = 1,
+            schema_registry: ToolSchemaRegistry | None = None) -> Stage1Result:
     if fmt == "dom":
-        rep, status = dom_flags(_as_text(traffic.payload)), "text"
+        text = _as_text(traffic.payload)
+        if not text.strip():
+            rep = StructuralReport(findings=[], uncounted_findings=[], hit_count=0,
+                                   boundary_count=1, structural_score=0.0)
+            return Stage1Result("untrusted_default", "empty", rep, ["empty DOM payload; untrusted by default"])
+        rep, status = dom_flags(text), "text"
     elif fmt == "markdown":
+        if not _as_text(traffic.payload).strip():
+            rep = StructuralReport(findings=[], uncounted_findings=[], hit_count=0,
+                                   boundary_count=1, structural_score=0.0)
+            return Stage1Result("untrusted_default", "empty", rep, ["empty markdown payload; untrusted by default"])
         rep, status = _markdown_report(traffic), "text"
     elif fmt == "json":
         res = parse(traffic)
         status = getattr(res.status, "value", str(res.status))
-        rep = structural_flags(res)
+        schema_findings = schema_registry.validate(traffic) if schema_registry and status == "ok" else ()
+        rep = structural_flags(res, schema_findings=schema_findings)
         if status != "ok":
             return Stage1Result("untrusted_default", status, rep,
                                 [f"payload did not parse ({status}); untrusted by default"])

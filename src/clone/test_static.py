@@ -1231,6 +1231,82 @@ def test_enforcement_blocks_pre_hop_without_running_tool() -> None:
     assert all(record.pre_interception_id for record in matrix.records if record.phase == "post")
 
 
+def test_parser_adapter_receives_runtime_schemas_on_both_hops() -> None:
+    parser_detector = pytest.importorskip(
+        "pipeline.clone_parser_detector"
+    ).parser_detector
+    calls: list[str] = []
+    ledger = InterceptionLedger()
+    message = _message()
+    message["tool_calls"][0].args["unexpected"] = "schema-forgery"
+
+    result = TrustVerificationToolsExecutor(
+        parser_detector,
+        mode="enforce",
+        ledger=ledger,
+        tool_matrix=_test_tool_matrix(),
+    ).query("", _runtime(calls), messages=[message])
+
+    # The generated Function.parameters schema is passed to the pre-hop parser;
+    # the extra argument is rejected before record() runs. The second call
+    # executes, and its str return annotation is used to validate post-hop text.
+    assert calls == ["reverse:second"]
+    assert "Tool schema validation failed" in result[3][1]["content"][0]["content"]
+    assert result[3][2]["content"][0]["content"] == "dnoces"
+    pre_calls = [record for record in ledger.records if record.phase == "pre"]
+    assert pre_calls[0].label == "schema-violation"
+    assert pre_calls[1].label == "no-adi-detected"
+    post_records = [record for record in ledger.records if record.phase == "post"]
+    assert len(post_records) == 2  # denial delivery plus inspected tool result
+    assert post_records[-1].label == "no-adi-detected"
+
+
+def test_parser_adapter_uses_runtime_return_schema_before_releasing_result() -> None:
+    parser_detector = pytest.importorskip(
+        "pipeline.clone_parser_detector"
+    ).parser_detector
+    runtime = FunctionsRuntime()
+
+    def structured(value: str) -> dict[str, int]:
+        """Return a structured value.
+
+        :param value: Input value.
+        """
+        return {"count": "not-an-integer"}  # type: ignore[dict-item]
+
+    runtime.register_function(structured)
+    matrix = TrustMatrix((ToolMatrixEntry(
+        tool_name="structured",
+        internal_tool_id="test.structured",
+        impact_tier=1,
+        impact_tier_source="policy default",
+        authority_arguments=(),
+        field_trust_classes={"value": "unclassified"},
+        expected_keys=("value",),
+        source_suites=("test",),
+    ),))
+    message = ChatAssistantMessage(
+        role="assistant",
+        content=None,
+        tool_calls=[FunctionCall(function="structured", args={"value": "ok"}, id="call-schema")],
+    )
+    ledger = InterceptionLedger()
+
+    result = TrustVerificationToolsExecutor(
+        parser_detector,
+        mode="enforce",
+        ledger=ledger,
+        tool_matrix=matrix,
+    ).query("", runtime, messages=[message])
+
+    assert "Tool schema validation failed" in result[3][1]["content"][0]["content"]
+    assert ledger.records[0].phase == "pre"
+    assert ledger.records[0].label == "no-adi-detected"
+    assert ledger.records[1].phase == "post"
+    assert ledger.records[1].label == "schema-violation"
+    assert ledger.records[1].released is False
+
+
 def test_detector_failure_blocks_and_is_logged() -> None:
     matrix = InterceptionLedger()
 

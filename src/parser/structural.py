@@ -92,18 +92,46 @@ def _loc_to_path(loc: tuple[Any, ...]) -> str:
 
 
 def check_schema(traffic: ToolTraffic, expected: Any) -> list[Finding]:
-    """Optional: validate against a Pydantic model/type for this tool's response.
-    Register models with ConfigDict(extra='forbid') so unknown keys are errors."""
+    """Validate against a trusted Pydantic model/type for this tool direction.
+
+    AgentDojo-generated argument models often ignore extra fields by default, so
+    explicitly report unknown top-level keys even when the model config does
+    not forbid extras. Nested models should use ``extra='forbid'`` themselves.
+    """
     out: list[Finding] = []
+    raw = payload_text(traffic).lstrip("\ufeff")
     try:
-        TypeAdapter(expected).validate_python(json.loads(payload_text(traffic).lstrip("\ufeff")))
+        value = json.loads(raw)
     except ValidationError as e:
         for err in e.errors():
             kind = "unexpected_key" if err["type"] == "extra_forbidden" else "schema_violation"
             detail = "key not in the tool's expected schema" if kind == "unexpected_key" else err["msg"]
             out.append(Finding(kind=kind, path=_loc_to_path(err["loc"]), detail=detail))   # type: ignore[arg-type]
+        return out
     except ValueError:
-        pass   # not JSON: parse() already reported it via status
+        # Some AgentDojo tools return plain strings rather than JSON values.
+        # Accept non-JSON only when the declared return type actually accepts
+        # the raw string (e.g. str or Literal[str]); structured schemas fail.
+        try:
+            TypeAdapter(expected).validate_python(raw)
+        except ValidationError:
+            out.append(Finding(kind="schema_violation", path="$",
+                               detail="tool result is not valid JSON for its registered schema"))
+        return out
+
+    expected_fields = getattr(expected, "model_fields", None)
+    if isinstance(value, dict) and expected_fields is not None:
+        for key in value.keys() - expected_fields.keys():
+            out.append(Finding(kind="unexpected_key", path=_child_path("$", key),
+                               detail="key not in the tool's expected schema"))
+    try:
+        TypeAdapter(expected).validate_python(value)
+    except ValidationError as e:
+        for err in e.errors():
+            if err["type"] == "extra_forbidden":
+                continue  # already reported above when it is a top-level field
+            out.append(Finding(kind="schema_violation", path=_loc_to_path(err["loc"]),
+                               detail=err["msg"]))
     return out
 
 

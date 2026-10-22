@@ -9,7 +9,7 @@ Today this folder contains:
 - `clone_parser_detector.py`: a detector callback that receives a cloned payload and `DetectorContext`, creates the parser's `ToolTraffic`, runs `parse()` and `structural_flags()`, and returns a `DetectorDecision`.
 - `test_clone_parser_detector.py`: focused tests for the current bridge behavior. Check these tests when changing parser policy; an older expectation that plain prose is blocked may need reconciliation with `ParseStatus.NOT_JSON`.
 
-The bridge currently returns only the final decision fields (`allowed`, `label`, structural `score`, `reason`, and `contains_adi`). It does **not** expose its `ParseResult` or `StructuralReport` to a subsequent stage, nor does it assemble a multi-stage detector.
+The bridge currently returns only the final decision fields (`allowed`, `label`, structural `score`, `reason`, and `contains_adi`). It does **not** expose its `ParseResult` or `StructuralReport` to a subsequent stage, nor does it assemble a multi-stage detector. For schema checks, the adapter passes the runtime's trusted argument model for pre-hop and declared return type for post-hop.
 
 The structural score is a deterministic heuristic, not a probability or SVM score:
 
@@ -26,7 +26,7 @@ The AgentDojo executor in `src/clone/adapters/agentdojo.py` intercepts each call
 - **Pre-hop:** normalized `{"tool": tool_name, "args": args}` dict, where the adapter has applied `_framework_args`.
 - **Post-hop:** the exact formatted tool-result string.
 
-The parser bridge receives that clone as its `payload` argument. The `DetectorContext` identifies `"pre"`/`"post"`, tool name, call ID, and matrix entry. TVM/ledger are for mapping, trace, and audit; parser scoring currently does not consume them. The ledger keeps its own raw-payload snapshot, which is separate from the detector's working copy.
+The parser bridge receives that clone as its `payload` argument. The `DetectorContext` identifies `"pre"`/`"post"`, tool name, call ID, matrix entry, and the optional runtime schema. For pre-hop the parser analyzes the cloned `args` object; for post-hop it analyzes the exact formatted result string. TVM/ledger are for mapping, trace, and audit; parser scoring does not infer schemas from them. The ledger keeps its own raw-payload snapshot, separate from the detector's working copy.
 
 Wire the current parser bridge into the AgentDojo executor as follows:
 
@@ -66,6 +66,29 @@ Suggested implementation sequence for the next contributor/agent:
 3. Add composition tests proving the same cloned traffic is passed through the stages and that the original stays held until the final decision.
 4. Add graph/WL/SVM stages behind the same pipeline interface as they become available.
 5. Add provider-backed AgentDojo integration tests after local fake/static tests pass.
+
+## Classifier, risk gate, and evaluation handoff
+
+The following reusable components are now available:
+
+- `classifier.wl_svm`: `GraphSnapshot`, deterministic Weisfeiler-Lehman subtree features, and a linear SVM with sigmoid probability calibration. It expects the graph builder to supply categorical trust/provenance node labels and edges; it does not create graphs from raw parser output.
+- `classifier.train`: trains an artifact from labeled graph JSONL. Each row contains a unique `case_id`, `label` (`benign` or `attack`), and `graph` with `node_labels` and `edges`. Each class needs at least two examples for calibration.
+- `pipeline.classifier_gate.classify_and_assess`: combines an existing parser score with the model's attack probability and the trusted tool impact tier (1/5/10).
+- `pipeline.risk_gate`: proposal confidence formula `1 - (1 - structural_score) * (1 - classifier_score)`, multiplied by impact. Risk below 1 auto-allows; `[1, 5)` and `>=5` require review, with `allow` removed at high risk. `classifier_score=None` is retained as missing evidence and contributes zero until a trained model is supplied.
+- `pipeline.evidence_panel`: deterministic JSON evidence packet for a reviewer; it does not call an LLM or expose raw untrusted content automatically.
+- `pipeline.evaluation`: computes attack success rate, benign utility, utility under attack, false positive/negative rates, and human approval accuracy from per-case JSONL results.
+
+Example commands (run from the repository root in PowerShell):
+
+```powershell
+$env:PYTHONPATH = "src"
+python -m classifier.train .\graphs.jsonl .\wl_svm.joblib
+python -m pipeline.evaluation .\evaluation_cases.jsonl
+```
+
+Training graph JSONL and evaluation JSONL must come from labeled project/AgentDojo runs; this repository does not fabricate training data. Evaluation rows require `case_id`, `label`, `task_success`, and `flagged`; attack rows also require `attack_success`. Optional `human_decision` is `allow`, `deny`, or `evidence_only`. Human approval accuracy counts `allow` as correct for benign cases and any non-allow action as correct for attack cases.
+
+These components define the classifier/gate APIs, but they are not yet wired into `parser_detector` or the clone executor. That integration depends on the field-tagging/graph stage, trusted impact mapping, trained graph data, and a human-review UI/callback. Until those are supplied, the current clone bridge continues using parser structural policy only. Post-hop review can withhold a result from the agent but cannot undo a side effect the tool has already completed.
 
 ## Testing and validation
 

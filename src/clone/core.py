@@ -22,6 +22,7 @@ class DetectorContext:
     tool_name: str
     tool_call_id: str | None
     matrix_entry: ToolMatrixEntry
+    schema: Any | None = None
 
 
 @dataclass(frozen=True)
@@ -86,6 +87,7 @@ class InterceptionCore:
         tool: str,
         args: dict[str, Any],
         expected_keys: set[str] | frozenset[str],
+        schema: Any | None = None,
     ) -> InterceptionVerdict:
         """Capture and decide whether a tool call may execute."""
         if self.mode == "off":
@@ -115,7 +117,7 @@ class InterceptionCore:
                 error=f"Tool {tool!r} is missing from the trust matrix.",
             )
 
-        context = DetectorContext("pre", tool, call_id, entry)
+        context = DetectorContext("pre", tool, call_id, entry, schema)
         decision, error = self._inspect(record, payload, context)
         if error is None and decision is not None and decision.allowed:
             if entry.is_fallback and self.mode == "enforce":
@@ -176,6 +178,7 @@ class InterceptionCore:
         text: str,
         *,
         tool_error: str | None = None,
+        schema: Any | None = None,
     ) -> InterceptionVerdict:
         """Capture and decide whether the original tool observation may be released."""
         if not isinstance(text, str):
@@ -205,7 +208,7 @@ class InterceptionCore:
             matrix_schema_version=self.tool_matrix.schema_version,
             matrix_sha256=self.tool_matrix.source_sha256,
         )
-        context = DetectorContext("post", tool, call_id, entry)
+        context = DetectorContext("post", tool, call_id, entry, schema)
         decision, error = self._inspect(record, text, context)
         if error is None and decision is not None and decision.allowed:
             self.ledger.transition(
