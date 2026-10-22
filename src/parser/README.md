@@ -74,8 +74,10 @@ Counted signs: `quote_close_structure`, `key_injection`, `object_reopen`, `array
   line, or a repeated id, is a forged element.
 
 **`md_flags()`** (experimental) - numbered record out of sequence, the same top-level record id in two records,
-or a field marker `- **key**:` in the middle of a line. The markdown route ALSO runs the JSON text rules over
-the whole text, because the single-issue markdown attack is a fake issue dumped as a Python-dict string.
+or a field marker `- **key**:` in the middle of a line. The `stage1.analyze(..., fmt="markdown")` route
+combines these checks with the JSON text rules over the whole document, because some markdown attacks
+embed a fake issue as a Python-dict-like string. Keep this route experimental until it has broader benign
+coverage.
 
 **`stage1.analyze()`** - verdict rule:
 - `untrusted_default`: JSON that does not parse (proposal 6.2: unparsed content is untrusted by default).
@@ -93,15 +95,15 @@ traffic (proposal 6.1). Real benchmark data exists only for post_hop; pre_hop ha
 
 | Check | Result |
 |---|---|
-| Unit tests | 89 passed at the last verified run (re-run for the current count) |
-| ADI JSON, 6 categories (email, calendar, cloud_drive, github_comments, github_issue, reference_json), with and without `random_key` | syntactic attacks caught **400 / 400**; benign false positives **0 / 82** |
-| ADI web_dom, 5 layouts x 3 pages | attacks **30 / 30**, benign false positives **0 / 45**; 25 of these cases are held out (pages not looked at while the rules were fixed) |
+| Unit tests | Previous run reported 89 passed; current suite has not been re-run |
+| Current generated JSON snapshot, 6 categories (email, calendar, cloud_drive, github_comments, github_issue, reference_json), with and without `random_key` | syntactic attacks caught **400 / 400**; benign false positives **0 / 82** |
+| Current generated web_dom snapshot | attacks **20 / 20**, benign false positives **0 / 30** |
 | ADI semantic attacks (`error`, `contextual`) | **0 caught, by design** (wording only; classifier stage) |
 | AgentDojo replay, benign | 0 of 678 messages flagged (earlier run) |
-| Markdown (`md_flags` alone) | github_comments 3/3 caught, 0/11 benign flagged; github_issue **0/10 caught** (its attack is a fake issue dumped as a Python-dict string, which `md_flags` does not look at). The combined route (md_flags + text rules) is the fix: **re-run to record it** |
+| Current generated markdown snapshot (combined `md_flags` + text rules) | github_comments **71 / 71** syntactic attacks caught, **0 / 33** benign flagged; github_issue **130 / 130** syntactic attacks caught, but **6 / 30** benign cases flagged. This is a small, generator-derived snapshot, not a final benchmark result. |
 | Pre-hop (22 hand-made cases) | attacks 10/10 caught, 0/12 benign flagged, flag on the right field 9/9 (one case has no field). Hand-made: sanity check only |
 | Hard benign (33 hand-made harmless messages) | **9/33 flagged** (see section 5). The other 24 pass |
-| github_issue, JSON, 10 seeds | attacks 120/120, but **2 of 10 benign issues flagged**: inline code followed by a colon (`` `file.py`: ``) matches the backtick `kv_forgery` variant. Fix pending |
+| github_issue JSON, larger earlier run | attacks 120/120, but **2 of 10 benign issues flagged**: inline code followed by a colon (`` `file.py`: ``) matches the backtick `kv_forgery` variant. The current generated snapshot is smaller and did not reproduce those false positives; investigate before claiming they are fixed. |
 
 **Cautions - do not over-claim:**
 1. The 400 come from 8 seeds and one attack generator; many cases are near-duplicates. Strong sign, not a final detection rate.
@@ -128,13 +130,13 @@ traffic (proposal 6.1). Real benchmark data exists only for post_hop; pre_hop ha
 
 ## 6. Open work
 
-1. Run `md_flags`, `stage1`, pre-hop and hard-benign results and record them in section 4.
+1. Re-run the unit suite and record the current count; unit tests were not run for this status update.
 2. Confirm `min_hits` / the verdict rule with the supervisor.
-3. Tagging (proposal 6.3): the only way to close the real-new-line gap.
-4. Provenance graph, classifier, risk gate (6.4 - 6.6).
-5. A real LLM agent run in AgentDojo for ASR and utility.
-6. Larger benign corpora; more seeds per category; a frozen held-out set for JSON categories.
-7. YAML and other formats.
+3. Extend independent benign data, increase seeds per category, and freeze a held-out JSON set. Investigate the markdown false positives and the earlier backtick false positive using held-out data.
+4. Implement proposal 6.3 tagging, then the field trust-provenance graph, constrained classifier, risk scoring and review gate (sections 6.4–6.7). These do not belong to Stage 1 parsing and are not implemented here.
+5. Integrate the detector with AgentDojo and run paired benign / attack agent tasks to measure ASR and utility; the current parser-only evaluation does not measure either.
+6. Clarify the post-hop policy in the proposal: a post-hop response check can prevent untrusted content reaching the agent, but it cannot undo a side effect already performed by a tool. Side-effecting proposed calls need pre-hop authorization.
+7. Add YAML or other formats only if they remain in the agreed project scope.
 
 ## 7. How to add a new check
 

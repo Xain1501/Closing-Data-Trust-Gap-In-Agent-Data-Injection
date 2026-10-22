@@ -20,6 +20,10 @@ except ImportError:  # flat-folder layout
 
 MAX_BYTES = 1_000_000
 MAX_DEPTH = 32
+_STRUCTURED_TEXT = re.compile(
+    r"^\s*[A-Za-z_][\w.-]*\s*:\s*(?:$|[\[{\"'\d-]|true\b|false\b|null\b)",
+    re.IGNORECASE,
+)
 
 
 class _Pairs(list):
@@ -32,6 +36,18 @@ class _TooDeep(Exception):
 
 def _reject_constant(name: str) -> Any:  # NaN / Infinity are not valid JSON
     raise ValueError(f"non-standard JSON constant: {name}")
+
+
+def _parse_failure_status(raw: str) -> ParseStatus:
+    stripped = raw.strip()
+    if (
+        not stripped
+        or stripped.startswith(("{", "[", '"', "'"))
+        or stripped in {"NaN", "Infinity", "-Infinity"}
+        or _STRUCTURED_TEXT.match(stripped)
+    ):
+        return ParseStatus.INVALID_JSON
+    return ParseStatus.NOT_JSON
 
 
 def _child_path(parent: str, key: str) -> str:
@@ -95,8 +111,9 @@ def parse(traffic: ToolTraffic) -> ParseResult:
             status = ParseStatus.TOO_DEEP
             ctx.findings.append(Finding(kind="depth_exceeded", path="$", detail=f"nesting deeper than {MAX_DEPTH}"))
         except ValueError as e:   # JSONDecodeError is a ValueError
-            status = ParseStatus.INVALID_JSON
-            ctx.findings.append(Finding(kind="parse_failure", path="$", detail=f"{type(e).__name__}: {e}"))
+            status = _parse_failure_status(raw)
+            if status is ParseStatus.INVALID_JSON:
+                ctx.findings.append(Finding(kind="parse_failure", path="$", detail=f"{type(e).__name__}: {e}"))
 
     if status is not ParseStatus.OK:  # default-untrusted: one opaque string node
         ctx.fields = [ParsedField(path="$", key=None, parent_path=None, depth=0,

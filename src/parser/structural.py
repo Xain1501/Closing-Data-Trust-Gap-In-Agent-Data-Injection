@@ -110,7 +110,7 @@ def check_schema(traffic: ToolTraffic, expected: Any) -> list[Finding]:
 def structural_flags(result: ParseResult, schema_findings: Sequence[Finding] = ()) -> StructuralReport:
     """S = min(1, counted hits / boundaries). Only meaningful when status is OK;
     otherwise S = 0 and the status itself carries the (default-untrusted) signal."""
-    if result.status is not ParseStatus.OK:
+    if result.status not in (ParseStatus.OK, ParseStatus.NOT_JSON):
         return StructuralReport(findings=[], uncounted_findings=[], hit_count=0,
                                 boundary_count=result.boundary_count, structural_score=0.0)
 

@@ -51,6 +51,13 @@ def test_non_json_is_untrusted_blob_with_status():
     assert r.status is ParseStatus.INVALID_JSON and len(r.fields) == 1
 
 
+def test_plain_text_observation_has_not_json_status():
+    r = parse(T("The tool found two matching records."))
+    assert r.status is ParseStatus.NOT_JSON
+    assert len(r.fields) == 1
+    assert r.fields[0].value == "The tool found two matching records."
+
+
 def test_nan_rejected():
     assert parse(T('{"x": NaN}')).status is ParseStatus.INVALID_JSON
 

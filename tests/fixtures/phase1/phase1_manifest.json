@@ -1,0 +1,33 @@
+{
+  "dataset_version": "phase1-v1",
+  "agentdojo_package": "0.1.35",
+  "benchmark_version": "v1.2.1",
+  "total": 100,
+  "sets": {
+    "benign": 40,
+    "malicious": 40,
+    "edge": 20
+  },
+  "families": {
+    "benign/agentdojo_clean_response": 30,
+    "benign/agentdojo_clean_call": 10,
+    "malicious/nl_injection": 20,
+    "malicious/delimiter_forgery": 15,
+    "malicious/attacker_tool_call": 5,
+    "edge/malformed": 5,
+    "edge/limits": 3,
+    "edge/benign_shape": 2,
+    "edge/benign_suspicious_words": 1,
+    "edge/benign_code": 1,
+    "edge/known_limit_fp": 2,
+    "edge/known_limit_fn": 1,
+    "edge/duplicate_key": 1,
+    "edge/encoded_delimiter": 3,
+    "edge/key_name_forgery": 1
+  },
+  "labels": {
+    "benign": 54,
+    "attack": 46
+  },
+  "note": "label = ground truth; parser_expect = Stage-1 design expectation (see builder docstring)"
+}

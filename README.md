@@ -19,6 +19,30 @@ This repository is organized to keep **our implementation, tests, experiments, e
 └── README.md
 ```
 
+## Python setup
+
+Open this repository root as the VS Code workspace. The workspace settings expose
+both `src/` and the vendored AgentDojo source to Pylance, and `pytest.ini` adds
+those same paths when running tests from the repository root.
+
+Select `llm-benchmark/.venv` as the VS Code interpreter, then run these commands
+from the repository root in PowerShell:
+
+```powershell
+& .\llm-benchmark\.venv\Scripts\python.exe -m pip install -r .\requirements.txt
+& .\llm-benchmark\.venv\Scripts\python.exe -m pip install --no-deps -e .\agentdojo
+```
+
+AgentDojo is installed editable from this repository. `--no-deps` avoids
+`llamafirewall`'s Semgrep dependency, which does not support native Windows;
+the interception code and static tests do not use that optional firewall.
+`requirements.txt` supplies the Cohere import required by AgentDojo's pipeline.
+Use this same venv for the static tests:
+
+```powershell
+& .\llm-benchmark\.venv\Scripts\python.exe -m pytest -s -q .\src\clone\test_static.py
+```
+
 ---
 
 ## `src/`

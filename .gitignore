@@ -26,6 +26,8 @@ __pycache__/
 # IDE
 .vscode/
 .idea/
+!.vscode/
+!.vscode/settings.json
 # Environment / secrets
 .env
 .env.local
@@ -59,3 +61,7 @@ htmlcov/
 .tox/
 .mypy_cache/
 .ruff_cache/
+
+# Keep shared Python workspace configuration while ignoring personal IDE state.
+!.vscode/
+!.vscode/settings.json
