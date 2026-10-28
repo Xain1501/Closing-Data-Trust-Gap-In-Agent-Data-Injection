@@ -16,7 +16,6 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
-sys.path.insert(0, str(ROOT / "src" / "parser"))
 
 from run_phase1_cases import evaluate, load_cases, materialize  # noqa: E402
 

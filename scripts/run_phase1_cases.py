@@ -26,11 +26,11 @@ from importlib.metadata import version
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "src" / "parser"))
+sys.path.insert(0, str(ROOT / "src"))   # package imports, same as src/pipeline (flat imports shadow the package)
 
-from models import Direction, ToolTraffic  # noqa: E402
-from parser import parse  # noqa: E402
-from structural import structural_flags  # noqa: E402
+from parser.models import Direction, ToolTraffic  # noqa: E402
+from parser.parser import parse  # noqa: E402
+from parser.structural import structural_flags  # noqa: E402
 
 CASES = ROOT / "tests" / "fixtures" / "phase1" / "phase1_cases.jsonl"
 RESULTS = ROOT / "experiments" / "results" / "phase1_run.json"
