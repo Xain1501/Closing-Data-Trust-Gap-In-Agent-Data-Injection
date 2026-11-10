@@ -384,6 +384,7 @@ Set the appropriate API keys for the models you want to use:
 export OPENAI_API_KEY="your-openai-key"
 export ANTHROPIC_API_KEY="your-anthropic-key"
 export GOOGLE_API_KEY="your-google-key"
+export GROQ_API_KEY="your-groq-key"
 ```
 
 ## Running the LLM Benchmark
@@ -444,6 +445,26 @@ uv run python -m agentdojo.scripts.benchmark \
     -s workspace \
     --force-rerun
 ```
+
+### Groq baseline without a detector
+
+The `baseline` agent is a plain ReAct agent: it does not apply the project
+detector or an AgentDojo defense by default. From the repository root, set
+`GROQ_API_KEY` in the environment (or in the root `.env` file) and run a small
+benchmark:
+
+```powershell
+uv run --project .\agentdojo python -m agentdojo.scripts.benchmark `
+    --agent baseline `
+    --model llama-3.3-70b-versatile `
+    --attack data_only_syntactic `
+    -s workspace `
+    -ut user_task_0 `
+    -it injection_task_0
+```
+
+Omit `--attack` and `-it` for a utility-only run. Add `--force-rerun` to repeat
+tasks that already have results.
 
 ### Command-Line Options
 

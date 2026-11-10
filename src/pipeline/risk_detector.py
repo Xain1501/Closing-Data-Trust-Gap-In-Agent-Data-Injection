@@ -2,17 +2,12 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Any
-
 from classifier.wl_svm import WLGraphSVM
 from clone.core import DetectorContext, DetectorDecision
 from clone.ledger import DetectorPayload
-from parser.models import Direction, ToolTraffic
-from parser.parser import parse
-from parser.structural import structural_flags
 from pipeline.classifier_gate import classify_and_assess
-from pipeline.clone_parser_detector import parser_detector
 from pipeline.evidence_panel import EvidencePanel
+from pipeline.parser_analysis import analyze_clone_payload
 from pipeline.risk_gate import RiskAssessment, resolve_review
 from trust_graph import build_trust_graph, tag_fields
 
@@ -35,33 +30,25 @@ def make_risk_detector(
     def detector(payload: DetectorPayload, context: DetectorContext | None = None) -> DetectorDecision:
         if context is None:
             raise ValueError("Risk detector requires interception context.")
-        base = parser_detector(payload, context)
-        if not base.allowed:
-            return base
+        analysis = analyze_clone_payload(payload, context)
+        base_contains_adi = analysis.structural.hit_count > 0
+        if not analysis.usable:
+            return DetectorDecision(False, "parser-untrusted", analysis.structural.structural_score,
+                                    f"Parser status: {analysis.parsed.status.value}.", base_contains_adi)
+        if analysis.schema_invalid:
+            return DetectorDecision(False, "schema-violation", analysis.structural.structural_score,
+                                    "Tool schema validation failed.", True)
+        report = analysis.structural
         if context.matrix_entry.impact_tier not in (1, 5, 10):
-            return DetectorDecision(False, "risk-unclassified", base.score,
-                                    "Trusted impact tier is unavailable.", base.contains_adi)
+            return DetectorDecision(False, "risk-unclassified", report.structural_score,
+                                    "Trusted impact tier is unavailable.", base_contains_adi)
 
-        direction = Direction.PRE_HOP if context.direction == "pre" else Direction.POST_HOP
-        parser_payload: Any = (
-            payload.get("args", payload)
-            if direction is Direction.PRE_HOP and isinstance(payload, dict)
-            else payload
-        )
-        traffic = ToolTraffic(
-            direction=direction,
-            tool_name=context.tool_name,
-            tool_call_id=context.tool_call_id,
-            payload=parser_payload,
-        )
-        parsed = parse(traffic)
-        report = structural_flags(parsed)
-        tagged = tag_fields(parsed, dict(context.matrix_entry.field_trust_classes))
+        tagged = tag_fields(analysis.parsed, dict(context.matrix_entry.field_trust_classes))
         graph = build_trust_graph(tagged, report.findings)
         result = classify_and_assess(
             graph,
             classifier,
-            base.score or 0.0,
+            report.structural_score,
             context.matrix_entry.impact_tier,
         )
         assessment = result.assessment
@@ -99,7 +86,7 @@ def make_risk_detector(
             )
         except ValueError as exc:
             return DetectorDecision(False, "review-invalid", assessment.risk_score,
-                                    str(exc), base.contains_adi)
+                                    str(exc), base_contains_adi)
 
         allowed = resolution.execute_tool if context.direction == "pre" else resolution.release_raw_content
         label = f"risk-{assessment.tier}"
@@ -114,7 +101,7 @@ def make_risk_detector(
             label=label,
             score=assessment.risk_score,
             reason=reason,
-            contains_adi=base.contains_adi or result.classifier.predicted_label == "attack",
+            contains_adi=base_contains_adi or result.classifier.predicted_label == "attack",
         )
 
     detector.__name__ = "risk_detector"

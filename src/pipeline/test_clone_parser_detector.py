@@ -1,3 +1,4 @@
+import json
 from typing import Literal
 
 from pydantic import BaseModel
@@ -132,3 +133,15 @@ def test_post_hop_schema_validates_json_and_plain_string_returns() -> None:
     assert invalid.allowed is False
     assert invalid.label == "schema-violation"
     assert text.allowed is True
+
+
+def test_ledger_persists_post_hop_payload_and_delivery_state(tmp_path) -> None:
+    ledger = InterceptionLedger(storage_dir=tmp_path)
+    record = ledger.capture("run-1", "post", "call-1", '{"message":"result"}', "pre-1")
+    ledger.transition(record, "released", released=True, delivered_payload='{"message":"result"}')
+
+    raw = (tmp_path / "raw-payloads.jsonl").read_text(encoding="utf-8")
+    events = (tmp_path / "ledger.jsonl").read_text(encoding="utf-8")
+    assert json.loads(raw.splitlines()[0])["payload"] == '{"message":"result"}'
+    assert json.loads(events.splitlines()[-1])["state"] == "released"
+    assert record.delivered_sha256 == record.sha256

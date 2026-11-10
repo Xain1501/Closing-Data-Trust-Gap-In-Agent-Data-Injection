@@ -2,14 +2,83 @@
 
 `src/pipeline` is the integration space for detector stages. It connects framework-neutral cloned traffic supplied by `src/clone` to parsing, tagging, graph classification, risk assessment, and review. Keep stage orchestration and shared stage state here; keep framework interception and audit behavior in `src/clone`.
 
+## Clone -> Parser flow
+
+```mermaid
+flowchart TD
+    A[AgentDojo tool call or result] --> B[Clone adapter normalizes/captures payload]
+    B --> C[InterceptionCore holds original]
+    C --> D[Detector receives cloned payload + context]
+    D --> E[analyze_clone_payload: one parse and schema pass]
+    E --> F{Parse usable and schema valid?}
+    F -- No --> G[Hard block: parser/schema failure]
+    F -- Yes --> H[Structural scan: findings, hit count, S]
+    H --> I{Detector selected}
+    I -- Parser-only --> J[Allow iff no structural hits]
+    I -- Risk composition --> K[Tag fields from TVM provenance]
+    K --> L[Build trust graph]
+    L --> M[Classifier probability + impact]
+    M --> N[Risk formula and review policy]
+    N --> O[Allow, deny, or evidence-only]
+    G --> P[Clone records verdict and delivered hash]
+    J --> P
+    O --> P
+    P --> Q[Adapter releases original or denial]
+```
+
+```mermaid
+sequenceDiagram
+    participant Agent
+    participant Adapter as Clone / AgentDojo adapter
+    participant Core as InterceptionCore
+    participant Detector as Parser / risk detector
+    participant Ledger
+    participant Tool
+    Agent->>Adapter: proposed call
+    Adapter->>Core: normalized args + trusted schema
+    Core->>Ledger: capture pre-hop payload
+    Core->>Detector: deep copy + direction/tool/schema context
+    Detector-->>Core: decision
+    alt pre-hop allowed
+        Core->>Tool: execute original call
+        Tool-->>Adapter: formatted result
+        Adapter->>Core: result + pre interception id
+        Core->>Ledger: capture post-hop result
+        Core->>Detector: result string + declared return schema
+        Detector-->>Core: decision
+        Core->>Ledger: record release/block and delivered hash
+        Core-->>Agent: original result or denial
+    else pre-hop blocked
+        Core->>Ledger: record block and denial delivery
+        Core-->>Agent: denial; tool not executed
+    end
+```
+
+### Formula and decision boundaries
+
+The parser's structural score is `S = min(1, counted_hits / max(1, boundaries))`. A boundary is a JSON object, array, or key; scalar leaf values do not increase the denominator. Duplicate keys and counted forged-structure patterns contribute hits. Parse status is separate: malformed/over-limit JSON is hard-blocked even though its `S` is zero. Schema failures are also hard-blocked. In the risk-composed path, structural hits are evidence for the classifier and risk assessment; they no longer bypass that path. Parser-only mode still blocks any counted structural hit.
+
+The risk gate currently combines `S` and classifier attack probability as `confidence = 1 - (1 - S) * (1 - classifier_score)`, then `risk = confidence * impact`. This uses the project's existing proposal formula; `S` is a heuristic feature and should not be described as a calibrated probability.
+
+### Post-hop retention
+
+Every post-hop result is captured in the ledger's `raw_payloads` before detector evaluation. The result remains available in memory after release or block, and ledger events retain its input hash plus the hash of the delivered observation. For durable snapshots, construct the ledger with an explicit directory:
+
+```python
+ledger = InterceptionLedger(storage_dir="runs/current/clone-ledger")
+```
+
+The ledger refreshes `ledger.jsonl`, `raw-payloads.jsonl`, and `run-metadata.jsonl` after each capture/state transition. Raw files contain tool results and may contain private data, so persistence is explicit rather than enabled by default.
+
 ## Current implementation
 
 Today this folder contains:
 
 - `clone_parser_detector.py`: a detector callback that receives a cloned payload and `DetectorContext`, creates the parser's `ToolTraffic`, runs `parse()` and `structural_flags()`, and returns a `DetectorDecision`.
+- `parser_analysis.py`: shared one-pass payload normalization, parse, schema validation, and structural analysis for parser-only and risk-composed paths.
 - `test_clone_parser_detector.py`: focused tests for the current bridge behavior. Check these tests when changing parser policy; an older expectation that plain prose is blocked may need reconciliation with `ParseStatus.NOT_JSON`.
 
-The bridge currently returns only the final decision fields (`allowed`, `label`, structural `score`, `reason`, and `contains_adi`). It does **not** expose its `ParseResult` or `StructuralReport` to a subsequent stage, nor does it assemble a multi-stage detector. For schema checks, the adapter passes the runtime's trusted argument model for pre-hop and declared return type for post-hop.
+The callback returns the final decision fields (`allowed`, `label`, `score`, `reason`, and `contains_adi`). Its internal `ParserAnalysis` retains the `ParseResult` and `StructuralReport` for downstream tagging/classification without reparsing. For schema checks, the adapter passes the runtime's trusted argument model for pre-hop and declared return type for post-hop.
 
 The structural score is a deterministic heuristic, not a probability or SVM score:
 

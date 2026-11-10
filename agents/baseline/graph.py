@@ -5,11 +5,13 @@ in AgentDojo. It wraps the core react_agent_creation logic with an
 AgentDojo-compliant interface.
 """
 
-from typing import Any, Literal
-from langgraph.graph.state import CompiledStateGraph
-from langchain_openai import ChatOpenAI
+import os
+from typing import Any
+
 from langchain_anthropic import ChatAnthropic
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_openai import ChatOpenAI
+from langgraph.graph.state import CompiledStateGraph
 
 # Import LangGraphAgent for wrapping
 from agentdojo.agents.base_agent import LangGraphAgent
@@ -18,7 +20,7 @@ from .react_agent_creation import create_react_agent
 
 
 def create_agent(
-    model: Literal["gpt-4o-mini", "gpt-4o", "claude-3-5-sonnet", "gemini-1.5-pro"] = "gpt-4o-mini",
+    model: str = "gpt-4o-mini",
     **kwargs: Any,
 ) -> LangGraphAgent:
     """Create baseline ReAct agent for AgentDojo.
@@ -33,6 +35,7 @@ def create_agent(
             - "gpt-4o": OpenAI GPT-4o model
             - "claude-3-5-sonnet": Anthropic Claude 3.5 Sonnet
             - "gemini-1.5-pro": Google Gemini 1.5 Pro
+            - "llama-3.3-70b-versatile": Llama 3.3 70B hosted by Groq
         **kwargs: Additional arguments passed by benchmark system:
             - tools (list[Function]): List of tools from suite.tools (required)
             - langchain_tools (list[BaseTool]): LangChain tools (preferred)
@@ -104,7 +107,7 @@ def create_agent(
 
 
 def _get_model_instance(
-    model_name: Literal["gpt-4o-mini", "gpt-4o", "claude-3-5-sonnet", "gemini-1.5-pro"]
+    model_name: str,
 ):
     """Convert model string to LangChain model instance.
 
@@ -132,5 +135,15 @@ def _get_model_instance(
     # Handle Google Gemini models
     elif "gemini" in model_name.lower():
         return ChatGoogleGenerativeAI(model=model_name, temperature=0)
+    elif model_name in {"llama-3.3-70b-versatile", "openai/gpt-oss-120b"}:
+        api_key = os.getenv("GROQ_API_KEY")
+        if not api_key:
+            raise ValueError("GROQ_API_KEY must be set to use the Groq model.")
+        return ChatOpenAI(
+            model=model_name,
+            temperature=0,
+            api_key=api_key,
+            base_url="https://api.groq.com/openai/v1",
+        )
     else:
         raise ValueError(f"Unsupported model: {model_name}")
