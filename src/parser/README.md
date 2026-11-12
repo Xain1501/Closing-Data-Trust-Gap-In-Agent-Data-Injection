@@ -1,9 +1,14 @@
-# Parser (Stage 1) - Closing the Data Trust Gap in Agent Data Injection
+# Parser - Closing the Data Trust Gap in Agent Data Injection
 
-Stage 1 of the Detector Agent (proposal 6.2, deterministic parsing). It opens a tool message,
-splits it into addressable fields, and measures how much *fake structure* hides inside text values.
-It makes **no trust decision and blocks nothing**. Tagging, the provenance graph, the classifier and
-the risk gate are later stages (not built yet).
+`src/parser` owns deterministic parsing and structural checks. The Clone-to-Parser integration is
+orchestrated from `src/pipeline`: `parser_analysis.py` calls the parser and structural checks,
+`clone_parser_detector.py` exposes the parser-only callback, and `risk_detector.py` composes parsing
+with tagging, trust graph, classification, and risk handling. Clone events reach that pipeline through
+the adapters in `src/clone`. See `src/pipeline/README.md` for the end-to-end flow.
+
+The parser modules remain usable independently for offline evaluation. `stage1.py` is a parser-level
+convenience API; the live pipeline currently uses `parse()` and `structural_flags()` through
+`parser_analysis.py`.
 
 ```
 message (pre_hop call args or post_hop tool result)
@@ -29,9 +34,8 @@ Design rule: **structure only, never wording.** No trigger words ("ignore", "sys
 | `stage1.py` | `analyze(traffic, fmt)`: one entry point + the verdict rule |
 | `adi_eval.py` | Runs ADI benchmark files, reports by scope / attack type / category / delimiter / defense / route |
 | `make_extra_cases.py` | Writes the hand-made `prehop_cases.jsonl` and `hard_benign.jsonl` |
-| `eval.py`, `agentdojo_offline.py`, `demo.py` | Older runners / demo (see 3) |
+| `eval.py`, `agentdojo_offline.py`, `demo.py` | Offline evaluator, benchmark data builder support, and demo |
 | `test_*.py` | Unit tests (`test_dom_layout.py`, `test_dom_linenum.py`, `test_md_flags.py`, `test_stage1.py` are new) |
-| `agentdojo_element.py` | Unfinished, unused |
 
 ## 2. Setup and commands (Windows PowerShell)
 
@@ -57,12 +61,13 @@ uv run dib generate -C web_dom -c configs/benchmark_syntactic.yaml -n 3 -f web_d
 
 ## 3. How each part works
 
-**`parse()`** - strict JSON only (NaN/Infinity rejected, BOM tolerated), limits 1,000,000 bytes,
+**`parse()`** - strict JSON only (NaN/Infinity and exponent overflow rejected, BOM tolerated), limits 1,000,000 bytes,
 depth 32, and 100,000 parsed fields. Limit failures return an opaque untrusted field and an explicit status.
 Every field gets a path (`$.emails[0].body`) and a parent link; duplicate keys stay visible (`$.to`, `$.to#2`).
 Status is one of `ok`, `not_json`, `invalid_json`, `too_large`, `too_deep`, `too_many_fields`. `not_json` means
-plain text rather than malformed JSON syntax; `stage1.analyze()` still marks non-JSON input untrusted by default
-when JSON was requested. On malformed or over-limit JSON, the whole payload is one untrusted blob.
+plain text rather than malformed JSON syntax; it remains untrusted by default unless a registered trusted schema
+explicitly accepts raw text (for example, a string return type). On malformed or over-limit JSON, the whole
+payload is one untrusted blob.
 
 **`structural_flags()`** - `S = min(1, counted signs / boundaries)`, boundaries = objects + arrays + keys.
 Counted signs: `quote_close_structure`, `key_injection`, `object_reopen`, `array_close_object`, `kv_forgery`

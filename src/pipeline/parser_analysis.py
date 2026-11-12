@@ -17,11 +17,21 @@ class ParserAnalysis:
     traffic: ToolTraffic
     parsed: ParseResult
     structural: StructuralReport
+    schema_registered: bool
     schema_invalid: bool
 
     @property
     def usable(self) -> bool:
-        return self.parsed.status in (ParseStatus.OK, ParseStatus.NOT_JSON)
+        if self.parsed.status is ParseStatus.OK:
+            return True
+        # Plain text is accepted only when a trusted, direction-specific schema
+        # explicitly validates it (for example, a tool whose return type is str).
+        # Without that contract, NOT_JSON is an opaque untrusted payload.
+        return (
+            self.parsed.status is ParseStatus.NOT_JSON
+            and self.schema_registered
+            and not self.schema_invalid
+        )
 
 
 def analyze_clone_payload(payload: DetectorPayload, context: DetectorContext) -> ParserAnalysis:
@@ -48,4 +58,4 @@ def analyze_clone_payload(payload: DetectorPayload, context: DetectorContext) ->
         finding.kind in ("unexpected_key", "schema_violation")
         for finding in (*structural.findings, *structural.uncounted_findings)
     )
-    return ParserAnalysis(traffic, parsed, structural, schema_invalid)
+    return ParserAnalysis(traffic, parsed, structural, context.schema is not None, schema_invalid)

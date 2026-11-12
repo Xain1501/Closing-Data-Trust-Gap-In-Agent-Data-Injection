@@ -139,9 +139,12 @@ def _get_model_instance(
         api_key = os.getenv("GROQ_API_KEY")
         if not api_key:
             raise ValueError("GROQ_API_KEY must be set to use the Groq model.")
+        max_tokens = os.getenv("GROQ_MAX_TOKENS")
         return ChatOpenAI(
             model=model_name,
             temperature=0,
+            max_tokens=int(max_tokens) if max_tokens else None,
+            max_retries=8,
             api_key=api_key,
             base_url="https://api.groq.com/openai/v1",
         )

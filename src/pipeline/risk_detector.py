@@ -50,6 +50,7 @@ def make_risk_detector(
             classifier,
             report.structural_score,
             context.matrix_entry.impact_tier,
+            structural_hits=report.hit_count,
         )
         assessment = result.assessment
         action = "allow" if assessment.route == "auto_allow" else None
@@ -94,6 +95,8 @@ def make_risk_detector(
             f"Risk {assessment.risk_score:.3f} ({assessment.tier}); "
             f"action={resolution.action}."
         )
+        if assessment.review_reasons:
+            reason = f"{reason} Review reasons: {', '.join(assessment.review_reasons)}."
         if resolution.observation:
             reason = f"{reason} {resolution.observation}"
         return DetectorDecision(

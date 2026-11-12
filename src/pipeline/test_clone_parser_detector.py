@@ -69,16 +69,16 @@ def test_parser_detector_scores_pre_and_post_payloads_in_core() -> None:
     assert ledger.ledger[-2].contains_adi is True
 
 
-def test_parser_allows_plain_text_tool_results_without_structural_findings() -> None:
+def test_parser_blocks_plain_text_without_a_trusted_schema() -> None:
     decision = parser_detector(
         "not-json",
         context=_context("post"),
     )
 
-    assert decision.allowed is True
+    assert decision.allowed is False
     assert decision.contains_adi is False
     assert decision.score == 0.0
-    assert decision.label == "no-adi-detected"
+    assert decision.label == "parser-untrusted"
 
 
 def test_parser_bridge_uses_parser_structural_score_for_each_direction() -> None:

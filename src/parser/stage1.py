@@ -6,7 +6,7 @@ Works for BOTH directions (traffic.direction = pre_hop or post_hop): the same pa
 outgoing call's arguments and on an incoming tool response (proposal 6.1 / 6.2).
 
 Verdict (a label for the next stages, NOT a block decision):
-  untrusted_default : JSON that does not parse (invalid_json / too_large / too_deep).
+  untrusted_default : malformed/over-limit JSON, or non-JSON without a trusted schema that accepts text.
                       Proposal 6.2: content that does not parse is untrusted by default.
   flagged           : parsed, and at least `min_hits` counted signs of forged structure.
   clean             : parsed, fewer than `min_hits` signs.
@@ -80,9 +80,19 @@ def analyze(traffic: ToolTraffic, fmt: str = "json", min_hits: int = 1,
     elif fmt == "json":
         res = parse(traffic)
         status = getattr(res.status, "value", str(res.status))
-        schema_findings = schema_registry.validate(traffic) if schema_registry and status == "ok" else ()
+        schema = (
+            schema_registry.get(traffic.tool_name, traffic.direction.value)
+            if schema_registry
+            else None
+        )
+        schema_findings = (
+            schema_registry.validate(traffic)
+            if schema_registry and status in {"ok", "not_json"}
+            else ()
+        )
         rep = structural_flags(res, schema_findings=schema_findings)
-        if status != "ok":
+        text_schema_ok = status == "not_json" and schema is not None and not schema_findings
+        if status != "ok" and not text_schema_ok:
             return Stage1Result("untrusted_default", status, rep,
                                 [f"payload did not parse ({status}); untrusted by default"])
     else:

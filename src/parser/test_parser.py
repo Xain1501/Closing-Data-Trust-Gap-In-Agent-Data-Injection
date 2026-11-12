@@ -62,6 +62,10 @@ def test_nan_rejected():
     assert parse(T('{"x": NaN}')).status is ParseStatus.INVALID_JSON
 
 
+def test_float_overflow_is_not_silently_parsed_as_infinity():
+    assert parse(T('{"x": 1e9999}')).status is ParseStatus.INVALID_JSON
+
+
 def test_depth_limit_sets_status():
     assert parse(T("[" * 50 + "]" * 50)).status is ParseStatus.TOO_DEEP
 
