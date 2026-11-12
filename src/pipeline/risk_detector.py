@@ -37,7 +37,7 @@ def make_risk_detector(
                                     f"Parser status: {analysis.parsed.status.value}.", base_contains_adi)
         if analysis.schema_invalid:
             return DetectorDecision(False, "schema-violation", analysis.structural.structural_score,
-                                    "Tool schema validation failed.", True)
+                                    "Tool schema validation failed.", base_contains_adi)
         report = analysis.structural
         if context.matrix_entry.impact_tier not in (1, 5, 10):
             return DetectorDecision(False, "risk-unclassified", report.structural_score,
