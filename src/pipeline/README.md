@@ -2,14 +2,83 @@
 
 `src/pipeline` is the integration space for detector stages. It connects framework-neutral cloned traffic supplied by `src/clone` to parsing, tagging, graph classification, risk assessment, and review. Keep stage orchestration and shared stage state here; keep framework interception and audit behavior in `src/clone`.
 
+## Clone -> Parser flow
+
+```mermaid
+flowchart TD
+    A[AgentDojo tool call or result] --> B[Clone adapter normalizes/captures payload]
+    B --> C[InterceptionCore holds original]
+    C --> D[Detector receives cloned payload + context]
+    D --> E[analyze_clone_payload: one parse and schema pass]
+    E --> F{Parse usable and schema valid?}
+    F -- No --> G[Hard block: parser/schema failure]
+    F -- Yes --> H[Structural scan: findings, hit count, S]
+    H --> I{Detector selected}
+    I -- Parser-only --> J[Allow iff no structural hits]
+    I -- Risk composition --> K[Tag fields from TVM provenance]
+    K --> L[Build trust graph]
+    L --> M[Classifier probability + impact]
+    M --> N[Risk formula and review policy]
+    N --> O[Allow, deny, or evidence-only]
+    G --> P[Clone records verdict and delivered hash]
+    J --> P
+    O --> P
+    P --> Q[Adapter releases original or denial]
+```
+
+```mermaid
+sequenceDiagram
+    participant Agent
+    participant Adapter as Clone / AgentDojo adapter
+    participant Core as InterceptionCore
+    participant Detector as Parser / risk detector
+    participant Ledger
+    participant Tool
+    Agent->>Adapter: proposed call
+    Adapter->>Core: normalized args + trusted schema
+    Core->>Ledger: capture pre-hop payload
+    Core->>Detector: deep copy + direction/tool/schema context
+    Detector-->>Core: decision
+    alt pre-hop allowed
+        Core->>Tool: execute original call
+        Tool-->>Adapter: formatted result
+        Adapter->>Core: result + pre interception id
+        Core->>Ledger: capture post-hop result
+        Core->>Detector: result string + declared return schema
+        Detector-->>Core: decision
+        Core->>Ledger: record release/block and delivered hash
+        Core-->>Agent: original result or denial
+    else pre-hop blocked
+        Core->>Ledger: record block and denial delivery
+        Core-->>Agent: denial; tool not executed
+    end
+```
+
+### Formula and decision boundaries
+
+The parser's structural score is `S = min(1, counted_hits / max(1, boundaries))`. A boundary is a JSON object, array, or key; scalar leaf values do not increase the denominator. Duplicate keys and counted forged-structure patterns contribute hits. Parse status is separate: malformed/over-limit JSON is hard-blocked even though its `S` is zero. Schema failures are also hard-blocked. In the risk-composed path, structural hits are evidence for the classifier and risk assessment; they no longer bypass that path. Parser-only mode still blocks any counted structural hit.
+
+The risk gate does not treat structural density `S` as a probability. It keeps the calibrated classifier score separate and computes `risk = classifier_probability * impact`. Any counted structural finding independently forces human review, even when a large boundary count makes `S` very small. If classifier evidence is unavailable, the gate also forces review. This prevents heuristic-score dilution and prevents missing model evidence from silently auto-allowing traffic. Parser/schema failures remain hard blocks; high classifier risk removes `allow` from reviewer options.
+
+### Post-hop retention
+
+Every post-hop result is captured in the ledger's `raw_payloads` before detector evaluation. The result remains available in memory after release or block, and ledger events retain its input hash plus the hash of the delivered observation. For durable snapshots, construct the ledger with an explicit directory:
+
+```python
+ledger = InterceptionLedger(storage_dir="runs/current/clone-ledger")
+```
+
+The ledger refreshes `ledger.jsonl`, `raw-payloads.jsonl`, and `run-metadata.jsonl` after each capture/state transition. Raw files contain tool results and may contain private data, so persistence is explicit rather than enabled by default. The live smoke runner enables persistence under a timestamped `runs/live_clone_parser_smoke/` directory, reloads the event ledger, and checks the post-hop payload hashes against the captured records.
+
 ## Current implementation
 
 Today this folder contains:
 
 - `clone_parser_detector.py`: a detector callback that receives a cloned payload and `DetectorContext`, creates the parser's `ToolTraffic`, runs `parse()` and `structural_flags()`, and returns a `DetectorDecision`.
+- `parser_analysis.py`: shared one-pass payload normalization, parse, schema validation, and structural analysis for parser-only and risk-composed paths.
 - `test_clone_parser_detector.py`: focused tests for the current bridge behavior. Check these tests when changing parser policy; an older expectation that plain prose is blocked may need reconciliation with `ParseStatus.NOT_JSON`.
 
-The bridge currently returns only the final decision fields (`allowed`, `label`, structural `score`, `reason`, and `contains_adi`). It does **not** expose its `ParseResult` or `StructuralReport` to a subsequent stage, nor does it assemble a multi-stage detector. For schema checks, the adapter passes the runtime's trusted argument model for pre-hop and declared return type for post-hop.
+The callback returns the final decision fields (`allowed`, `label`, `score`, `reason`, and `contains_adi`). Its internal `ParserAnalysis` retains the `ParseResult` and `StructuralReport` for downstream tagging/classification without reparsing. For schema checks, the adapter passes the runtime's trusted argument model for pre-hop and declared return type for post-hop.
 
 The structural score is a deterministic heuristic, not a probability or SVM score:
 
@@ -17,7 +86,7 @@ The structural score is a deterministic heuristic, not a probability or SVM scor
 min(1, counted_structural_findings / parser_boundary_count)
 ```
 
-The parser reports parse status separately. Plain prose with no counted structural finding is `NOT_JSON`, score `0`, and allowed by the current bridge. Malformed object/array JSON is `INVALID_JSON`, score `0`, and blocked as `parser-untrusted` without being labeled ADI. Valid structured payloads are scanned for counted structural findings; prose containing such findings is blocked as `adi-detected`.
+The parser reports parse status separately. Plain prose without a trusted schema is `NOT_JSON`, score `0`, and blocked as `parser-untrusted`; it is accepted only when a registered direction-specific schema validates the raw text (for example, a declared string return type). Malformed object/array JSON is also blocked as `parser-untrusted` without being labeled ADI. Valid structured payloads are scanned for counted structural findings; prose containing such findings is blocked as `adi-detected`.
 
 ## How clone supplies traffic
 
@@ -74,8 +143,8 @@ The following reusable components are now available:
 - `trust_graph.tagging.tag_fields`: tags each parsed field from its top-level TVM class; unknown classes default to `UT`. Nested fields inherit their top-level argument class.
 - `trust_graph.graph.build_trust_graph`: builds parent-child field edges and attaches structural finding nodes.
 - `classifier.train`: trains an artifact from labeled graph JSONL. Each row contains a unique `case_id`, `label` (`benign` or `attack`), and `graph` with `node_labels` and `edges`. Each class needs at least two examples for calibration.
-- `pipeline.classifier_gate.classify_and_assess`: combines an existing parser score with the model's attack probability and the trusted tool impact tier (1/5/10).
-- `pipeline.risk_gate`: proposal confidence formula `1 - (1 - structural_score) * (1 - classifier_score)`, multiplied by impact. Risk below 1 auto-allows; `[1, 5)` and `>=5` require review, with `allow` removed at high risk. `classifier_score=None` is retained as missing evidence and contributes zero until a trained model is supplied.
+- `pipeline.classifier_gate.classify_and_assess`: applies classifier probability to trusted impact tier (1/5/10) and keeps parser structural density as separate evidence.
+- `pipeline.risk_gate`: `risk = classifier_probability * impact`. Risk below 1 auto-allows only when there are no structural hits and classifier evidence exists; `[1, 5)` requires review; `>=5` requires review with `allow` removed. Any structural hit or missing classifier forces review regardless of the numeric risk score.
 - `pipeline.evidence_panel`: deterministic JSON evidence packet for a reviewer; it does not call an LLM or expose raw untrusted content automatically.
 - `pipeline.evaluation`: computes attack success rate, benign utility, utility under attack, false positive/negative rates, and human approval accuracy from per-case JSONL results.
 - `pipeline.risk_detector.make_risk_detector`: creates an opt-in contextual detector that composes parser/schema checks, tagging, graph construction, SVM, risk assessment, and an optional reviewer callback. If a review-tier case has no callback, it is blocked. Parser/schema failures remain blocked without asking the reviewer.

@@ -1,3 +1,4 @@
+import json
 from typing import Literal
 
 from pydantic import BaseModel
@@ -68,16 +69,16 @@ def test_parser_detector_scores_pre_and_post_payloads_in_core() -> None:
     assert ledger.ledger[-2].contains_adi is True
 
 
-def test_parser_allows_plain_text_tool_results_without_structural_findings() -> None:
+def test_parser_blocks_plain_text_without_a_trusted_schema() -> None:
     decision = parser_detector(
         "not-json",
         context=_context("post"),
     )
 
-    assert decision.allowed is True
+    assert decision.allowed is False
     assert decision.contains_adi is False
     assert decision.score == 0.0
-    assert decision.label == "no-adi-detected"
+    assert decision.label == "parser-untrusted"
 
 
 def test_parser_bridge_uses_parser_structural_score_for_each_direction() -> None:
@@ -132,3 +133,15 @@ def test_post_hop_schema_validates_json_and_plain_string_returns() -> None:
     assert invalid.allowed is False
     assert invalid.label == "schema-violation"
     assert text.allowed is True
+
+
+def test_ledger_persists_post_hop_payload_and_delivery_state(tmp_path) -> None:
+    ledger = InterceptionLedger(storage_dir=tmp_path)
+    record = ledger.capture("run-1", "post", "call-1", '{"message":"result"}', "pre-1")
+    ledger.transition(record, "released", released=True, delivered_payload='{"message":"result"}')
+
+    raw = (tmp_path / "raw-payloads.jsonl").read_text(encoding="utf-8")
+    events = (tmp_path / "ledger.jsonl").read_text(encoding="utf-8")
+    assert json.loads(raw.splitlines()[0])["payload"] == '{"message":"result"}'
+    assert json.loads(events.splitlines()[-1])["state"] == "released"
+    assert record.delivered_sha256 == record.sha256

@@ -95,7 +95,11 @@ class RawPayload:
 class InterceptionLedger:
     """Thread-safe trace of intercepted tool inputs, observations, and state changes."""
 
-    def __init__(self) -> None:
+    def __init__(self, storage_dir: str | Path | None = None) -> None:
+        """Create an in-memory ledger, optionally snapshotting it to JSONL.
+
+        Raw payload persistence is opt-in because captured tool data may be private.
+        """
         self.records: list[InterceptionRecord] = []
         self.ledger: list[LedgerEntry] = []
         self.raw_payloads: list[RawPayload] = []
@@ -105,12 +109,14 @@ class InterceptionLedger:
         self._raw_payload_index: dict[str, int] = {}
         self._run_metadata: dict[str, dict[str, Any]] = {}
         self._event_seq = 0
+        self.storage_dir = Path(storage_dir) if storage_dir is not None else None
 
     def set_run_metadata(self, run_id: str, mapping: Mapping[str, Any]) -> None:
         if not isinstance(mapping, Mapping):
             raise TypeError("Run metadata must be a mapping.")
         with self._lock:
             self._run_metadata[run_id] = deepcopy(dict(mapping))
+            self._persist_locked()
 
     def capture(
         self,
@@ -159,6 +165,7 @@ class InterceptionLedger:
                 RawPayload(run_id, record.interception_id, phase, None, deepcopy(payload))
             )
             self._append_ledger_locked(record, "captured")
+            self._persist_locked()
             return record
 
     def get_record(self, interception_id: str) -> InterceptionRecord | None:
@@ -211,6 +218,7 @@ class InterceptionLedger:
                 payload.payload,
             )
             self._append_ledger_locked(record, state)
+            self._persist_locked()
 
     def _append_ledger_locked(self, record: InterceptionRecord, state: str) -> None:
         event_seq = self._event_seq + 1
@@ -321,6 +329,27 @@ class InterceptionLedger:
             self._raw_payload_index.clear()
             self._run_metadata.clear()
             self._event_seq = 0
+            self._persist_locked()
+
+    def _persist_locked(self) -> None:
+        if self.storage_dir is None:
+            return
+        snapshots = (
+            ("ledger.jsonl", [asdict(entry) for entry in self.ledger]),
+            ("raw-payloads.jsonl", [asdict(payload) for payload in self.raw_payloads]),
+            (
+                "run-metadata.jsonl",
+                [
+                    {"run_id": run_id, "metadata": deepcopy(metadata)}
+                    for run_id, metadata in sorted(self._run_metadata.items())
+                ],
+            ),
+        )
+        for name, rows in snapshots:
+            target = self.storage_dir / name
+            temporary = target.with_suffix(target.suffix + ".tmp")
+            _write_jsonl(temporary, [_jsonable(row) for row in rows])
+            temporary.replace(target)
 
 
 def _payload_hash(phase: Phase, payload: DetectorPayload) -> str:

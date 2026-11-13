@@ -83,6 +83,14 @@ assert ledger.verify_chain()
 
 Run metadata can be supplied to the AgentDojo executor through `extra_args["_clone_tvm_run_meta"]`, for example suite, task, or attack identifiers. It is stored separately and is not passed to the detector. Raw payload exports may contain sensitive tool arguments and results; handle them accordingly.
 
+For automatic durable snapshots after each capture and state change, pass a directory to the ledger constructor:
+
+```python
+ledger = InterceptionLedger(storage_dir="runs/current/clone-ledger")
+```
+
+This writes `ledger.jsonl`, `raw-payloads.jsonl`, and `run-metadata.jsonl`. In-memory capture remains the default when no directory is supplied. The raw payload file includes both pre-hop arguments and post-hop tool responses.
+
 ## Use with AgentDojo
 
 Run commands from the repository root. The project uses the benchmark virtual environment for AgentDojo integration:

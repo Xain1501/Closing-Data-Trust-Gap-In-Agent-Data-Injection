@@ -10,6 +10,7 @@ would silently collapse them). Pydantic validates the outputs.
 from __future__ import annotations
 
 import json
+import math
 import re
 from typing import Any
 
@@ -41,6 +42,14 @@ class _TooManyFields(Exception):
 
 def _reject_constant(name: str) -> Any:  # NaN / Infinity are not valid JSON
     raise ValueError(f"non-standard JSON constant: {name}")
+
+
+def _finite_float(token: str) -> float:
+    """Decode JSON numbers without silently turning exponent overflow into infinity."""
+    value = float(token)
+    if not math.isfinite(value):
+        raise ValueError(f"JSON number is outside the supported finite range: {token}")
+    return value
 
 
 def _parse_failure_status(raw: str) -> ParseStatus:
@@ -115,7 +124,12 @@ def parse(traffic: ToolTraffic) -> ParseResult:
         raw = raw[:MAX_BYTES]
     else:
         try:
-            tree = json.loads(raw, object_pairs_hook=_Pairs, parse_constant=_reject_constant)
+            tree = json.loads(
+                raw,
+                object_pairs_hook=_Pairs,
+                parse_constant=_reject_constant,
+                parse_float=_finite_float,
+            )
             _walk(tree, "$", None, None, 0, ctx)
         except (_TooDeep, RecursionError):
             status = ParseStatus.TOO_DEEP

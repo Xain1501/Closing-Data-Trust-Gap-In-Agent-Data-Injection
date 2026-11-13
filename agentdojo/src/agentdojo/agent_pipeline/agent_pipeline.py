@@ -96,6 +96,15 @@ def get_llm(provider: str, model: str, model_id: str | None, tool_delimiter: str
             base_url="https://api.together.xyz/v1",
         )
         llm = PromptingLLM(client, model)
+    elif provider == "groq":
+        api_key = os.getenv("GROQ_API_KEY")
+        if not api_key:
+            raise ValueError("GROQ_API_KEY must be set to use Groq models.")
+        client = openai.OpenAI(
+            api_key=api_key,
+            base_url="https://api.groq.com/openai/v1",
+        )
+        llm = OpenAILLM(client, model)
     elif provider == "cohere":
         client = cohere.Client()
         llm = CohereLLM(client, model)

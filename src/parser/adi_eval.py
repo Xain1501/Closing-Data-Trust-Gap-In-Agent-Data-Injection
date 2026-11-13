@@ -34,7 +34,7 @@ try:  # package layout
     from .structural import structural_flags
     from .md_flags import md_flags
     try:
-        from .dom_flags import dom_flags
+        from .dom_flag import dom_flags
     except ImportError:
         from .dom_flag import dom_flags
 except ImportError:  # loose files
@@ -43,7 +43,7 @@ except ImportError:  # loose files
     from structural import structural_flags
     from md_flags import md_flags
     try:
-        from dom_flags import dom_flags
+        from dom_flag import dom_flags
     except ImportError:
         from dom_flag import dom_flags
 

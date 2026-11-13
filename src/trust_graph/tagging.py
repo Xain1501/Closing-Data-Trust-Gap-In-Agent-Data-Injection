@@ -25,3 +25,5 @@ def _root_key(path: str) -> str:
     remainder = path[2:]
     key = remainder.split(".", 1)[0].split("[", 1)[0]
     return key.replace("~1", "/").replace("~0", "~")
+ 
+ 

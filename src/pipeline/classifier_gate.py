@@ -18,8 +18,15 @@ def classify_and_assess(
     classifier: WLGraphSVM,
     structural_score: float,
     impact: int | None,
+    *,
+    structural_hits: int = 0,
 ) -> GraphRiskResult:
-    """Score one trust graph and combine it with the parser's structural score."""
+    """Classify a trust graph; keep parser hit evidence separate from probability."""
     prediction = classifier.predict(graph)
-    risk = assess_risk(structural_score, prediction.attack_probability, impact)
+    risk = assess_risk(
+        structural_score,
+        prediction.attack_probability,
+        impact,
+        structural_hits=structural_hits,
+    )
     return GraphRiskResult(prediction, risk)
