@@ -253,7 +253,7 @@ validation and drafting tools arrive in Phase 2 (blocked until explicitly approv
 |---|---|
 | `src/trust_graph/tagging.py` | **updated**: `Provenance`, `Role`, `LineageStatus`, `Evidence`, `FieldTag`, profile-entry data class, new `tag_fields(direction, tool_name, fields, profile_entry, run_state)` |
 | `src/provenance/run_state.py` | `RunState` (the package was scaffolded for provenance and is otherwise empty) |
-| `src/provenance/lineage.py` | normalisation and matching (Section 4) |
+| `src/provenance/lineage.py` | matching (Section 4), from step 1.3. `normalise()` lives in `tagging.py` during step 1.2 (needed for `FieldTag.length`) and moves here in step 1.3. |
 | `tests/unit/test_tagging.py` | step 1.2 fixtures |
 | `tests/unit/test_provenance.py` | step 1.3 fixtures (file exists, currently empty) |
 
