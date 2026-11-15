@@ -47,8 +47,8 @@ def test_nested_duplicate_keys():
 
 # ---- failure statuses (malformed != malicious) -------------------------------
 def test_non_json_is_untrusted_blob_with_status():
-    r = parse(T("emails:\n- from: a@b.com"))
-    assert r.status is ParseStatus.INVALID_JSON and len(r.fields) == 1
+    r = parse(T("emails:\n- from: a@b.com"))   # YAML is another format, not broken JSON
+    assert r.status is ParseStatus.NOT_JSON and len(r.fields) == 1
 
 
 def test_plain_text_observation_has_not_json_status():
@@ -74,7 +74,7 @@ def test_too_large_sets_status():
     assert parse(T('"' + "a" * (MAX_BYTES + 10) + '"')).status is ParseStatus.TOO_LARGE
 
 
-@pytest.mark.parametrize("text", ["", "   ", '{"a":1,}', '{"a":1} // c', "{'a': 1}", "a: 1", '{"a":1}{"b":2}', "[1,2"])
+@pytest.mark.parametrize("text", ["", "   ", '{"a":1,}', '{"a":1} // c', "{'a': 1}", '{"a":1}{"b":2}', "[1,2"])
 def test_strict_json_only_everything_else_is_invalid(text):
     assert parse(T(text)).status is ParseStatus.INVALID_JSON
 

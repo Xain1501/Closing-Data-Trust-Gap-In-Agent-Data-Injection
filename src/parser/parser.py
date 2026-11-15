@@ -9,6 +9,7 @@ would silently collapse them). Pydantic validates the outputs.
 """
 from __future__ import annotations
 
+import ast
 import json
 import math
 import re
@@ -22,10 +23,6 @@ except ImportError:  # flat-folder layout
 MAX_BYTES = 1_000_000
 MAX_DEPTH = 32
 MAX_FIELDS = 100_000
-_STRUCTURED_TEXT = re.compile(
-    r"^\s*[A-Za-z_][\w.-]*\s*:\s*(?:$|[\[{\"'\d-]|true\b|false\b|null\b)",
-    re.IGNORECASE,
-)
 
 
 class _Pairs(list):
@@ -53,15 +50,73 @@ def _finite_float(token: str) -> float:
 
 
 def _parse_failure_status(raw: str) -> ParseStatus:
+    """INVALID_JSON = the payload tried to be JSON (object/array opener or a JSON
+    constant) and failed. Anything else - prose, "Key: value" text, YAML, CSV,
+    markdown, HTML, text starting with a quote - is NOT_JSON (another format)."""
     stripped = raw.strip()
     if (
-        not stripped
-        or stripped.startswith(("{", "[", '"', "'"))
+        not stripped                      # empty result: handled separately later (C1)
+        or stripped.startswith(("{", "["))
         or stripped in {"NaN", "Infinity", "-Infinity"}
-        or _STRUCTURED_TEXT.match(stripped)
     ):
         return ParseStatus.INVALID_JSON
     return ParseStatus.NOT_JSON
+
+
+def _repair(raw: str) -> str:
+    """Best-effort close of truncated JSON: drop trailing commas, close an open
+    string and any open brackets. Purely textual; never evaluates anything."""
+    out: list[str] = []
+    stack: list[str] = []
+    in_str = esc = False
+    for ch in raw:
+        if in_str:
+            out.append(ch)
+            if esc:
+                esc = False
+            elif ch == "\\":
+                esc = True
+            elif ch == '"':
+                in_str = False
+            continue
+        if ch == '"':
+            in_str = True
+        elif ch in "{[":
+            stack.append("}" if ch == "{" else "]")
+        elif ch in "}]":
+            while out and out[-1] in " \t\r\n,":
+                out.pop()
+            if stack:
+                stack.pop()
+        out.append(ch)
+    if in_str:
+        if esc:
+            out.pop()
+        out.append('"')
+    while out and out[-1] in " \t\r\n,":
+        out.pop()
+    if out and out[-1] == ":":
+        out.append("null")
+    return "".join(out) + "".join(reversed(stack))
+
+
+def _salvage(raw: str) -> Any | None:
+    """Recover a JSON tree from broken JSON so its fields can be scored.
+    Tries: Python literal (repr of a dict/list) -> repaired JSON. None if neither works."""
+    stripped = raw.strip()
+    if not stripped.startswith(("{", "[")):
+        return None
+    try:   # Python repr such as {'a': 1, 'b': None}; literal_eval is safe (no code execution)
+        obj = ast.literal_eval(stripped)
+        if isinstance(obj, (dict, list)):
+            return json.loads(json.dumps(obj, default=str), object_pairs_hook=_Pairs)
+    except (ValueError, TypeError, SyntaxError, MemoryError, RecursionError):
+        pass
+    try:
+        return json.loads(_repair(stripped), object_pairs_hook=_Pairs,
+                          parse_constant=lambda _: None, parse_float=float)
+    except (ValueError, RecursionError):
+        return None
 
 
 def _child_path(parent: str, key: str) -> str:
@@ -117,6 +172,7 @@ def parse(traffic: ToolTraffic) -> ParseResult:
     raw = payload_text(traffic).lstrip("\ufeff")   # a leading BOM is not an attack
     ctx = _Ctx()
     status = ParseStatus.OK
+    salvaged = False
 
     if len(raw.encode("utf-8", "ignore")) > MAX_BYTES:
         status = ParseStatus.TOO_LARGE
@@ -141,9 +197,19 @@ def parse(traffic: ToolTraffic) -> ParseResult:
         except ValueError as e:   # JSONDecodeError is a ValueError
             status = _parse_failure_status(raw)
             if status is ParseStatus.INVALID_JSON:
-                ctx.findings.append(Finding(kind="parse_failure", path="$", detail=f"{type(e).__name__}: {e}"))
+                tree = _salvage(raw)
+                if tree is not None:
+                    try:
+                        _walk(tree, "$", None, None, 0, ctx)
+                        salvaged = True
+                    except (_TooDeep, _TooManyFields, RecursionError):
+                        ctx.fields, ctx.boundaries = [], 0
+                        ctx.findings = [f for f in ctx.findings if f.kind != "duplicate_key"]
+                note = " (fields salvaged for scoring)" if salvaged else ""
+                ctx.findings.append(Finding(kind="parse_failure", path="$",
+                                            detail=f"{type(e).__name__}: {e}{note}"))
 
-    if status is not ParseStatus.OK:  # default-untrusted: one opaque string node
+    if status is not ParseStatus.OK and not salvaged:  # default-untrusted: one opaque string node
         ctx.fields = [ParsedField(path="$", key=None, parent_path=None, depth=0,
                                   value_type="string", value=raw)]
         ctx.boundaries = 1
