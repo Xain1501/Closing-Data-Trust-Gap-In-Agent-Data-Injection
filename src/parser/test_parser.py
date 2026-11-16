@@ -74,7 +74,7 @@ def test_too_large_sets_status():
     assert parse(T('"' + "a" * (MAX_BYTES + 10) + '"')).status is ParseStatus.TOO_LARGE
 
 
-@pytest.mark.parametrize("text", ["", "   ", '{"a":1,}', '{"a":1} // c', "{'a': 1}", '{"a":1}{"b":2}', "[1,2"])
+@pytest.mark.parametrize("text", ['{"a":1,}', '{"a":1} // c', "{'a': 1}", '{"a":1}{"b":2}', "[1,2"])
 def test_strict_json_only_everything_else_is_invalid(text):
     assert parse(T(text)).status is ParseStatus.INVALID_JSON
 

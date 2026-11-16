@@ -29,6 +29,7 @@ class ParseStatus(str, Enum):
     Untrusted by default (6.2) and the risk gate must read the status itself."""
     OK = "ok"
     NOT_JSON = "not_json"
+    EMPTY = "empty"                 # nothing returned: no content to inject (C1)
     INVALID_JSON = "invalid_json"
     TOO_LARGE = "too_large"
     TOO_DEEP = "too_deep"
@@ -98,6 +99,8 @@ class StructuralReport(BaseModel):
     hit_count: int = Field(ge=0)
     boundary_count: int = Field(ge=1)
     structural_score: float = Field(ge=0.0, le=1.0)
+    # distinct fields with >= 1 counted finding (JSON path only; dom/md reports leave 0)
+    forged_fields: int = Field(default=0, ge=0)
 
 
 # ------------------------------------------------- STAGE 2 (tagging) stub ----

@@ -55,8 +55,7 @@ def _parse_failure_status(raw: str) -> ParseStatus:
     markdown, HTML, text starting with a quote - is NOT_JSON (another format)."""
     stripped = raw.strip()
     if (
-        not stripped                      # empty result: handled separately later (C1)
-        or stripped.startswith(("{", "["))
+        stripped.startswith(("{", "["))
         or stripped in {"NaN", "Infinity", "-Infinity"}
     ):
         return ParseStatus.INVALID_JSON
@@ -174,7 +173,9 @@ def parse(traffic: ToolTraffic) -> ParseResult:
     status = ParseStatus.OK
     salvaged = False
 
-    if len(raw.encode("utf-8", "ignore")) > MAX_BYTES:
+    if not raw.strip():                            # empty / whitespace-only result (C1)
+        status = ParseStatus.EMPTY
+    elif len(raw.encode("utf-8", "ignore")) > MAX_BYTES:
         status = ParseStatus.TOO_LARGE
         ctx.findings.append(Finding(kind="payload_too_large", path="$", detail=f"> {MAX_BYTES} bytes"))
         raw = raw[:MAX_BYTES]

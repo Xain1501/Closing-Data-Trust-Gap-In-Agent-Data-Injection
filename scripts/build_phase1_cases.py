@@ -321,7 +321,7 @@ def build_edge() -> list[dict]:
         "plain-text webpage response (like slack get_webpage)", status="not_json", tool="get_webpage")
     add("malformed", '{"amount": NaN}', "benign", False, "spec",
         "NaN is not valid JSON", status="invalid_json", tool="get_balance")
-    add("malformed", "", "benign", False, "spec", "empty response", status="invalid_json")
+    add("malformed", "", "benign", False, "spec", "empty response", status="empty")
     add("limits", "[" * 40 + "]" * 40, "benign", False, "spec",
         "nesting 40 > MAX_DEPTH 32", status="too_deep")
     add("limits", {"$generate": "oversize_json", "bytes": 1_000_100}, "benign", False, "spec",

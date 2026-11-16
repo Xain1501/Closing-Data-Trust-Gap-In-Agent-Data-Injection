@@ -92,7 +92,7 @@ def analyze(traffic: ToolTraffic, fmt: str = "json", min_hits: int = 1,
         )
         rep = structural_flags(res, schema_findings=schema_findings)
         text_schema_ok = status == "not_json" and schema is not None and not schema_findings
-        if status != "ok" and not text_schema_ok:
+        if status not in ("ok", "empty") and not text_schema_ok:
             return Stage1Result("untrusted_default", status, rep,
                                 [f"payload did not parse ({status}); untrusted by default"])
     else:

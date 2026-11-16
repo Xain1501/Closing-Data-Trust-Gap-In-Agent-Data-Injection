@@ -85,9 +85,18 @@ def test_forgery_rules_fire_on_every_non_ok_format(text, status):
     assert s.hit_count > 0
 
 
-def test_empty_result_still_invalid_until_c1_decided():
-    # C1: empty tool output handling is a separate, pending change.
-    assert run("")[0].status is ParseStatus.INVALID_JSON
+@pytest.mark.parametrize("text", ["", "   ", "\n\t", "﻿"])
+def test_empty_result_has_its_own_status_and_no_findings(text):
+    # C1: an empty tool result is not broken JSON; there is nothing to inject.
+    r, s = run(text)
+    assert r.status is ParseStatus.EMPTY and s.hit_count == 0 and not r.findings
+
+
+def test_empty_result_is_usable_on_the_live_path():
+    from clone.core import DetectorContext
+    from pipeline.parser_analysis import analyze_clone_payload
+    ctx = DetectorContext(direction="post", tool_name="t", tool_call_id="1", matrix_entry=None)
+    assert analyze_clone_payload("", ctx).usable
 
 
 @pytest.mark.parametrize("text", ["[" * 40 + "]" * 40])

@@ -22,7 +22,7 @@ class ParserAnalysis:
 
     @property
     def usable(self) -> bool:
-        if self.parsed.status is ParseStatus.OK:
+        if self.parsed.status in (ParseStatus.OK, ParseStatus.EMPTY):   # empty: nothing to inject
             return True
         # Plain text is accepted only when a trusted, direction-specific schema
         # explicitly validates it (for example, a tool whose return type is str).

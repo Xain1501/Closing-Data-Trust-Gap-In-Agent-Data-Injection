@@ -91,6 +91,14 @@ def _loc_to_path(loc: tuple[Any, ...]) -> str:
     return p
 
 
+def _accepts(adapter: TypeAdapter, value: Any) -> bool:
+    try:
+        adapter.validate_python(value)
+    except ValidationError:
+        return False
+    return True
+
+
 def check_schema(traffic: ToolTraffic, expected: Any) -> list[Finding]:
     """Validate against a trusted Pydantic model/type for this tool direction.
 
@@ -100,23 +108,21 @@ def check_schema(traffic: ToolTraffic, expected: Any) -> list[Finding]:
     """
     out: list[Finding] = []
     raw = payload_text(traffic).lstrip("\ufeff")
+    adapter = TypeAdapter(expected)
     try:
         value = json.loads(raw)
-    except ValidationError as e:
-        for err in e.errors():
-            kind = "unexpected_key" if err["type"] == "extra_forbidden" else "schema_violation"
-            detail = "key not in the tool's expected schema" if kind == "unexpected_key" else err["msg"]
-            out.append(Finding(kind=kind, path=_loc_to_path(err["loc"]), detail=detail))   # type: ignore[arg-type]
-        return out
     except ValueError:
         # Some AgentDojo tools return plain strings rather than JSON values.
         # Accept non-JSON only when the declared return type actually accepts
         # the raw string (e.g. str or Literal[str]); structured schemas fail.
-        try:
-            TypeAdapter(expected).validate_python(raw)
-        except ValidationError:
+        # A tool returning None is formatted as the text "None".
+        if not _accepts(adapter, raw) and not (raw.strip() == "None" and _accepts(adapter, None)):
             out.append(Finding(kind="schema_violation", path="$",
                                detail="tool result is not valid JSON for its registered schema"))
+        return out
+    if not isinstance(value, (dict, list)) and _accepts(adapter, raw):
+        # Text that merely looks like a JSON scalar ("5", "true", "null") from a
+        # tool whose declared return type is str: the raw text is the value.
         return out
 
     expected_fields = getattr(expected, "model_fields", None)
@@ -125,7 +131,7 @@ def check_schema(traffic: ToolTraffic, expected: Any) -> list[Finding]:
             out.append(Finding(kind="unexpected_key", path=_child_path("$", key),
                                detail="key not in the tool's expected schema"))
     try:
-        TypeAdapter(expected).validate_python(value)
+        adapter.validate_python(value)
     except ValidationError as e:
         for err in e.errors():
             if err["type"] == "extra_forbidden":
@@ -135,11 +141,19 @@ def check_schema(traffic: ToolTraffic, expected: Any) -> list[Finding]:
     return out
 
 
+def _field_of(path: str) -> str:
+    """Finding path -> the field it belongs to ('$.a#key' and '$.a#2' are field '$.a')."""
+    return path.split("#", 1)[0]
+
+
 def structural_flags(result: ParseResult, schema_findings: Sequence[Finding] = ()) -> StructuralReport:
-    """S = min(1, counted hits / boundaries). Scored for OK, NOT_JSON and
-    INVALID_JSON (broken JSON is scanned as one raw string, so an attack hidden in
-    it still produces findings; the status keeps it untrusted). Limit statuses
-    (too large / too deep / too many fields) get S = 0."""
+    """S = min(1, forged fields / string fields)   (policy research 10.1).
+
+    A field with several rule hits counts once, so the same forgery scores the
+    same whether it sits inside JSON or arrives as plain text (one field).
+    S is a density heuristic, not a probability; hit_count still lists every hit.
+    Scored for OK, NOT_JSON and INVALID_JSON (broken JSON is salvaged into fields
+    when possible; the status keeps it untrusted). Limit statuses get S = 0."""
     if result.status not in (ParseStatus.OK, ParseStatus.NOT_JSON, ParseStatus.INVALID_JSON):
         return StructuralReport(findings=[], uncounted_findings=[], hit_count=0,
                                 boundary_count=result.boundary_count, structural_score=0.0)
@@ -154,8 +168,11 @@ def structural_flags(result: ParseResult, schema_findings: Sequence[Finding] = (
     for sf in schema_findings:
         (counted if sf.kind == "unexpected_key" else weak).append(sf)
 
+    forged = len({_field_of(f.path) for f in counted})
+    string_fields = sum(1 for f in result.fields if f.value_type == "string")
     return StructuralReport(
         findings=counted, uncounted_findings=weak, hit_count=len(counted),
         boundary_count=result.boundary_count,
-        structural_score=min(1.0, len(counted) / result.boundary_count),
+        structural_score=min(1.0, forged / max(1, string_fields)),
+        forged_fields=forged,
     )
