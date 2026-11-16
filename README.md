@@ -36,7 +36,10 @@ from the repository root in PowerShell:
 AgentDojo is installed editable from this repository. `--no-deps` avoids
 `llamafirewall`'s Semgrep dependency, which does not support native Windows;
 the interception code and static tests do not use that optional firewall.
-`requirements.txt` supplies the Cohere import required by AgentDojo's pipeline.
+Because of `--no-deps`, `requirements.txt` pins every package the detector, the
+tests and the vendored AgentDojo task suites need (Python 3.13). Everyone on the
+team installs from it, so all machines run the same versions. If a new import is
+added, pin it there in the same commit.
 Use this same venv for the static tests:
 
 ```powershell

@@ -1,2 +1,40 @@
-cohere>=5.3.4
-scikit-learn>=1.5,<2
+# One pinned environment for the whole team (Python 3.13).
+#
+#   python -m pip install -r requirements.txt
+#   python -m pip install --no-deps -e ./agentdojo
+#
+# AgentDojo is installed with --no-deps because its `llamafirewall` dependency
+# pulls in Semgrep, which does not support native Windows. Everything AgentDojo
+# needs to load its task suites and run the clone is therefore pinned here.
+# Not included (optional, unused by the detector): llamafirewall, pydantic-ai,
+# tiktoken, vertexai, mistralai, torch, transformers.
+
+# --- detector (src/) ---
+pydantic[email]==2.12.5
+email-validator==2.4.0
+scikit-learn==1.9.1
+numpy==2.5.4
+scipy==1.18.1
+joblib==1.6.0
+
+# --- tests ---
+pytest==9.0.2
+
+# --- vendored AgentDojo: task suites and tool runtime ---
+langchain-core==1.8.1
+langgraph==1.2.22
+deepdiff==9.1.0
+PyYAML==6.0.3
+docstring_parser==0.17.0
+tenacity==9.1.2
+typing_extensions==4.15.0
+click==8.5.0
+rich==14.2.0
+python-dotenv==1.2.1
+requests==2.32.5
+
+# --- vendored AgentDojo: LLM clients (imported by the pipeline; needed for live runs) ---
+openai==2.15.0
+anthropic==0.75.0
+cohere==7.2.0
+google-genai==1.55.0
