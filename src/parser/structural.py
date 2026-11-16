@@ -19,7 +19,8 @@ import json
 import re
 import unicodedata
 from collections.abc import Sequence
-from typing import Any
+from types import UnionType
+from typing import Annotated, Any, Union, get_args, get_origin
 from urllib.parse import unquote
 
 from pydantic import TypeAdapter, ValidationError
@@ -44,14 +45,20 @@ _COUNTED: dict[str, re.Pattern[str]] = {
     "array_close_object": re.compile(r"[\]\uff3d]\s*[}\uff5d]"),                       # ]}
     # forged key:value pair with ANY quote look-alike, optionally backslash-escaped
     "kv_forgery": re.compile(
-        rf"\\?[{_QK}]\s*[\w\-. ]{{1,40}}?\s*\\?[{_QK}]\s*[:\uff1a]\s*(?:\\?[{_QK}]|[{{\[\d-]|true|false|null)"),
+        rf"\\?[{_QK}]\s*[\w\-. ]{{1,40}}?\s*\\?[{_QK}]\s*[:\uff1a]\s*(?:\\?[{_QK}]|[{{\[\d-]|(?:true|false|null)\b)"),
 }
+# A string closed and a new string opened:  0", "students
+# Inside prose this is ordinary ("yes", "no"), so it is COUNTED only when the
+# string is an element of a JSON array (the forgery splits one item into two);
+# anywhere else it is logged as a weak signal.
+_ELEMENT_SPLIT = re.compile(rf"[{_Q}]\s*[,，]\s*[{_Q}]")
 # NOT counted: plausible in benign content
 _WEAK: dict[str, re.Pattern[str]] = {
     "code_fence": re.compile(r"```"),
     "chat_template_token": re.compile(r"<\|[a-z_]+\|>|\[/?INST\]|</?(?:system|tool_response|function_results)>", re.I),
 }
 
+_MAX_FINDINGS = 1_000
 _INVISIBLE = re.compile("[\u200b-\u200f\u202a-\u202e\u2060-\u2064\ufeff\u00ad]")
 
 
@@ -66,8 +73,18 @@ def _variants(s: str) -> list[str]:
     return [s] if t == s else [s, t]
 
 
-def _scan_string(s: str, path: str, counted: list[Finding], weak: list[Finding]) -> None:
+def _scan_string(s: str, path: str, counted: list[Finding], weak: list[Finding],
+                 array_element: bool = False) -> None:
     variants = _variants(s)
+    for v in variants:
+        if m := _ELEMENT_SPLIT.search(v):
+            if array_element:
+                counted.append(Finding(kind="illegal_delimiter", path=path,
+                                       detail=f"array_element_split: {m.group(0)!r}"))
+            else:
+                weak.append(Finding(kind="weak_signal", path=path,
+                                    detail=f"quote_comma_quote: {m.group(0)!r}"))
+            break
     for table, out, kind in ((_COUNTED, counted, "illegal_delimiter"), (_WEAK, weak, "weak_signal")):
         for name, pat in table.items():
             for v in variants:
@@ -99,6 +116,44 @@ def _accepts(adapter: TypeAdapter, value: Any) -> bool:
     return True
 
 
+def _unexpected_keys(value: Any, annotation: Any, path: str, out: list[Finding], depth: int = 0) -> None:
+    """Report keys the schema does not declare, at EVERY nesting level, in sorted order.
+
+    Follows nested models, list/tuple/set items, dict values and Optional members.
+    Sorted so the finding order does not depend on PYTHONHASHSEED."""
+    if depth > 64 or len(out) >= _MAX_FINDINGS:
+        return
+    origin, args = get_origin(annotation), get_args(annotation)
+    if origin in (Union, UnionType):
+        members = [a for a in args if a is not type(None)]
+        if len(members) == 1:                      # Optional[X] / X | None
+            _unexpected_keys(value, members[0], path, out, depth)
+        return
+    if origin is Annotated:
+        _unexpected_keys(value, args[0], path, out, depth)
+        return
+    fields = getattr(annotation, "model_fields", None)
+    if fields is not None and isinstance(value, dict):
+        known: dict[str, Any] = {}
+        for name, info in fields.items():
+            known[name] = info.annotation
+            if info.alias:
+                known[info.alias] = info.annotation
+        for key in sorted(value):
+            child = _child_path(path, key)
+            if key in known:
+                _unexpected_keys(value[key], known[key], child, out, depth + 1)
+            else:
+                out.append(Finding(kind="unexpected_key", path=child,
+                                   detail="key not in the tool's expected schema"))
+    elif origin in (list, tuple, set, frozenset) and isinstance(value, list) and args:
+        for i, item in enumerate(value):
+            _unexpected_keys(item, args[0], f"{path}[{i}]", out, depth + 1)
+    elif origin is dict and isinstance(value, dict) and len(args) == 2:
+        for key in sorted(value):
+            _unexpected_keys(value[key], args[1], _child_path(path, key), out, depth + 1)
+
+
 def check_schema(traffic: ToolTraffic, expected: Any) -> list[Finding]:
     """Validate against a trusted Pydantic model/type for this tool direction.
 
@@ -125,17 +180,13 @@ def check_schema(traffic: ToolTraffic, expected: Any) -> list[Finding]:
         # tool whose declared return type is str: the raw text is the value.
         return out
 
-    expected_fields = getattr(expected, "model_fields", None)
-    if isinstance(value, dict) and expected_fields is not None:
-        for key in value.keys() - expected_fields.keys():
-            out.append(Finding(kind="unexpected_key", path=_child_path("$", key),
-                               detail="key not in the tool's expected schema"))
+    _unexpected_keys(value, expected, "$", out)
     try:
         adapter.validate_python(value)
     except ValidationError as e:
         for err in e.errors():
             if err["type"] == "extra_forbidden":
-                continue  # already reported above when it is a top-level field
+                continue  # reported by _unexpected_keys at every nesting level
             out.append(Finding(kind="schema_violation", path=_loc_to_path(err["loc"]),
                                detail=err["msg"]))
     return out
@@ -161,8 +212,11 @@ def structural_flags(result: ParseResult, schema_findings: Sequence[Finding] = (
     counted = [f for f in result.findings if f.kind == "duplicate_key"]
     weak: list[Finding] = []
     for f in result.fields:
+        if len(counted) >= _MAX_FINDINGS:                 # a flood adds no evidence
+            break
         if f.value_type == "string" and isinstance(f.value, str):
-            _scan_string(f.value, f.path, counted, weak)
+            _scan_string(f.value, f.path, counted, weak,
+                         array_element=f.key is None and f.parent_path is not None)
         if f.key:                                         # attacker-controlled key names too
             _scan_string(f.key, f"{f.path}#key", counted, weak)
     for sf in schema_findings:

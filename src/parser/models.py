@@ -89,6 +89,9 @@ class ParseResult(BaseModel):
     fields: list[ParsedField]
     findings: list[Finding]          # parse-level facts only
     boundary_count: int = Field(ge=1)   # containers + keys (denominator for S)
+    # INVALID_JSON only: how fields were recovered. "repr" = Python literal (dict/list repr),
+    # "repaired" = truncated JSON closed by guesswork, None = not recovered (one opaque blob).
+    salvage: Literal["repr", "repaired"] | None = None
 
 
 # ---------------------------------------- STAGE 1b: structural flag output ----

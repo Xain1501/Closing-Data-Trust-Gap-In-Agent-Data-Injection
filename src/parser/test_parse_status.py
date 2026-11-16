@@ -92,11 +92,11 @@ def test_empty_result_has_its_own_status_and_no_findings(text):
     assert r.status is ParseStatus.EMPTY and s.hit_count == 0 and not r.findings
 
 
-def test_empty_result_is_usable_on_the_live_path():
+def test_empty_result_is_allowed_on_the_live_path():
     from clone.core import DetectorContext
-    from pipeline.parser_analysis import analyze_clone_payload
+    from pipeline.clone_parser_detector import parser_detector
     ctx = DetectorContext(direction="post", tool_name="t", tool_call_id="1", matrix_entry=None)
-    assert analyze_clone_payload("", ctx).usable
+    assert parser_detector("", ctx).allowed
 
 
 @pytest.mark.parametrize("text", ["[" * 40 + "]" * 40])

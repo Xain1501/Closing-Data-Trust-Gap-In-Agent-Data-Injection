@@ -40,13 +40,17 @@ try:
 except ImportError:  # flat-folder layout
     from models import Finding, StructuralReport
 
-_OPEN_TAG = re.compile(r"<([A-Za-z][\w:-]*)")           # opening tags only, not </x>
+# opening tags only, not </x>; the name must end the tag or be followed by attributes,
+# so autolinks such as <https://x.y> and <admin@site.com> are not elements
+_OPEN_TAG = re.compile(r"<([A-Za-z][\w:-]*)(?=[\s>]|/>|$)")
 # allowed stuff before a real element on its line:
 #   3->  |SCROLL|  tabs  *  [idx]  *  (x,y)
 _OK_PREFIX = re.compile(
     r"^(?:\d+(?:\u2192|\u00e2\u2020\u2019))?"          # line-number prefix "3->" (or its mojibake)
-    r"(?:\|\w+\|)?(?:\\t|\s)*\*?(?:\[\w+\])?\*?\s*"
-    r"(?:\(\s*-?\d+\s*,\s*-?\d+\s*\))?\s*$"
+    # possessive quantifiers (*+): adjacent whitespace runs must not backtrack into
+    # each other, or a long run of spaces takes cubic time (ReDoS)
+    r"(?:\|\w+\|)?(?:\\t|\s)*+\*?(?:\[\w+\])?\*?\s*+"
+    r"(?:\(\s*+-?\d+\s*+,\s*+-?\d+\s*+\))?\s*+$"
 )
 _REF = re.compile(r"\[(ref_\w+)\]")                      # accessibility-tree reference id
 

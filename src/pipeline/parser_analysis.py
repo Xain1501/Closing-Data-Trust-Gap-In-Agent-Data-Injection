@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Literal
 
 from clone.core import DetectorContext
 from clone.ledger import DetectorPayload
@@ -11,6 +11,7 @@ from parser.parser import parse
 from parser.schema_registry import ToolSchemaRegistry
 from parser.structural import structural_flags
 
+ParseHealth = Literal["clean", "salvaged_repr", "salvaged_repaired", "uninspectable"]
 
 @dataclass(frozen=True)
 class ParserAnalysis:
@@ -20,18 +21,28 @@ class ParserAnalysis:
     schema_registered: bool
     schema_invalid: bool
 
+    # The parser reports EVIDENCE; it does not gate. pipeline/decision.py decides.
     @property
-    def usable(self) -> bool:
-        if self.parsed.status in (ParseStatus.OK, ParseStatus.EMPTY):   # empty: nothing to inject
-            return True
-        # Plain text is accepted only when a trusted, direction-specific schema
-        # explicitly validates it (for example, a tool whose return type is str).
-        # Without that contract, NOT_JSON is an opaque untrusted payload.
-        return (
-            self.parsed.status is ParseStatus.NOT_JSON
-            and self.schema_registered
-            and not self.schema_invalid
-        )
+    def parse_health(self) -> ParseHealth:
+        """How well the payload could be read.
+
+        clean             - ok / empty / not_json: every field was scanned as written
+        salvaged_repr     - invalid_json that is a Python literal (dict/list repr): fields recovered exactly
+        salvaged_repaired - truncated JSON closed by guesswork: fields are a best guess
+        uninspectable     - nothing could be read (too large / deep / many fields, unsalvageable JSON)
+        """
+        status = self.parsed.status
+        if status in (ParseStatus.OK, ParseStatus.EMPTY, ParseStatus.NOT_JSON):
+            return "clean"
+        if status is ParseStatus.INVALID_JSON and self.parsed.salvage == "repr":
+            return "salvaged_repr"
+        if status is ParseStatus.INVALID_JSON and self.parsed.salvage == "repaired":
+            return "salvaged_repaired"
+        return "uninspectable"
+
+    @property
+    def inspectable(self) -> bool:
+        return self.parse_health != "uninspectable"
 
 
 def analyze_clone_payload(payload: DetectorPayload, context: DetectorContext) -> ParserAnalysis:

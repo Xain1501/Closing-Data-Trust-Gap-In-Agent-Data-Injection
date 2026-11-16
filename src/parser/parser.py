@@ -23,6 +23,7 @@ except ImportError:  # flat-folder layout
 MAX_BYTES = 1_000_000
 MAX_DEPTH = 32
 MAX_FIELDS = 100_000
+MAX_FINDINGS = 1_000     # cap on Finding objects per payload (a flood adds no evidence)
 
 
 class _Pairs(list):
@@ -99,21 +100,22 @@ def _repair(raw: str) -> str:
     return "".join(out) + "".join(reversed(stack))
 
 
-def _salvage(raw: str) -> Any | None:
+def _salvage(raw: str) -> tuple[Any, str] | None:
     """Recover a JSON tree from broken JSON so its fields can be scored.
-    Tries: Python literal (repr of a dict/list) -> repaired JSON. None if neither works."""
+    Tries: Python literal (repr of a dict/list) -> repaired JSON.
+    Returns (tree, "repr" | "repaired"), or None if neither works."""
     stripped = raw.strip()
     if not stripped.startswith(("{", "[")):
         return None
     try:   # Python repr such as {'a': 1, 'b': None}; literal_eval is safe (no code execution)
         obj = ast.literal_eval(stripped)
         if isinstance(obj, (dict, list)):
-            return json.loads(json.dumps(obj, default=str), object_pairs_hook=_Pairs)
+            return json.loads(json.dumps(obj, default=str), object_pairs_hook=_Pairs), "repr"
     except (ValueError, TypeError, SyntaxError, MemoryError, RecursionError):
         pass
     try:
         return json.loads(_repair(stripped), object_pairs_hook=_Pairs,
-                          parse_constant=lambda _: None, parse_float=float)
+                          parse_constant=lambda _: None, parse_float=float), "repaired"
     except (ValueError, RecursionError):
         return None
 
@@ -133,6 +135,10 @@ class _Ctx:
         self.findings: list[Finding] = []
         self.boundaries = 0    # containers + keys
 
+    def add_finding(self, finding: Finding) -> None:
+        if len(self.findings) < MAX_FINDINGS:
+            self.findings.append(finding)
+
     def add_field(self, field: ParsedField) -> None:
         if len(self.fields) >= MAX_FIELDS:
             raise _TooManyFields
@@ -151,10 +157,13 @@ def _walk(node: Any, path: str, parent: str | None, key: str | None, depth: int,
             n = counts[k] = counts.get(k, 0) + 1
             base = _child_path(path, k)
             if n > 1:
-                ctx.findings.append(Finding(kind="duplicate_key", path=base, detail=f"key {k!r} appears {n} times"))
                 base = f"{base}#{n}"
             ctx.boundaries += 1
             _walk(v, base, path, k, depth + 1, ctx)
+        for k, n in counts.items():            # one finding per duplicated key, with its count
+            if n > 1:
+                ctx.add_finding(Finding(kind="duplicate_key", path=_child_path(path, k),
+                                        detail=f"key {k!r} appears {n} times"))
     elif isinstance(node, list):
         ctx.boundaries += 1
         ctx.add_field(ParsedField(path=path, key=key, parent_path=parent, depth=depth, value_type="array"))
@@ -171,14 +180,14 @@ def parse(traffic: ToolTraffic) -> ParseResult:
     raw = payload_text(traffic).lstrip("\ufeff")   # a leading BOM is not an attack
     ctx = _Ctx()
     status = ParseStatus.OK
-    salvaged = False
+    salvaged: str | None = None
 
     if not raw.strip():                            # empty / whitespace-only result (C1)
         status = ParseStatus.EMPTY
     elif len(raw.encode("utf-8", "ignore")) > MAX_BYTES:
         status = ParseStatus.TOO_LARGE
         ctx.findings.append(Finding(kind="payload_too_large", path="$", detail=f"> {MAX_BYTES} bytes"))
-        raw = raw[:MAX_BYTES]
+        raw = raw.encode("utf-8", "ignore")[:MAX_BYTES].decode("utf-8", "ignore")   # cut BYTES, not chars
     else:
         try:
             tree = json.loads(
@@ -198,11 +207,11 @@ def parse(traffic: ToolTraffic) -> ParseResult:
         except ValueError as e:   # JSONDecodeError is a ValueError
             status = _parse_failure_status(raw)
             if status is ParseStatus.INVALID_JSON:
-                tree = _salvage(raw)
-                if tree is not None:
+                recovered = _salvage(raw)
+                if recovered is not None:
                     try:
-                        _walk(tree, "$", None, None, 0, ctx)
-                        salvaged = True
+                        _walk(recovered[0], "$", None, None, 0, ctx)
+                        salvaged = recovered[1]
                     except (_TooDeep, _TooManyFields, RecursionError):
                         ctx.fields, ctx.boundaries = [], 0
                         ctx.findings = [f for f in ctx.findings if f.kind != "duplicate_key"]
@@ -219,5 +228,5 @@ def parse(traffic: ToolTraffic) -> ParseResult:
         internal_id=traffic.internal_id, direction=traffic.direction,
         tool_name=traffic.tool_name, tool_call_id=traffic.tool_call_id,
         status=status, fields=ctx.fields, findings=ctx.findings,
-        boundary_count=max(1, ctx.boundaries),
+        boundary_count=max(1, ctx.boundaries), salvage=salvaged,
     )

@@ -1047,7 +1047,8 @@ def test_parser_detector_requires_context() -> None:
         parser_detector({"tool": "record", "args": {"value": "ordinary"}})
 
 
-def test_parser_detector_blocks_post_hop_prose_without_trusted_schema() -> None:
+def test_parser_detector_allows_clean_post_hop_prose_without_schema() -> None:
+    # Parser is evidence, not a gate: inspectable text with no findings is allowed.
     parser_detector = pytest.importorskip(
         "pipeline.clone_parser_detector"
     ).parser_detector
@@ -1056,8 +1057,8 @@ def test_parser_detector_blocks_post_hop_prose_without_trusted_schema() -> None:
 
     prose = parser_detector("ordinary tool response", context)
 
-    assert prose.allowed is False
-    assert prose.label == "parser-untrusted"
+    assert prose.allowed is True
+    assert prose.label == "no-adi-detected"
     assert prose.score == 0.0
     assert prose.contains_adi is False
 
@@ -1089,7 +1090,7 @@ def test_parser_detector_blocks_plain_prose_with_delimiter_injection() -> None:
     )
 
     assert injected.allowed is False
-    assert injected.label == "parser-untrusted"
+    assert injected.label == "adi-detected"
     assert injected.score is not None and injected.score > 0
     assert injected.contains_adi is True
 

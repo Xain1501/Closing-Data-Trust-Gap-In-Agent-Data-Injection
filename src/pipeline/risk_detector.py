@@ -7,6 +7,7 @@ from clone.core import DetectorContext, DetectorDecision
 from clone.ledger import DetectorPayload
 from pipeline.classifier_gate import classify_and_assess
 from pipeline.evidence_panel import EvidencePanel
+from pipeline.decision import decide
 from pipeline.parser_analysis import analyze_clone_payload
 from pipeline.risk_gate import RiskAssessment, resolve_review
 from trust_graph import build_trust_graph, tag_fields
@@ -32,12 +33,12 @@ def make_risk_detector(
             raise ValueError("Risk detector requires interception context.")
         analysis = analyze_clone_payload(payload, context)
         base_contains_adi = analysis.structural.hit_count > 0
-        if not analysis.usable:
-            return DetectorDecision(False, "parser-untrusted", analysis.structural.structural_score,
-                                    f"Parser status: {analysis.parsed.status.value}.", base_contains_adi)
-        if analysis.schema_invalid:
-            return DetectorDecision(False, "schema-violation", analysis.structural.structural_score,
-                                    "Tool schema validation failed.", base_contains_adi)
+        # Hard blocks come from the shared decision layer; structural findings on
+        # inspectable content go on to the classifier/risk stages instead.
+        verdict = decide(analysis)
+        if verdict.label in ("parser-untrusted", "schema-violation"):
+            return DetectorDecision(False, verdict.label, analysis.structural.structural_score,
+                                    verdict.reason, base_contains_adi)
         report = analysis.structural
         if context.matrix_entry.impact_tier not in (1, 5, 10):
             return DetectorDecision(False, "risk-unclassified", report.structural_score,
