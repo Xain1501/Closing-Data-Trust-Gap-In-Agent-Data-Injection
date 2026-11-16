@@ -21,4 +21,8 @@ def parser_detector(
         score=analysis.structural.structural_score,
         reason=verdict.reason,
         contains_adi=verdict.contains_adi,
+        forgery_found=verdict.contains_adi,
+        schema_ok=analysis.schema_ok,
+        parse_health=analysis.parse_health,
+        decided_by="parser",
     )

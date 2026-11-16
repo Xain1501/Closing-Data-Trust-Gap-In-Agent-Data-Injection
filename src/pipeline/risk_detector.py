@@ -33,16 +33,19 @@ def make_risk_detector(
             raise ValueError("Risk detector requires interception context.")
         analysis = analyze_clone_payload(payload, context)
         base_contains_adi = analysis.structural.hit_count > 0
+        evidence = {"forgery_found": base_contains_adi, "schema_ok": analysis.schema_ok,
+                    "parse_health": analysis.parse_health}
         # Hard blocks come from the shared decision layer; structural findings on
         # inspectable content go on to the classifier/risk stages instead.
         verdict = decide(analysis)
         if verdict.label in ("parser-untrusted", "schema-violation"):
             return DetectorDecision(False, verdict.label, analysis.structural.structural_score,
-                                    verdict.reason, base_contains_adi)
+                                    verdict.reason, base_contains_adi, decided_by="parser", **evidence)
         report = analysis.structural
         if context.matrix_entry.impact_tier not in (1, 5, 10):
             return DetectorDecision(False, "risk-unclassified", report.structural_score,
-                                    "Trusted impact tier is unavailable.", base_contains_adi)
+                                    "Trusted impact tier is unavailable.", base_contains_adi,
+                                    decided_by="matrix", **evidence)
 
         tagged = tag_fields(analysis.parsed, dict(context.matrix_entry.field_trust_classes))
         graph = build_trust_graph(tagged, report.findings)
@@ -88,7 +91,7 @@ def make_risk_detector(
             )
         except ValueError as exc:
             return DetectorDecision(False, "review-invalid", assessment.risk_score,
-                                    str(exc), base_contains_adi)
+                                    str(exc), base_contains_adi, decided_by="review", **evidence)
 
         allowed = resolution.execute_tool if context.direction == "pre" else resolution.release_raw_content
         label = f"risk-{assessment.tier}"
@@ -105,7 +108,10 @@ def make_risk_detector(
             label=label,
             score=assessment.risk_score,
             reason=reason,
-            contains_adi=base_contains_adi or result.classifier.predicted_label == "attack",
+            # contains_adi means forged structure only; the classifier's view is in label/score.
+            contains_adi=base_contains_adi,
+            decided_by="risk",
+            **evidence,
         )
 
     detector.__name__ = "risk_detector"

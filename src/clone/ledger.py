@@ -3,18 +3,21 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping
 from copy import deepcopy
 from dataclasses import asdict, dataclass, replace
-from hashlib import sha256
+from hashlib import sha256  # noqa: F401  (entry hashing below)
 import json
+import math
 from pathlib import Path
 from threading import Lock
 from time import time
 from typing import Any, Literal
 from uuid import uuid4
 
+from clone.canonical import canonical_json, text_sha256
+
 Phase = Literal["pre", "post"]
 DetectorPayload = dict[str, Any] | str
 _GENESIS_ENTRY_SHA256 = "0" * 64
-_ENTRY_SCHEMA_VERSION = 1
+_ENTRY_SCHEMA_VERSION = 2   # v2: forgery_found, schema_ok, parse_health, decided_by
 
 
 @dataclass
@@ -47,6 +50,11 @@ class InterceptionRecord:
     prev_entry_sha256: str | None = None
     entry_sha256: str | None = None
     entry_schema_version: int | None = None
+    # Evidence, logged separately so statistics are not mixed (scope section 8):
+    forgery_found: bool | None = None     # counted structural findings (same meaning as contains_adi)
+    schema_ok: bool | None = None         # None = no schema was checked
+    parse_health: str | None = None       # clean | salvaged_repr | salvaged_repaired | uninspectable
+    decided_by: str | None = None         # who produced the outcome: detector name/stage, "matrix", "detector-error", "policy"
 
 
 @dataclass(frozen=True)
@@ -81,6 +89,11 @@ class LedgerEntry:
     prev_entry_sha256: str | None = None
     entry_sha256: str | None = None
     entry_schema_version: int | None = None
+    # Evidence, logged separately so statistics are not mixed (scope section 8):
+    forgery_found: bool | None = None     # counted structural findings (same meaning as contains_adi)
+    schema_ok: bool | None = None         # None = no schema was checked
+    parse_health: str | None = None       # clean | salvaged_repr | salvaged_repaired | uninspectable
+    decided_by: str | None = None         # who produced the outcome: detector name/stage, "matrix", "detector-error", "policy"
 
 
 @dataclass(frozen=True)
@@ -96,9 +109,14 @@ class InterceptionLedger:
     """Thread-safe trace of intercepted tool inputs, observations, and state changes."""
 
     def __init__(self, storage_dir: str | Path | None = None) -> None:
-        """Create an in-memory ledger, optionally snapshotting it to JSONL.
+        """Create an in-memory ledger, optionally persisting it to JSONL.
 
-        Raw payload persistence is opt-in because captured tool data may be private.
+        With ``storage_dir`` set, ``ledger.jsonl`` and ``raw-payloads.jsonl`` are
+        APPENDED to (one line per event / per captured payload), so the cost of a
+        run grows linearly. Raw payloads are written whenever ``storage_dir`` is
+        set; captured tool data may be private. A payload's final label is in
+        ``ledger.jsonl`` (and in ``export_raw_payloads``); the appended raw row
+        is written at capture time, before any label exists.
         """
         self.records: list[InterceptionRecord] = []
         self.ledger: list[LedgerEntry] = []
@@ -110,13 +128,16 @@ class InterceptionLedger:
         self._run_metadata: dict[str, dict[str, Any]] = {}
         self._event_seq = 0
         self.storage_dir = Path(storage_dir) if storage_dir is not None else None
+        self._persisted_entries = 0
+        self._persisted_payloads = 0
+        self._files_started = False
 
     def set_run_metadata(self, run_id: str, mapping: Mapping[str, Any]) -> None:
         if not isinstance(mapping, Mapping):
             raise TypeError("Run metadata must be a mapping.")
         with self._lock:
             self._run_metadata[run_id] = deepcopy(dict(mapping))
-            self._persist_locked()
+            self._persist_metadata_locked()
 
     def capture(
         self,
@@ -136,7 +157,13 @@ class InterceptionLedger:
         matrix_schema_version: int | None = None,
         matrix_sha256: str | None = None,
     ) -> InterceptionRecord:
-        payload_hash = _payload_hash(phase, payload)
+        # Pre-hop payloads are frozen into their canonical JSON text here, once.
+        # That text is what is hashed, stored and (decoded) inspected.
+        if not isinstance(payload, str):
+            if phase == "post":
+                raise TypeError("Post-hop payloads must be strings.")
+            payload = canonical_json(payload)
+        payload_hash = text_sha256(payload)
         with self._lock:
             seq = self._seq_by_run.get(run_id, 0) + 1
             self._seq_by_run[run_id] = seq
@@ -162,7 +189,7 @@ class InterceptionLedger:
             self._records_by_id[record.interception_id] = record
             self._raw_payload_index[record.interception_id] = len(self.raw_payloads)
             self.raw_payloads.append(
-                RawPayload(run_id, record.interception_id, phase, None, deepcopy(payload))
+                RawPayload(run_id, record.interception_id, phase, None, payload)
             )
             self._append_ledger_locked(record, "captured")
             self._persist_locked()
@@ -171,6 +198,12 @@ class InterceptionLedger:
     def get_record(self, interception_id: str) -> InterceptionRecord | None:
         with self._lock:
             return self._records_by_id.get(interception_id)
+
+    def get_payload(self, interception_id: str) -> str | None:
+        """The frozen payload text captured for an interception."""
+        with self._lock:
+            index = self._raw_payload_index.get(interception_id)
+            return None if index is None else self.raw_payloads[index].payload  # type: ignore[return-value]
 
     def transition(
         self,
@@ -185,9 +218,23 @@ class InterceptionLedger:
         error: str | None = None,
         detector_latency_ms: float | None = None,
         delivered_payload: DetectorPayload | None = None,
+        forgery_found: bool | None = None,
+        schema_ok: bool | None = None,
+        parse_health: str | None = None,
+        decided_by: str | None = None,
     ) -> None:
+        if score is not None and not (isinstance(score, (int, float)) and math.isfinite(score)):
+            score = None                      # NaN / infinity is not valid JSON
         with self._lock:
             record.state = state
+            if forgery_found is not None:
+                record.forgery_found = forgery_found
+            if schema_ok is not None:
+                record.schema_ok = schema_ok
+            if parse_health is not None:
+                record.parse_health = parse_health
+            if decided_by is not None:
+                record.decided_by = decided_by
             if detector_decision is not None:
                 record.detector_decision = detector_decision
             if released is not None:
@@ -203,7 +250,7 @@ class InterceptionLedger:
             if detector_latency_ms is not None:
                 record.detector_latency_ms = detector_latency_ms
             if delivered_payload is not None:
-                record.delivered_sha256 = _payload_hash(record.phase, delivered_payload)
+                record.delivered_sha256 = _payload_hash(delivered_payload)
             raw_index = self._raw_payload_index.get(record.interception_id)
             if raw_index is None:
                 raise KeyError(
@@ -259,6 +306,10 @@ class InterceptionLedger:
             matrix_sha256=record.matrix_sha256,
             prev_entry_sha256=previous_hash,
             entry_schema_version=_ENTRY_SCHEMA_VERSION,
+            forgery_found=record.forgery_found,
+            schema_ok=record.schema_ok,
+            parse_health=record.parse_health,
+            decided_by=record.decided_by,
         )
         self.ledger.append(replace(entry, entry_sha256=_ledger_entry_hash(entry)))
         self._event_seq = event_seq
@@ -329,39 +380,41 @@ class InterceptionLedger:
             self._raw_payload_index.clear()
             self._run_metadata.clear()
             self._event_seq = 0
+            self._persisted_entries = 0
+            self._persisted_payloads = 0
+            self._files_started = False       # next persist truncates the files
             self._persist_locked()
+            self._persist_metadata_locked()
 
     def _persist_locked(self) -> None:
+        """Append only what is new since the last call (linear cost per run)."""
         if self.storage_dir is None:
             return
-        snapshots = (
-            ("ledger.jsonl", [asdict(entry) for entry in self.ledger]),
-            ("raw-payloads.jsonl", [asdict(payload) for payload in self.raw_payloads]),
-            (
-                "run-metadata.jsonl",
-                [
-                    {"run_id": run_id, "metadata": deepcopy(metadata)}
-                    for run_id, metadata in sorted(self._run_metadata.items())
-                ],
-            ),
-        )
-        for name, rows in snapshots:
-            target = self.storage_dir / name
-            temporary = target.with_suffix(target.suffix + ".tmp")
-            _write_jsonl(temporary, [_jsonable(row) for row in rows])
-            temporary.replace(target)
+        mode = "a" if self._files_started else "w"
+        _write_jsonl(self.storage_dir / "ledger.jsonl",
+                     [asdict(entry) for entry in self.ledger[self._persisted_entries:]], mode)
+        _write_jsonl(self.storage_dir / "raw-payloads.jsonl",
+                     [asdict(payload) for payload in self.raw_payloads[self._persisted_payloads:]], mode)
+        self._persisted_entries = len(self.ledger)
+        self._persisted_payloads = len(self.raw_payloads)
+        if not self._files_started:
+            self._files_started = True
+            self._persist_metadata_locked()
+
+    def _persist_metadata_locked(self) -> None:
+        if self.storage_dir is None:
+            return
+        target = self.storage_dir / "run-metadata.jsonl"
+        temporary = target.with_suffix(target.suffix + ".tmp")
+        _write_jsonl(temporary, [
+            _jsonable({"run_id": run_id, "metadata": deepcopy(metadata)})
+            for run_id, metadata in sorted(self._run_metadata.items())
+        ])
+        temporary.replace(target)
 
 
-def _payload_hash(phase: Phase, payload: DetectorPayload) -> str:
-    if phase == "pre":
-        canonical = json.dumps(
-            _jsonable(payload), sort_keys=True, separators=(",", ":"), ensure_ascii=False
-        ).encode("utf-8")
-    elif isinstance(payload, str):
-        canonical = payload.encode("utf-8")
-    else:
-        raise TypeError("Post-hop payloads must be strings.")
-    return sha256(canonical).hexdigest()
+def _payload_hash(payload: DetectorPayload) -> str:
+    return text_sha256(payload if isinstance(payload, str) else canonical_json(payload))
 
 
 def _ledger_entry_hash(entry: LedgerEntry) -> str:
@@ -374,19 +427,15 @@ def _ledger_entry_hash(entry: LedgerEntry) -> str:
 
 
 def _jsonable(value: Any) -> Any:
-    if hasattr(value, "model_dump"):
-        return _jsonable(value.model_dump(mode="json"))
-    if isinstance(value, Mapping):
-        return {str(key): _jsonable(item) for key, item in value.items()}
-    if isinstance(value, (list, tuple)):
-        return [_jsonable(item) for item in value]
-    return value
+    """Plain JSON data for any value (sets, bytes, NaN, models... never raise)."""
+    return json.loads(canonical_json(value))
 
 
-def _write_jsonl(path: str | Path, rows: Iterable[dict[str, Any]]) -> None:
+def _write_jsonl(path: str | Path, rows: Iterable[dict[str, Any]], mode: str = "w") -> None:
     destination = Path(path)
     destination.parent.mkdir(parents=True, exist_ok=True)
-    with destination.open("w", encoding="utf-8", newline="\n") as output:
+    # backslashreplace: a lone surrogate inside a payload must not abort the write
+    with destination.open(mode, encoding="utf-8", errors="backslashreplace", newline="\n") as output:
         for row in rows:
             output.write(json.dumps(row, ensure_ascii=False, separators=(",", ":")))
             output.write("\n")

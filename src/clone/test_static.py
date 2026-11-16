@@ -107,13 +107,13 @@ def _core_state_sequence(ledger: InterceptionLedger, record) -> list[str]:
 
 
 def _captured_payload_hash(record, payload) -> str:
+    # Pre and post payloads are both stored as frozen text; pre-hop text is canonical JSON.
+    assert isinstance(payload, str)
     if record.phase == "pre":
-        encoded = json.dumps(
-            payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False
-        ).encode("utf-8")
-    else:
-        encoded = payload.encode("utf-8")
-    return sha256(encoded).hexdigest()
+        assert payload == json.dumps(
+            json.loads(payload), sort_keys=True, separators=(",", ":"), ensure_ascii=False
+        )
+    return sha256(payload.encode("utf-8")).hexdigest()
 
 
 def _assert_trace_invariants(
@@ -555,7 +555,7 @@ def test_core_direct_lifecycle_allow_block_and_passthrough() -> None:
         "block-run", "block-call", "record", {"value": "first"}, {"value"}
     )
     assert pre_block.allowed is False
-    assert pre_block.denial_text == "Blocked by Trust Verification Matrix: blocked"
+    assert pre_block.denial_text == "Blocked by Trust Verification Matrix."
     assert pre_block.record is not None
     assert _core_state_sequence(block_ledger, pre_block.record) == [
         "captured",
@@ -598,7 +598,7 @@ def test_core_direct_lifecycle_allow_block_and_passthrough() -> None:
         "recorded:first",
     )
     assert post_block.allowed is False
-    assert post_block.denial_text == "Blocked by Trust Verification Matrix: block"
+    assert post_block.denial_text == "Blocked by Trust Verification Matrix."
     assert post_block.record is not None
     assert _core_state_sequence(post_block_ledger, post_block.record) == [
         "captured",
@@ -1145,7 +1145,7 @@ def test_passthrough_matches_off_and_records_linked_batch(tmp_path) -> None:
     ]
     assert [call.args for call in original_message["tool_calls"]] == original_args
     assert len(seen) == 4
-    assert matrix.raw_payloads[0].payload == {
+    assert json.loads(matrix.raw_payloads[0].payload) == {
         "tool": "record",
         "args": {"value": "first"},
     }
@@ -1226,7 +1226,9 @@ def test_enforcement_blocks_pre_hop_without_running_tool() -> None:
     ).query("", _runtime(calls), messages=[_message()])
 
     assert calls == []
-    assert "not permitted" in result[3][1]["content"][0]["content"]
+    # The model gets a fixed denial with no reason; the reason is in the ledger only.
+    assert result[3][1]["content"][0]["content"] == "Blocked by Trust Verification Matrix."
+    assert "not permitted" in next(r for r in matrix.records if r.state == "blocked").error
     assert len([record for record in matrix.records if record.phase == "pre"]) == 2
     assert len([record for record in matrix.records if record.phase == "post"]) == 2
     assert all(record.pre_interception_id for record in matrix.records if record.phase == "post")
@@ -1252,7 +1254,8 @@ def test_parser_adapter_receives_runtime_schemas_on_both_hops() -> None:
     # the extra argument is rejected before record() runs. The second call
     # executes, and its str return annotation is used to validate post-hop text.
     assert calls == ["reverse:second"]
-    assert "Tool schema validation failed" in result[3][1]["content"][0]["content"]
+    assert result[3][1]["content"][0]["content"] == "Blocked by Trust Verification Matrix."
+    assert "Tool schema validation failed" in ledger.records[0].error
     assert result[3][2]["content"][0]["content"] == "dnoces"
     pre_calls = [record for record in ledger.records if record.phase == "pre"]
     assert pre_calls[0].label == "schema-violation"
@@ -1300,7 +1303,9 @@ def test_parser_adapter_uses_runtime_return_schema_before_releasing_result() -> 
         tool_matrix=matrix,
     ).query("", runtime, messages=[message])
 
-    assert "Tool schema validation failed" in result[3][1]["content"][0]["content"]
+    assert result[3][1]["content"][0]["content"] == "Blocked by Trust Verification Matrix."
+    assert result[3][1]["error"] == "Blocked by Trust Verification Matrix."
+    assert "Tool schema validation failed" in ledger.records[1].error
     assert ledger.records[0].phase == "pre"
     assert ledger.records[0].label == "no-adi-detected"
     assert ledger.records[1].phase == "post"
@@ -1361,7 +1366,8 @@ def test_post_hop_block_hashes_denial_and_retains_raw_result() -> None:
     observation = result[3][1]["content"][0]["content"]
     post = next(record for record in matrix.records if record.phase == "post")
 
-    assert observation == "Blocked by Trust Verification Matrix: sensitive result"
+    assert observation == "Blocked by Trust Verification Matrix."
+    assert post.error == "sensitive result"
     assert post.sha256 == sha256("recorded:first".encode("utf-8")).hexdigest()
     assert post.delivered_sha256 == sha256(observation.encode("utf-8")).hexdigest()
     assert matrix.raw_payloads[1].payload == "recorded:first"
@@ -1432,11 +1438,16 @@ def test_tool_execution_errors_are_recorded_without_changing_observations(
     ).query("", runtime, messages=[message])
 
     observation = result[3][-1]
-    post_record = next(record for record in ledger.records if record.phase == "post")
     assert observation["content"][0]["content"] == ""
     assert observation["error"] == expected_error
-    assert post_record.tool_error == expected_error
-    assert ledger.ledger[-1].tool_error == expected_error
+    if function_name == "failing_tool":
+        post_record = next(record for record in ledger.records if record.phase == "post")
+        assert post_record.tool_error == expected_error
+        assert ledger.ledger[-1].tool_error == expected_error
+    else:
+        # Same order as AgentDojo: an empty or unknown tool name is answered by the
+        # framework and never reaches the detector or the ledger (audit A3 / F-17).
+        assert ledger.records == []
 
 
 def test_detector_timeout_fails_closed() -> None:
@@ -1551,7 +1562,7 @@ def test_ledger_hash_chain_verifies_and_survives_export_import(tmp_path) -> None
     ledger = _make_chained_ledger()
     assert ledger.verify_chain() is True
     assert ledger.ledger[0].prev_entry_sha256 == "0" * 64
-    assert all(entry.entry_schema_version == 1 for entry in ledger.ledger)
+    assert all(entry.entry_schema_version == 2 for entry in ledger.ledger)
     assert all(entry.entry_sha256 for entry in ledger.ledger)
 
     path = tmp_path / "chained-ledger.jsonl"
@@ -1760,7 +1771,7 @@ def test_second_call_denial_does_not_block_first_call() -> None:
     assert calls == ["first"]
     assert observations == [
         "recorded:first",
-        "Blocked by Trust Verification Matrix: block",
+        "Blocked by Trust Verification Matrix.",
     ]
     assert [record.seq for record in ledger.records] == [1, 2, 3, 4]
     assert ledger.records[2].state == "blocked"

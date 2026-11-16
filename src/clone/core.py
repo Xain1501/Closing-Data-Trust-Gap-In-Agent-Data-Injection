@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from copy import deepcopy
+import json
 from dataclasses import dataclass
 from inspect import Signature, signature
 from queue import Empty, Queue
@@ -9,11 +9,15 @@ from threading import Thread
 from time import perf_counter_ns
 from typing import Any, Literal
 
+from clone.canonical import canonical_json
 from clone.ledger import DetectorPayload, InterceptionLedger, InterceptionRecord
 from clone.tvm import ToolMatrixEntry, TrustMatrix
 
 Mode = Literal["off", "passthrough", "enforce"]
-_DENIAL_PREFIX = "Blocked by Trust Verification Matrix"
+# What the model is told when the detector blocks. It deliberately carries NO
+# reason or rule name (that would tell an attacker which rule fired); the
+# reason is written to the ledger record's ``error`` field only.
+_DENIAL_TEXT = "Blocked by Trust Verification Matrix."
 
 
 @dataclass(frozen=True)
@@ -23,6 +27,9 @@ class DetectorContext:
     tool_call_id: str | None
     matrix_entry: ToolMatrixEntry
     schema: Any | None = None
+    run_id: str | None = None          # the episode this interception belongs to
+    raw_result: Any = None             # post-hop only: the tool's result object before formatting
+    result_format: str = "json"        # how the result text was formatted
 
 
 @dataclass(frozen=True)
@@ -31,7 +38,11 @@ class DetectorDecision:
     label: str
     score: float | None = None
     reason: str | None = None
-    contains_adi: bool | None = None
+    contains_adi: bool | None = None   # forged structure found (forgery only)
+    forgery_found: bool | None = None  # same evidence under its explicit name
+    schema_ok: bool | None = None      # None = no schema was checked
+    parse_health: str | None = None
+    decided_by: str | None = None      # detector stage that produced this decision
 
 
 Detector = Callable[..., bool | DetectorDecision]
@@ -94,7 +105,8 @@ class InterceptionCore:
             return InterceptionVerdict(True, None, None)
 
         entry = self.tool_matrix.lookup(tool, expected_keys)
-        payload = {"tool": tool, "args": deepcopy(args)}
+        # One frozen canonical string: hashed, stored and (decoded) inspected.
+        payload = canonical_json({"tool": tool, "args": args})
         record = self.ledger.capture(
             run_id,
             "pre",
@@ -117,32 +129,25 @@ class InterceptionCore:
                 error=f"Tool {tool!r} is missing from the trust matrix.",
             )
 
-        context = DetectorContext("pre", tool, call_id, entry, schema)
+        context = DetectorContext("pre", tool, call_id, entry, schema, run_id=run_id)
         decision, error = self._inspect(record, payload, context)
+        evidence = self._evidence(decision, error)
         if error is None and decision is not None and decision.allowed:
             if entry.is_fallback and self.mode == "enforce":
                 denial = "Blocked: unclassified tool"
                 label = "unclassified"
                 detail = f"Tool {tool!r} is missing from the trust matrix."
+                evidence["decided_by"] = "matrix"     # the detector allowed; the matrix blocked
             else:
-                self.ledger.transition(
-                    record,
-                    "allowed",
-                    detector_decision=True,
-                    label=decision.label,
-                    score=decision.score,
-                    contains_adi=decision.contains_adi,
-                )
+                self.ledger.transition(record, "allowed", label=decision.label, **evidence)
                 return InterceptionVerdict(True, None, record)
         elif self.mode == "passthrough":
             self.ledger.transition(
                 record,
                 "passthrough_release",
-                detector_decision=decision.allowed if decision is not None else None,
                 label=decision.label if decision is not None else "detector-error",
-                score=decision.score if decision is not None else None,
-                contains_adi=decision.contains_adi if decision is not None else None,
                 error=error,
+                **evidence,
             )
             return InterceptionVerdict(True, None, record)
         else:
@@ -151,17 +156,14 @@ class InterceptionCore:
             detail = error or (decision.reason if decision is not None else None)
 
         self.ledger.transition(
-            record,
-            "blocked",
-            detector_decision=False,
-            released=False,
-            label=label,
-            score=decision.score if decision is not None else None,
-            contains_adi=decision.contains_adi if decision is not None else None,
-            error=detail,
+            record, "blocked", released=False, label=label, error=detail, **evidence,
         )
         self._deliver_denial(run_id, call_id, record, entry, denial)
         return InterceptionVerdict(False, denial, record)
+
+    def mark_failed(self, record: InterceptionRecord, error: str) -> None:
+        """Close a pre-hop record whose execution or formatting raised, so the ledger stays complete."""
+        self.ledger.transition(record, "execution_failed", released=False, error=error)
 
     def mark_executed(self, record: InterceptionRecord, executed: bool) -> None:
         """Record that an allowed call has completed its execution attempt."""
@@ -179,6 +181,8 @@ class InterceptionCore:
         *,
         tool_error: str | None = None,
         schema: Any | None = None,
+        raw_result: Any = None,
+        result_format: str = "json",
     ) -> InterceptionVerdict:
         """Capture and decide whether the original tool observation may be released."""
         if not isinstance(text, str):
@@ -208,31 +212,25 @@ class InterceptionCore:
             matrix_schema_version=self.tool_matrix.schema_version,
             matrix_sha256=self.tool_matrix.source_sha256,
         )
-        context = DetectorContext("post", tool, call_id, entry, schema)
+        context = DetectorContext("post", tool, call_id, entry, schema, run_id=run_id,
+                                  raw_result=raw_result, result_format=result_format)
         decision, error = self._inspect(record, text, context)
+        evidence = self._evidence(decision, error)
         if error is None and decision is not None and decision.allowed:
             self.ledger.transition(
-                record,
-                "released",
-                detector_decision=True,
-                released=True,
-                label=decision.label,
-                score=decision.score,
-                contains_adi=decision.contains_adi,
-                delivered_payload=text,
+                record, "released", released=True, label=decision.label,
+                delivered_payload=text, **evidence,
             )
             return InterceptionVerdict(True, None, record)
         if self.mode == "passthrough":
             self.ledger.transition(
                 record,
                 "passthrough_release",
-                detector_decision=decision.allowed if decision is not None else None,
                 released=True,
                 label=decision.label if decision is not None else "detector-error",
-                score=decision.score if decision is not None else None,
-                contains_adi=decision.contains_adi if decision is not None else None,
                 error=error,
                 delivered_payload=text,
+                **evidence,
             )
             return InterceptionVerdict(True, None, record)
 
@@ -240,12 +238,10 @@ class InterceptionCore:
         self.ledger.transition(
             record,
             "blocked",
-            detector_decision=False,
             released=False,
             label=decision.label if decision is not None else "detector-error",
-            score=decision.score if decision is not None else None,
-            contains_adi=decision.contains_adi if decision is not None else None,
             error=error or (decision.reason if decision is not None else None),
+            **evidence,
         )
         self.ledger.transition(
             record,
@@ -293,12 +289,14 @@ class InterceptionCore:
             matrix_schema_version=self.tool_matrix.schema_version,
             matrix_sha256=self.tool_matrix.source_sha256,
         )
+        # A bookkeeping record of the denial text. The detector never saw it,
+        # so detector_decision stays None; decided_by marks it as policy.
         self.ledger.transition(
             post,
             "denial_delivered",
-            detector_decision=False,
             released=False,
             label="policy-denial",
+            decided_by="policy",
             delivered_payload=denial,
         )
 
@@ -310,9 +308,12 @@ class InterceptionCore:
     ) -> tuple[DetectorDecision | None, str | None]:
         self.ledger.transition(record, "decision_pending")
         started_ns = perf_counter_ns()
+        # Pre-hop: the detector gets a fresh dict decoded from the frozen canonical
+        # text, so it inspects exactly what was hashed and cannot alter what is stored.
+        detector_input: DetectorPayload = json.loads(payload) if context.direction == "pre" else payload
         decision, error = _run_detector(
             self.detector,
-            deepcopy(payload),
+            detector_input,
             context,
             self.detector_timeout_s,
             self._detector_uses_context,
@@ -340,16 +341,33 @@ class InterceptionCore:
         )
         return decision, None
 
+    def _evidence(self, decision: DetectorDecision | None, error: str | None) -> dict[str, Any]:
+        """Ledger fields describing what the DETECTOR said, kept apart from the outcome.
+
+        detector_decision is the detector's own verdict (None when it gave none:
+        error, timeout). Whether the payload was released is the record's
+        ``released`` / ``state``; who caused the outcome is ``decided_by``.
+        """
+        if decision is None or error is not None:
+            return {"decided_by": "detector-error"}
+        forgery = decision.forgery_found if decision.forgery_found is not None else decision.contains_adi
+        return {
+            "detector_decision": decision.allowed,
+            "score": decision.score,
+            "contains_adi": forgery,
+            "forgery_found": forgery,
+            "schema_ok": decision.schema_ok,
+            "parse_health": decision.parse_health,
+            "decided_by": decision.decided_by or self.detector_name or "detector",
+        }
+
     @staticmethod
     def _denial(
         decision: DetectorDecision | None, error: str | None
     ) -> str:
-        if error is not None:
+        if error is not None or decision is None:
             return "Blocked: detector unavailable"
-        reason = (decision.reason if decision else None) or (
-            decision.label if decision else "detector unavailable"
-        )
-        return f"{_DENIAL_PREFIX}: {reason}"
+        return _DENIAL_TEXT
 
 
 def _run_detector(

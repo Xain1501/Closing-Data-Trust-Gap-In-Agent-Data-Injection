@@ -1,17 +1,20 @@
 """One shared parser pass for the Clone -> Parser detector stages."""
 from __future__ import annotations
 
+import ast
+import json
 from dataclasses import dataclass
 from typing import Any, Literal
 
 from clone.core import DetectorContext
 from clone.ledger import DetectorPayload
 from parser.models import Direction, ParseResult, ParseStatus, StructuralReport, ToolTraffic
-from parser.parser import parse
+from parser.parser import parse, payload_text
 from parser.schema_registry import ToolSchemaRegistry
 from parser.structural import structural_flags
 
 ParseHealth = Literal["clean", "salvaged_repr", "salvaged_repaired", "uninspectable"]
+
 
 @dataclass(frozen=True)
 class ParserAnalysis:
@@ -20,6 +23,12 @@ class ParserAnalysis:
     structural: StructuralReport
     schema_registered: bool
     schema_invalid: bool
+    schema_checked: bool = False      # False = no schema, or the payload could not be checked against it
+
+    @property
+    def schema_ok(self) -> bool | None:
+        """True / False when a schema check ran, None when none did."""
+        return (not self.schema_invalid) if self.schema_checked else None
 
     # The parser reports EVIDENCE; it does not gate. pipeline/decision.py decides.
     @property
@@ -60,13 +69,32 @@ def analyze_clone_payload(payload: DetectorPayload, context: DetectorContext) ->
     )
     parsed = parse(traffic)
     schema_findings = ()
-    if context.schema is not None and parsed.status in (ParseStatus.OK, ParseStatus.NOT_JSON):
+    schema_traffic = None
+    if context.schema is not None:
+        if parsed.status in (ParseStatus.OK, ParseStatus.NOT_JSON):
+            schema_traffic = traffic
+        elif parsed.status is ParseStatus.INVALID_JSON and parsed.salvage == "repr":
+            # A Python-literal result (dict/list repr) carries the same data as its
+            # JSON form, so it gets the same schema check (was skipped before).
+            schema_traffic = _repr_as_json_traffic(traffic)
+    if schema_traffic is not None:
         schemas = ToolSchemaRegistry()
         schemas.register(context.tool_name, direction.value, context.schema)
-        schema_findings = schemas.validate(traffic)
+        schema_findings = schemas.validate(schema_traffic)
     structural = structural_flags(parsed, schema_findings=schema_findings)
     schema_invalid = any(
         finding.kind in ("unexpected_key", "schema_violation")
         for finding in (*structural.findings, *structural.uncounted_findings)
     )
-    return ParserAnalysis(traffic, parsed, structural, context.schema is not None, schema_invalid)
+    return ParserAnalysis(traffic, parsed, structural, context.schema is not None, schema_invalid,
+                          schema_checked=schema_traffic is not None)
+
+
+def _repr_as_json_traffic(traffic: ToolTraffic) -> ToolTraffic | None:
+    try:
+        value = ast.literal_eval(payload_text(traffic).lstrip("﻿").strip())
+    except (ValueError, TypeError, SyntaxError, MemoryError, RecursionError):
+        return None
+    return ToolTraffic(direction=traffic.direction, tool_name=traffic.tool_name,
+                       tool_call_id=traffic.tool_call_id, payload=json.dumps(value, default=str),
+                       internal_id=traffic.internal_id)

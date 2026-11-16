@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 from dataclasses import FrozenInstanceError
@@ -54,10 +55,7 @@ def test_core_holds_then_releases_original_call_and_result() -> None:
     assert result.record.phase == "post"
     assert result.record.released is True
     assert [record.phase for record in ledger.records] == ["pre", "post"]
-    assert ledger.raw_payloads[0].payload == {
-        "tool": "demo",
-        "args": {"value": "original"},
-    }
+    assert ledger.raw_payloads[0].payload == '{"args":{"value":"original"},"tool":"demo"}'  # frozen canonical text
 
 
 def test_core_blocks_call_and_creates_denial_delivery_record() -> None:
@@ -73,7 +71,8 @@ def test_core_blocks_call_and_creates_denial_delivery_record() -> None:
     )
 
     assert verdict.allowed is False
-    assert verdict.denial_text == "Blocked by Trust Verification Matrix: not allowed"
+    assert verdict.denial_text == "Blocked by Trust Verification Matrix."
+    assert verdict.record.error == "not allowed"   # reason: ledger only
     assert verdict.record is not None
     assert verdict.record.state == "blocked"
     assert verdict.record.released is False
@@ -122,7 +121,7 @@ def test_context_detector_receives_metadata_and_only_a_deep_copy() -> None:
     assert context.tool_name == "demo"
     assert context.tool_call_id == "call-1"
     assert context.matrix_entry.internal_tool_id == "test.demo"
-    assert ledger.raw_payloads[0].payload["args"]["value"] == "original"
+    assert json.loads(ledger.raw_payloads[0].payload)["args"]["value"] == "original"
     assert verdict.record.score == 0.25
     assert verdict.record.contains_adi is False
     assert ledger.ledger[-1].contains_adi is False

@@ -79,7 +79,28 @@ class TrustVerificationToolsExecutor(ToolsExecutor):
 
         # Process the whole assistant tool-call batch in framework order.
         for tool_call in messages[-1]["tool_calls"]:
+            # Same order as AgentDojo's ToolsExecutor: an empty or unknown tool name
+            # is answered by the framework and never reaches the detector or ledger,
+            # so a hallucinated tool behaves exactly as in a baseline run.
+            invalid = _invalid_tool_error(tool_call.function, runtime)
+            if invalid is not None:
+                tool_results.append(
+                    ChatToolResultMessage(
+                        role="tool",
+                        content=[text_content_block_from_string("")],
+                        tool_call_id=tool_call.id,
+                        tool_call=tool_call,
+                        error=invalid,
+                    )
+                )
+                continue
+
             args = _framework_args(tool_call.args)
+            # AgentDojo writes converted list arguments back into the call, so the
+            # message history matches a baseline run. ``args`` stays a separate copy.
+            for key, value in args.items():
+                if isinstance(value, list) and isinstance(tool_call.args.get(key), str):
+                    tool_call.args[key] = deepcopy(value)
             definition = runtime.functions.get(tool_call.function)
             expected_keys = (
                 set(definition.parameters.model_fields)
@@ -107,19 +128,26 @@ class TrustVerificationToolsExecutor(ToolsExecutor):
                 )
                 continue
 
-            if tool_call.function == EMPTY_FUNCTION_NAME:
-                result, error = "", "Empty function name provided. Provide a valid function name."
-                executed = False
-            elif tool_call.function not in runtime.functions:
-                result, error = "", f"Invalid tool {tool_call.function} provided."
-                executed = False
-            else:
-                tool_result, error = runtime.run_function(env, tool_call.function, args)
-                result = self.output_formatter(tool_result)
-                executed = True
             pre_record = call_verdict.record
             if pre_record is None:
                 raise RuntimeError("Allowed tool call did not produce an interception record.")
+            tool_result = None
+            if tool_call.function not in runtime.functions:   # registered under another key
+                result, error = "", f"Invalid tool {tool_call.function} provided."
+                executed = False
+            else:
+                try:
+                    tool_result, error = runtime.run_function(env, tool_call.function, args)
+                    result = self.output_formatter(tool_result)
+                except Exception as failure:
+                    # Close the record before the exception leaves (a baseline run
+                    # raises the same exception), so the ledger is not left half-open.
+                    self.core.mark_executed(pre_record, True)
+                    self.core.mark_failed(
+                        pre_record, f"{type(failure).__name__} while running or formatting the tool result."
+                    )
+                    raise
+                executed = True
             self.core.mark_executed(pre_record, executed)
             result_verdict = self.core.check_result(
                 run_id,
@@ -129,17 +157,14 @@ class TrustVerificationToolsExecutor(ToolsExecutor):
                 result,
                 tool_error=error,
                 schema=definition.return_type if definition is not None else None,
+                raw_result=tool_result,
             )
             observation = result if result_verdict.allowed else (
                 result_verdict.denial_text or "Blocked"
             )
-            if not result_verdict.allowed and result_verdict.record is not None:
-                record = result_verdict.record
-                error = (
-                    observation
-                    if record.label == "detector-error"
-                    else record.error or observation
-                )
+            if not result_verdict.allowed:
+                # The model sees only the fixed denial text; the reason stays in the ledger.
+                error = observation
 
             tool_results.append(
                 ChatToolResultMessage(
@@ -152,6 +177,15 @@ class TrustVerificationToolsExecutor(ToolsExecutor):
             )
 
         return query, runtime, env, [*messages, *tool_results], updated_extra_args
+
+
+def _invalid_tool_error(function: str, runtime: FunctionsRuntime) -> str | None:
+    """AgentDojo's own answers for an empty or unknown tool name (None if the tool exists)."""
+    if function == EMPTY_FUNCTION_NAME:
+        return "Empty function name provided. Provide a valid function name."
+    if function not in (tool.name for tool in runtime.functions.values()):
+        return f"Invalid tool {function} provided."
+    return None
 
 
 def _framework_args(args: Mapping[str, Any]) -> dict[str, Any]:
