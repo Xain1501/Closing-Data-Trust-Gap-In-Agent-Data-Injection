@@ -30,6 +30,8 @@ class DetectorContext:
     run_id: str | None = None          # the episode this interception belongs to
     raw_result: Any = None             # post-hop only: the tool's result object before formatting
     result_format: str = "json"        # how the result text was formatted
+    interception_id: str | None = None  # ledger id of this call/result (joins tags, ledger and audit)
+    user_prompt: str | None = None     # the user's request for this run, when the adapter knows it
 
 
 @dataclass(frozen=True)
@@ -99,6 +101,7 @@ class InterceptionCore:
         args: dict[str, Any],
         expected_keys: set[str] | frozenset[str],
         schema: Any | None = None,
+        user_prompt: str | None = None,
     ) -> InterceptionVerdict:
         """Capture and decide whether a tool call may execute."""
         if self.mode == "off":
@@ -129,7 +132,8 @@ class InterceptionCore:
                 error=f"Tool {tool!r} is missing from the trust matrix.",
             )
 
-        context = DetectorContext("pre", tool, call_id, entry, schema, run_id=run_id)
+        context = DetectorContext("pre", tool, call_id, entry, schema, run_id=run_id,
+                                  interception_id=record.interception_id, user_prompt=user_prompt)
         decision, error = self._inspect(record, payload, context)
         evidence = self._evidence(decision, error)
         if error is None and decision is not None and decision.allowed:
@@ -183,6 +187,7 @@ class InterceptionCore:
         schema: Any | None = None,
         raw_result: Any = None,
         result_format: str = "json",
+        user_prompt: str | None = None,
     ) -> InterceptionVerdict:
         """Capture and decide whether the original tool observation may be released."""
         if not isinstance(text, str):
@@ -213,7 +218,8 @@ class InterceptionCore:
             matrix_sha256=self.tool_matrix.source_sha256,
         )
         context = DetectorContext("post", tool, call_id, entry, schema, run_id=run_id,
-                                  raw_result=raw_result, result_format=result_format)
+                                  raw_result=raw_result, result_format=result_format,
+                                  interception_id=record.interception_id, user_prompt=user_prompt)
         decision, error = self._inspect(record, text, context)
         evidence = self._evidence(decision, error)
         if error is None and decision is not None and decision.allowed:

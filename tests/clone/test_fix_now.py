@@ -339,3 +339,33 @@ def test_c4_adapter_passes_the_raw_result_object():
     _query(executor, _runtime([]), FunctionCall(function="record", args={"value": "x"}, id="c1"))
     assert contexts[1].direction == "post" and contexts[1].raw_result == "recorded:x"
     assert contexts[0].run_id and contexts[0].run_id == contexts[1].run_id
+
+
+def test_c4_detector_context_carries_interception_id_and_user_prompt():
+    contexts = []
+    core, ledger = _core(lambda payload, context=None: contexts.append(context) or True)
+    call = core.check_call("run-7", "c1", "demo", {"value": "x"}, {"value"}, user_prompt="Pay Bob")
+    result = core.check_result("run-7", "c1", call.record.interception_id, "demo", "ok", user_prompt="Pay Bob")
+    pre, post = contexts
+    assert pre.interception_id == call.record.interception_id
+    assert post.interception_id == result.record.interception_id != pre.interception_id
+    assert pre.user_prompt == post.user_prompt == "Pay Bob"
+    assert all(ledger.get_record(c.interception_id) is not None for c in contexts)
+
+
+def test_c4_user_prompt_defaults_to_none_for_adapters_that_do_not_know_it():
+    contexts = []
+    core, _ = _core(lambda payload, context=None: contexts.append(context) or True)
+    core.check_call("run", "c1", "demo", {"value": "x"}, {"value"})
+    assert contexts[0].user_prompt is None and contexts[0].interception_id
+
+
+def test_c4_adapter_passes_the_user_prompt_in_both_directions():
+    contexts = []
+    executor = TrustVerificationToolsExecutor(lambda p, c=None: contexts.append(c) or True, mode="enforce",
+                                              ledger=InterceptionLedger(), tool_matrix=_matrix("record", "tag"))
+    message = ChatAssistantMessage(role="assistant", content=None,
+                                   tool_calls=[FunctionCall(function="record", args={"value": "x"}, id="c1")])
+    executor.query("How much did I spend?", _runtime([]), messages=[message])
+    assert [c.user_prompt for c in contexts] == ["How much did I spend?"] * 2
+    assert contexts[0].interception_id != contexts[1].interception_id
