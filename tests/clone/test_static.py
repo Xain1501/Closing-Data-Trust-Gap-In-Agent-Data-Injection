@@ -177,7 +177,7 @@ def _make_chained_ledger() -> InterceptionLedger:
 def test_framework_agnostic_modules_do_not_import_agentdojo_or_pydantic() -> None:
     from pathlib import Path
 
-    clone_dir = Path(__file__).parent
+    clone_dir = Path(__file__).resolve().parents[2] / "src" / "clone"
     for module_name in ("core.py", "ledger.py", "tvm.py"):
         source = (clone_dir / module_name).read_text(encoding="utf-8")
         assert _framework_imports(source) == set(), module_name
@@ -201,7 +201,7 @@ def test_adapter_and_legacy_shim_exports_are_identical() -> None:
 
 
 def test_clone_import_is_safe_without_agentdojo_in_fresh_processes() -> None:
-    src_dir = Path(__file__).resolve().parents[1]
+    src_dir = Path(__file__).resolve().parents[2] / "src"
     repo_root = src_dir.parent
     import_paths = [
         str(src_dir),
@@ -456,7 +456,7 @@ print(json.dumps({
     ),
 }, separators=(",", ":")))
 """
-    src_dir = Path(__file__).resolve().parents[1]
+    src_dir = Path(__file__).resolve().parents[2] / "src"
     environment = os.environ.copy()
     environment["PYTHONPATH"] = str(src_dir)
 

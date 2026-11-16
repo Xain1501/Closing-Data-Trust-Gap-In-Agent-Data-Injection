@@ -3,16 +3,10 @@ import json
 import pytest
 from pydantic import BaseModel, ConfigDict
 
-try:
-    from .models import Direction, ParseStatus, ToolTraffic
-    from .parser import MAX_FIELDS, parse
-    from .schema_registry import ToolSchemaRegistry
-    from .stage1 import analyze
-except ImportError:  # flat-folder layout
-    from models import Direction, ParseStatus, ToolTraffic
-    from parser import MAX_FIELDS, parse
-    from schema_registry import ToolSchemaRegistry
-    from stage1 import analyze
+from parser.models import Direction, ParseStatus, ToolTraffic
+from parser.parser import MAX_FIELDS, parse
+from parser.schema_registry import ToolSchemaRegistry
+from parser.stage1 import analyze
 
 
 def traffic(payload, direction=Direction.POST_HOP, tool="read_email"):

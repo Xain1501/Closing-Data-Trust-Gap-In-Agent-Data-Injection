@@ -135,19 +135,19 @@ The parser bridge is the current detector callback. It now consumes AgentDojo ru
 From the repository root, run the clone static suite:
 
 ```powershell
-python -m pytest -q --durations=5 src\clone\test_static.py
+python -m pytest -q --durations=5 tests\clone\test_static.py
 ```
 
 Use `-s` to print the static tool-call comparison and ledger output:
 
 ```powershell
-python -m pytest -s -q src\clone\test_static.py
+python -m pytest -s -q tests\clone\test_static.py
 ```
 
 Run parser unit tests separately:
 
 ```powershell
-python -m pytest -q --durations=5 src\parser
+python -m pytest -q --durations=5 tests\parser
 ```
 
 These checks exercise static/local runtimes and parser fixtures. **The clone/parser integration has not been validated against Groq or a live Groq-backed AgentDojo run.** A live provider run, including parity and enforce-mode checks, is still required. The separate parser-bridge test module may also contain an older prose-policy expectation; reconcile it with `ParseStatus.NOT_JSON` before treating that module as green.

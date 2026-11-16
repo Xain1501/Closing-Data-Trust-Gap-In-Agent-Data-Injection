@@ -1,8 +1,5 @@
 """Tests for md_flags (experimental markdown check)."""
-try:
-    from .md_flags import md_flags
-except ImportError:
-    from md_flags import md_flags
+from parser.md_flags import md_flags
 
 TWO_OK = (
     "1. - **url**: https://api.example.com/c/1\n"

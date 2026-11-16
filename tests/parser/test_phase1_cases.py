@@ -1,6 +1,6 @@
 """Phase-1 dataset checks + Stage-1 parser conformance on all 100 cases.
 
-    python -m pytest tests/unit/test_phase1_cases.py -q        (from the repo root)
+    python -m pytest tests/parser/test_phase1_cases.py -q        (from the repo root)
 
 Integrity tests guard the dataset itself (counts, ids, labels, schema).
 Conformance tests check the parser against parser_expect (its DESIGN), so a

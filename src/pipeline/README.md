@@ -76,7 +76,7 @@ Today this folder contains:
 
 - `clone_parser_detector.py`: a detector callback that receives a cloned payload and `DetectorContext`, creates the parser's `ToolTraffic`, runs `parse()` and `structural_flags()`, and returns a `DetectorDecision`.
 - `parser_analysis.py`: shared one-pass payload normalization, parse, schema validation, and structural analysis for parser-only and risk-composed paths.
-- `test_clone_parser_detector.py`: focused tests for the current bridge behavior. Check these tests when changing parser policy; an older expectation that plain prose is blocked may need reconciliation with `ParseStatus.NOT_JSON`.
+- `tests/pipeline/test_clone_parser_detector.py`: focused tests for the current bridge behavior. Check these tests when changing parser policy; an older expectation that plain prose is blocked may need reconciliation with `ParseStatus.NOT_JSON`.
 
 The callback returns the final decision fields (`allowed`, `label`, `score`, `reason`, and `contains_adi`). Its internal `ParserAnalysis` retains the `ParseResult` and `StructuralReport` for downstream tagging/classification without reparsing. For schema checks, the adapter passes the runtime's trusted argument model for pre-hop and declared return type for post-hop.
 
@@ -168,9 +168,9 @@ To opt in after training a model, construct the executor with `make_risk_detecto
 Run from the repository root:
 
 ```powershell
-python -m pytest -q --durations=5 src\clone\test_static.py
-python -m pytest -q --durations=5 src\parser
-python -m pytest -q --durations=5 src\pipeline\test_clone_parser_detector.py
+python -m pytest -q --durations=5 tests\clone\test_static.py
+python -m pytest -q --durations=5 tests\parser
+python -m pytest -q --durations=5 tests\pipeline\test_clone_parser_detector.py
 ```
 
 The clone static tests cover interception lifecycle, ledger/hash behavior, matrix lookups, import isolation, and a fake/local AgentDojo runtime. Parser tests use fixed fixtures. These are **static/local tests only**: the integration has **not been tested with Groq** or a live Groq-backed AgentDojo pipeline. A Groq-backed run must still validate pre/post call behavior, model-visible observations, detector latency/timeouts, and `off`/`passthrough`/`enforce` outcomes.

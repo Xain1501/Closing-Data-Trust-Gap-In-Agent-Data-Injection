@@ -197,7 +197,7 @@ def test_bug10_unexpected_key_order_is_stable_across_hash_seeds():
             "class M(BaseModel):\n    x: int = 0\n"
             "t = ToolTraffic(direction=Direction.POST_HOP, tool_name='t', payload='{\"c\":1,\"a\":2,\"b\":3}')\n"
             "print([f.path for f in check_schema(t, M)])\n")
-    src = str(Path(__file__).resolve().parents[1])
+    src = str(Path(__file__).resolve().parents[2] / "src")
     outputs = set()
     for seed in ("1", "2", "3"):
         env = {**os.environ, "PYTHONHASHSEED": seed, "PYTHONPATH": src}

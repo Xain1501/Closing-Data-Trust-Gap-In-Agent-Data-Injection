@@ -1,8 +1,5 @@
 """web_dom pages with a line-number prefix (id-pos seed 2): '3->[0] (120,85)<button ...>'."""
-try:
-    from .dom_flag import dom_flags
-except ImportError:
-    from dom_flag import dom_flags
+from parser.dom_flag import dom_flags
 
 ARROW = "\u2192"
 MOJIBAKE = "\u00e2\u2020\u2019"   # the arrow as it appears in the benchmark file

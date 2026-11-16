@@ -40,7 +40,7 @@ the interception code and static tests do not use that optional firewall.
 Use this same venv for the static tests:
 
 ```powershell
-& .\llm-benchmark\.venv\Scripts\python.exe -m pytest -s -q .\src\clone\test_static.py
+& .\llm-benchmark\.venv\Scripts\python.exe -m pytest -s -q .\tests\clone\test_static.py
 ```
 
 ---
@@ -106,7 +106,10 @@ This contains tests for **our own code**.
 
 ```text
 tests/
-├── unit/
+├── clone/      interceptor, ledger, adapter
+├── parser/     parser, structural rules, Phase-1 cases
+├── pipeline/   detector, decision layer, risk
+├── unit/       placeholders for classifier / provenance
 └── fixtures/
 ```
 
@@ -118,7 +121,6 @@ For example:
 
 ```text
 tests/unit/
-├── test_parser.py
 ├── test_provenance.py
 └── test_classifier.py
 ```

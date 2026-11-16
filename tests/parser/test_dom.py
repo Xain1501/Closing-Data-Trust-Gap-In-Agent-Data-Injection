@@ -1,8 +1,5 @@
 """Trimmed copies of the benchmark's web_dom inputs (same structure, shorter reviews)."""
-try:
-    from .dom_flag import dom_flags
-except ImportError:
-    from dom_flag import dom_flags
+from parser.dom_flag import dom_flags
 
 HEADER = (
     "## Format of Interactive Elements\n[index]<type>text</type>\n\n"

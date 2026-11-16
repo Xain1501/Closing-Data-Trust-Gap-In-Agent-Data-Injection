@@ -1,8 +1,5 @@
 """Tests for the two web_dom layouts found in the ADI benchmark (id-pos, id-ref)."""
-try:
-    from .dom_flag import dom_flags
-except ImportError:
-    from dom_flag import dom_flags
+from parser.dom_flag import dom_flags
 
 
 # ---- Layout A with coordinates (id-pos) ------------------------------------

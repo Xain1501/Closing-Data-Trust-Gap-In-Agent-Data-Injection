@@ -35,7 +35,7 @@ Design rule: **structure only, never wording.** No trigger words ("ignore", "sys
 | `adi_eval.py` | Runs ADI benchmark files, reports by scope / attack type / category / delimiter / defense / route |
 | `make_extra_cases.py` | Writes the hand-made `prehop_cases.jsonl` and `hard_benign.jsonl` |
 | `eval.py`, `agentdojo_offline.py`, `demo.py` | Offline evaluator, benchmark data builder support, and demo |
-| `test_*.py` | Unit tests (`test_dom_layout.py`, `test_dom_linenum.py`, `test_md_flags.py`, `test_stage1.py` are new) |
+| `tests/parser/test_*.py` | Unit tests, now under `tests/parser/` (`test_dom_layout.py`, `test_dom_linenum.py`, `test_md_flags.py`, `test_stage1.py` are new) |
 
 ## 2. Setup and commands (Windows PowerShell)
 

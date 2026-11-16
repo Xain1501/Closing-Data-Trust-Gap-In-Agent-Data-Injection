@@ -3,14 +3,9 @@ import json
 import pytest
 from pydantic import BaseModel, ConfigDict, ValidationError
 
-try:
-    from .models import Direction, LabeledCase, ToolTraffic
-    from .parser import parse
-    from .structural import check_schema, structural_flags
-except ImportError:  # flat-folder layout
-    from models import Direction, LabeledCase, ToolTraffic
-    from parser import parse
-    from structural import check_schema, structural_flags
+from parser.models import Direction, LabeledCase, ToolTraffic
+from parser.parser import parse
+from parser.structural import check_schema, structural_flags
 
 
 def T(payload, tool="read_email"):

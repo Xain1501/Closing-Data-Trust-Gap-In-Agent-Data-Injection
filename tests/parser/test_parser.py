@@ -2,12 +2,8 @@ import json
 
 import pytest
 
-try:
-    from .models import Direction, ParseStatus, ToolTraffic
-    from .parser import MAX_BYTES, parse
-except ImportError:  # flat-folder layout
-    from models import Direction, ParseStatus, ToolTraffic
-    from parser import MAX_BYTES, parse
+from parser.models import Direction, ParseStatus, ToolTraffic
+from parser.parser import MAX_BYTES, parse
 
 
 def T(payload, tool="read_email"):

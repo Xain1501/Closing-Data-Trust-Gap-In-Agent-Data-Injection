@@ -166,7 +166,7 @@ assert not any(
 """
     result = subprocess.run(
         [sys.executable, "-c", script],
-        cwd=Path(__file__).resolve().parents[1],
+        cwd=Path(__file__).resolve().parents[2] / "src",
         check=False,
         capture_output=True,
         text=True,
