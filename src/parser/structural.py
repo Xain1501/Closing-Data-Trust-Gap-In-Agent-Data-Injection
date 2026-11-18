@@ -28,9 +28,11 @@ from pydantic import TypeAdapter, ValidationError
 try:
     from .models import Finding, ParseResult, ParseStatus, StructuralReport, ToolTraffic
     from .parser import _child_path, payload_text
+    from .inner import scan_leaf
 except ImportError:  # flat-folder layout
     from models import Finding, ParseResult, ParseStatus, StructuralReport, ToolTraffic
     from parser import _child_path, payload_text
+    from inner import scan_leaf
 
 _Q = "\"'\u201c\u201d\u2018\u2019`"      # quote look-alikes
 _QK = _Q + "$"                            # '$' is used as a quote in the paper ({$k$:$v$}) - key/value shape only
@@ -193,8 +195,9 @@ def check_schema(traffic: ToolTraffic, expected: Any) -> list[Finding]:
 
 
 def _field_of(path: str) -> str:
-    """Finding path -> the field it belongs to ('$.a#key' and '$.a#2' are field '$.a')."""
-    return path.split("#", 1)[0]
+    """Finding path -> the field it belongs to ('$.a#key', '$.a#2' and the inner-record
+    paths '$.a.@row[3]', '$.a.@row[3].@col[1]' all belong to field '$.a')."""
+    return path.split("#", 1)[0].split(".@row[", 1)[0]
 
 
 def structural_flags(
@@ -226,6 +229,10 @@ def structural_flags(
         if f.value_type == "string" and isinstance(f.value, str):
             _scan_string(f.value, f.path, counted, weak,
                          array_element=f.key is None and f.parent_path is not None)
+            # Records written inside the string (a table, key-value lines): forged rows.
+            inner_counted, inner_logged = scan_leaf(f.value, f.path)
+            counted.extend(inner_counted)
+            weak.extend(inner_logged)
         if f.key:                                         # attacker-controlled key names too
             _scan_string(f.key, f"{f.path}#key", counted, weak)
     for sf in schema_findings:

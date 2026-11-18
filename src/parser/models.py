@@ -56,6 +56,7 @@ FindingKind = Literal[
     "parse_failure", "payload_too_large", "depth_exceeded", "field_limit_exceeded",  # status-level
     "duplicate_key",                                           # parse-level fact
     "illegal_delimiter", "embedded_json", "unexpected_key",    # counted toward S
+    "record_conflict",                                         # counted (parser.inner)
     "weak_signal", "schema_violation",                         # NOT counted toward S
 ]
 
