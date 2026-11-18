@@ -82,6 +82,7 @@ def link_arguments(
                     source_tag_id=system_match.source_tag_id,
                     match_type="equal", matched_length=len(candidate),
                     source_provenance=Provenance.SYSTEM,
+                    source_has_forgery=system_match.has_forgery,
                 ),),
             ))
             continue
@@ -104,6 +105,7 @@ def link_arguments(
                                       match_type=match_type,
                                       matched_length=len(candidate),
                                       source_provenance=Provenance.EXTERNAL,
+                                      source_has_forgery=value.has_forgery,
                                   ),)))
         else:
             output.append(replace(tag, lineage_status=LineageStatus.UNLINKED,

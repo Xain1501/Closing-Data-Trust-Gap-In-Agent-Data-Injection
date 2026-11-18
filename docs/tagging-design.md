@@ -8,8 +8,10 @@ detector wiring are referenced only where tagging must stay compatible with them
 
 The active project policy supersedes the older no-profile `UNKNOWN` rule below: object/array structure is
 `SYSTEM`, and every scalar leaf is `EXTERNAL` unless a caller supplies an approved profile override.
-`FieldTag.has_forgery` now maps counted parser findings to their owning fields. Lineage supports prompt
-matches, exact whole-field `SYSTEM_LINK`s, and exact/bounded-substring `EXTERNAL_LINK`s. `SYSTEM_LINK` is
+`FieldTag.has_forgery` maps counted findings to true result fields; when a raw result skeleton is available,
+structural scanning uses those source values instead of fields reconstructed from formatted text. Lineage
+evidence carries a source field's forgery flag into the risk graph. Lineage supports prompt matches, exact
+whole-field `SYSTEM_LINK`s, and exact/bounded-substring `EXTERNAL_LINK`s. `SYSTEM_LINK` is
 available when a caller supplies a profile marking a string field as `SYSTEM`; the default policy has no
 SYSTEM scalar leaves. Automatic profile loading, call screening, and a separate AuditTrail are not yet wired.
 

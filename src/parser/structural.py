@@ -197,7 +197,12 @@ def _field_of(path: str) -> str:
     return path.split("#", 1)[0]
 
 
-def structural_flags(result: ParseResult, schema_findings: Sequence[Finding] = ()) -> StructuralReport:
+def structural_flags(
+    result: ParseResult,
+    schema_findings: Sequence[Finding] = (),
+    *,
+    source_fields: Sequence[Any] | None = None,
+) -> StructuralReport:
     """S = min(1, forged fields / string fields)   (policy research 10.1).
 
     A field with several rule hits counts once, so the same forgery scores the
@@ -211,7 +216,11 @@ def structural_flags(result: ParseResult, schema_findings: Sequence[Finding] = (
 
     counted = [f for f in result.findings if f.kind == "duplicate_key"]
     weak: list[Finding] = []
-    for f in result.fields:
+    # When a raw tool result object is available, inspect its true field values.
+    # A broken/lossy formatter can split one string into fake parser fields; those
+    # parser paths must never become the attribution source for a forgery.
+    fields_to_scan = source_fields if source_fields is not None else result.fields
+    for f in fields_to_scan:
         if len(counted) >= _MAX_FINDINGS:                 # a flood adds no evidence
             break
         if f.value_type == "string" and isinstance(f.value, str):
@@ -223,7 +232,7 @@ def structural_flags(result: ParseResult, schema_findings: Sequence[Finding] = (
         (counted if sf.kind == "unexpected_key" else weak).append(sf)
 
     forged = len({_field_of(f.path) for f in counted})
-    string_fields = sum(1 for f in result.fields if f.value_type == "string")
+    string_fields = sum(1 for f in fields_to_scan if f.value_type == "string")
     return StructuralReport(
         findings=counted, uncounted_findings=weak, hit_count=len(counted),
         boundary_count=result.boundary_count,

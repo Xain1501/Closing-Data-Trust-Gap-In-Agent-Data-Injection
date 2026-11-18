@@ -15,6 +15,7 @@ class StoredValue:
     source_path: str
     batch_id: int | None = None
     provenance: str = "EXTERNAL"
+    has_forgery: bool = False
 
 
 # Retain the original exported type name for callers that only store EXTERNAL values.
@@ -74,7 +75,7 @@ class RunState:
                     continue
                 self.values.append(
                     StoredValue(value, tag.tag_id, tag.interception_id, tag.path,
-                                batch_id, tag.provenance.value)
+                                batch_id, tag.provenance.value, tag.has_forgery)
                 )
                 self._char_count += len(value)
 

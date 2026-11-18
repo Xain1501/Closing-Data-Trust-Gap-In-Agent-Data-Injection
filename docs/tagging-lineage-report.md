@@ -9,7 +9,7 @@ The current default tagging rule is:
 - Object and array nodes describe structure and are tagged `SYSTEM`.
 - Scalar leaves, including strings, numbers, booleans, and nulls, are tagged `EXTERNAL` unless an approved profile overrides them.
 - A string argument is linked to the user prompt, an exact whole SYSTEM string leaf, or an earlier EXTERNAL string leaf. EXTERNAL matches may be exact or bounded substrings. The link is evidence about the value's source; it does not, by itself, authorize the tool action.
-- Each tag has a `has_forgery` flag when a counted parser finding maps to that true field (the nearest owning field in the skeleton for post-hop results).
+- Each result tag has a `has_forgery` flag when structural scanning finds a counted pattern in that true field's value; post-hop scans use the raw result skeleton when available.
 
 ## What each part does
 
@@ -162,7 +162,7 @@ At the end of a normal AgentDojo turn sequence, the adapter calls the detector's
 ## What is implemented and what remains limited
 
 - Structured results use their raw-object skeleton for true field paths; strings and scalar results are opaque leaves.
-- Counted parser findings are mapped back onto the closest owning true field through `FieldTag.has_forgery`.
+- Counted structural findings attach to true result fields through `FieldTag.has_forgery` (using raw result fields for post-hop scans when available).
 - The `index_values` API keeps normalized SYSTEM and EXTERNAL string leaves in bounded per-run state. An incomplete parse, an oversized skeleton, or storage overflow is reflected in run state; the risk detector review-routes high-impact cases when lineage state is incomplete.
 - Lineage checks in order: short-value guard, bounded prompt match, exact SYSTEM-field match, then exact or bounded-substring EXTERNAL match. All matching applies the identifier boundary rule from the design.
 - Lineage uses normalized text matching, not model-internal provenance. It can miss paraphrased, encoded, split, or value-free attacks, and substring matching can produce imperfect attribution.
@@ -172,8 +172,10 @@ At the end of a normal AgentDojo turn sequence, the adapter calls the detector's
 
 ## Verification
 
-The focused clone-to-lineage suite passed **623 tests, with 6 expected failures**, across clone interception, parser skeletons, tagging, lineage, the parser bridge, trace recording, and risk evaluation. The adapter integration test exercises a tool result flowing to a later tool argument, and the tests cover batch isolation and cleanup. `compileall` and `git diff --check` also completed. The tool matrix loads with 70 entries; 58 entries have non-empty authority-argument lists. Pytest emitted a cache warning because this environment denied writes to `.pytest_cache`; it did not affect the test result.
+The focused clone-to-lineage suite passed **624 tests, with 6 expected failures**, across clone interception, parser skeletons, tagging, lineage, the parser bridge, trace recording, and risk evaluation. The adapter integration test exercises a tool result flowing to a later tool argument, and the tests cover batch isolation and cleanup. `compileall` and `git diff --check` also completed. The tool matrix loads with 70 entries; 58 entries have non-empty authority-argument lists. Pytest emitted a cache warning because this environment denied writes to `.pytest_cache`; it did not affect the test result.
 
-This review also fixed a graph-labeling error: lineage source nodes were always labeled `EXTERNAL`, even when an approved profile had produced a `SYSTEM_LINK`. Evidence now carries source provenance, and a regression test checks that the graph labels the source `SYSTEM`.
+The forgery path now scans post-hop values from the raw result skeleton when available, so a formatter that turns quoted text into a fake sibling field cannot erase the true source-field boundary before scanning. Counted findings attach to the owning true field. When a later argument matches that value, its lineage evidence carries the source forgery flag into the risk graph. The graph also preserves the source provenance (`SYSTEM` versus `EXTERNAL`) instead of labeling every source `EXTERNAL`.
+
+An end-to-end regression test uses deliberately broken JSON formatting that exposes a fake `account` sibling from a real `body` string; it verifies the `body` tag is marked forged and the later `account` argument links back to that forged source. This strengthens field attribution for the tested patterns and supported structured results. Forgery detection still uses heuristics and is not guaranteed for every encoding, format, or value-free attack.
 
 Passing local tests does not establish correctness for every live provider or tool formatter. In particular, profile loading is not wired automatically, and the default `parser_detector` records lineage but does not use it to alter its decision. Use `make_risk_detector` if lineage is meant to feed the risk graph. Matrix authority-argument assignments are initial policy choices and need domain review. Text matching can still miss transformed or paraphrased values.

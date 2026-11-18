@@ -59,6 +59,7 @@ class Evidence:
     match_type: Literal["equal", "substring"]
     matched_length: int
     source_provenance: Provenance = Provenance.EXTERNAL
+    source_has_forgery: bool = False
 
 
 @dataclass(frozen=True)

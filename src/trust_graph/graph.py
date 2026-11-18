@@ -26,6 +26,7 @@ def build_trust_graph(
                 getattr(lineage, "value", "unlinked"),
                 field.value_type,
                 f"depth={field.depth}",
+                f"forgery={str(getattr(field, 'has_forgery', False)).lower()}",
             )
         )
         if field.parent_path in field_paths:
@@ -35,7 +36,8 @@ def build_trust_graph(
                 source = f"source:{evidence.source_tag_id}"
                 source_provenance = getattr(evidence, "source_provenance", "EXTERNAL")
                 source_provenance = getattr(source_provenance, "value", source_provenance)
-                node_labels.setdefault(source, f"source:{source_provenance}:string")
+                source_forgery = str(getattr(evidence, "source_has_forgery", False)).lower()
+                node_labels.setdefault(source, f"source:{source_provenance}:string:forgery={source_forgery}")
                 edges.append((source, field.path))
     for index, finding in enumerate(findings):
         finding_id = f"finding:{index}:{finding.path}:{finding.kind}"

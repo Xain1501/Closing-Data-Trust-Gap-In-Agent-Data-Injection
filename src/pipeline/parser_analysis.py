@@ -116,15 +116,18 @@ def analyze_clone_payload(payload: DetectorPayload, context: DetectorContext) ->
         schemas = ToolSchemaRegistry()
         schemas.register(context.tool_name, direction.value, context.schema)
         schema_findings = schemas.validate(schema_traffic)
-    structural = structural_flags(parsed, schema_findings=schema_findings)
-    schema_invalid = any(
-        finding.kind in ("unexpected_key", "schema_violation")
-        for finding in (*structural.findings, *structural.uncounted_findings)
-    )
     skeleton = None
     if direction is Direction.POST_HOP and context.raw_result is not None:
         skeleton = build_skeleton(context.raw_result, tool_name=context.tool_name,
                                   interception_id=context.interception_id)
+    source_fields = skeleton.fields if skeleton is not None and skeleton.structured else None
+    structural = structural_flags(
+        parsed, schema_findings=schema_findings, source_fields=source_fields,
+    )
+    schema_invalid = any(
+        finding.kind in ("unexpected_key", "schema_violation")
+        for finding in (*structural.findings, *structural.uncounted_findings)
+    )
     return ParserAnalysis(traffic, parsed, structural, context.schema is not None, schema_invalid,
                           schema_checked=schema_traffic is not None, skeleton=skeleton)
 
