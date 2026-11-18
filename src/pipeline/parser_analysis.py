@@ -8,9 +8,10 @@ from typing import Any, Literal
 
 from clone.core import DetectorContext
 from clone.ledger import DetectorPayload
-from parser.models import Direction, ParseResult, ParseStatus, StructuralReport, ToolTraffic
+from parser.models import Direction, ParsedField, ParseResult, ParseStatus, StructuralReport, ToolTraffic
 from parser.parser import parse, payload_text
 from parser.schema_registry import ToolSchemaRegistry
+from parser.skeleton import Skeleton, build_skeleton
 from parser.structural import structural_flags
 
 ParseHealth = Literal["clean", "salvaged_repr", "salvaged_repaired", "uninspectable"]
@@ -24,6 +25,40 @@ class ParserAnalysis:
     schema_registered: bool
     schema_invalid: bool
     schema_checked: bool = False      # False = no schema, or the payload could not be checked against it
+    # True field list from the result OBJECT (post-hop, when the adapter supplied it).
+    # This is the provenance source for tagging / lineage; pass it on as-is.
+    skeleton: Skeleton | None = None
+
+    @property
+    def skeleton_fields(self) -> tuple[ParsedField, ...]:
+        """Fields from the result object; empty when there is no structured object."""
+        return self.skeleton.fields if self.skeleton is not None and self.skeleton.structured else ()
+
+    @property
+    def skeleton_matches(self) -> bool | None:
+        """True when the skeleton's paths equal the parser's paths.
+
+        None when there is nothing to compare (no structured result object).
+        False means the text the model sees does not have the structure of the
+        real object: forged structure, a lossy formatter, or a non-JSON format.
+        """
+        if not self.skeleton_fields:
+            return None
+        return [f.path for f in self.skeleton_fields] == [f.path for f in self.parsed.fields]
+
+    @property
+    def skeleton_diff(self) -> dict[str, list[str]]:
+        """Paths present on one side only (empty lists when they match or cannot be compared)."""
+        if not self.skeleton_fields:
+            return {"only_in_skeleton": [], "only_in_text": []}
+        real = {f.path for f in self.skeleton_fields}
+        seen = {f.path for f in self.parsed.fields}
+        return {"only_in_skeleton": sorted(real - seen), "only_in_text": sorted(seen - real)}
+
+    @property
+    def true_fields(self) -> tuple[ParsedField, ...]:
+        """The field list later stages should tag: the skeleton when there is one, else the parser's."""
+        return self.skeleton_fields or tuple(self.parsed.fields)
 
     @property
     def schema_ok(self) -> bool | None:
@@ -86,8 +121,12 @@ def analyze_clone_payload(payload: DetectorPayload, context: DetectorContext) ->
         finding.kind in ("unexpected_key", "schema_violation")
         for finding in (*structural.findings, *structural.uncounted_findings)
     )
+    skeleton = None
+    if direction is Direction.POST_HOP and context.raw_result is not None:
+        skeleton = build_skeleton(context.raw_result, tool_name=context.tool_name,
+                                  interception_id=context.interception_id)
     return ParserAnalysis(traffic, parsed, structural, context.schema is not None, schema_invalid,
-                          schema_checked=schema_traffic is not None)
+                          schema_checked=schema_traffic is not None, skeleton=skeleton)
 
 
 def _repr_as_json_traffic(traffic: ToolTraffic) -> ToolTraffic | None:
