@@ -21,8 +21,6 @@ def _matrix() -> TrustMatrix:
                 internal_tool_id="test.demo",
                 impact_tier=1,
                 impact_tier_source="policy default",
-                authority_arguments=(),
-                field_trust_classes={"value": "unclassified"},
                 expected_keys=("value",),
             ),
         )
@@ -128,8 +126,8 @@ def test_context_detector_receives_metadata_and_only_a_deep_copy() -> None:
 
     with pytest.raises(FrozenInstanceError):
         context.tool_name = "changed"
-    with pytest.raises(TypeError):
-        context.matrix_entry.field_trust_classes["value"] = "trusted"
+    with pytest.raises(FrozenInstanceError):
+        context.matrix_entry.args = (("value", "AUTHORITY_ARG"),)
 
 
 def test_legacy_one_argument_detector_remains_supported() -> None:

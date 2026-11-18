@@ -40,7 +40,7 @@ def make_risk_detector(
         analysis = tagged.analysis
         base_contains_adi = analysis.structural.hit_count > 0
         evidence = {"forgery_found": base_contains_adi, "schema_ok": analysis.schema_ok,
-                    "parse_health": analysis.parse_health}
+                    "parse_health": analysis.parse_health, "skeleton": analysis.skeleton}
         # Hard blocks come from the shared decision layer; structural findings on
         # inspectable content go on to the classifier/risk stages instead.
         verdict = decide(analysis)

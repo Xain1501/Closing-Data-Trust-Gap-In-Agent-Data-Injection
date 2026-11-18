@@ -1,124 +1,114 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "source": "AgentDojo v1 task-suite Function definitions",
+  "notes": "Field boundaries come from the result object (parser.skeleton); trust comes from lineage. args = argument roles; result_fields = optional provenance overrides. All entries are draft until reviewed.",
   "tools": [
     {
       "tool_name": "add_calendar_event_participants",
       "internal_tool_id": "agentdojo.v1.workspace.add_calendar_event_participants",
       "impact_tier": 5,
-      "authority_arguments": [
-        "event_id",
-        "participants"
-      ],
-      "field_trust_classes": {
-        "event_id": "unclassified",
-        "participants": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "event_id",
         "participants"
       ],
+      "args": {
+        "event_id": "AUTHORITY_ARG",
+        "participants": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "workspace"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "add_user_to_channel",
       "internal_tool_id": "agentdojo.v1.slack.add_user_to_channel",
       "impact_tier": 5,
-      "authority_arguments": [
-        "channel",
-        "user"
-      ],
-      "field_trust_classes": {
-        "channel": "unclassified",
-        "user": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "channel",
         "user"
       ],
+      "args": {
+        "channel": "AUTHORITY_ARG",
+        "user": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "slack"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "append_to_file",
       "internal_tool_id": "agentdojo.v1.workspace.append_to_file",
       "impact_tier": 5,
-      "authority_arguments": [
-        "file_id"
-      ],
-      "field_trust_classes": {
-        "content": "unclassified",
-        "file_id": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "content",
         "file_id"
       ],
+      "args": {
+        "file_id": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "workspace"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "cancel_calendar_event",
       "internal_tool_id": "agentdojo.v1.travel.cancel_calendar_event",
       "impact_tier": 5,
-      "authority_arguments": [
-        "event_id"
-      ],
-      "field_trust_classes": {
-        "event_id": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "event_id"
       ],
+      "args": {
+        "event_id": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "travel",
         "workspace"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "check_restaurant_opening_hours",
       "internal_tool_id": "agentdojo.v1.travel.check_restaurant_opening_hours",
       "impact_tier": 1,
-      "authority_arguments": [
-        "restaurant_names"
-      ],
-      "field_trust_classes": {
-        "restaurant_names": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "restaurant_names"
       ],
+      "args": {
+        "restaurant_names": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "travel"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "create_calendar_event",
       "internal_tool_id": "agentdojo.v1.travel.create_calendar_event",
       "impact_tier": 5,
-      "authority_arguments": [
-        "end_time",
-        "location",
-        "participants",
-        "start_time"
-      ],
-      "field_trust_classes": {
-        "description": "unclassified",
-        "end_time": "unclassified",
-        "location": "unclassified",
-        "participants": "unclassified",
-        "start_time": "unclassified",
-        "title": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "description",
         "end_time",
@@ -127,854 +117,912 @@
         "start_time",
         "title"
       ],
+      "args": {
+        "end_time": "AUTHORITY_ARG",
+        "location": "AUTHORITY_ARG",
+        "participants": "AUTHORITY_ARG",
+        "start_time": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "travel",
         "workspace"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "create_file",
       "internal_tool_id": "agentdojo.v1.workspace.create_file",
       "impact_tier": 5,
-      "authority_arguments": [
-        "filename"
-      ],
-      "field_trust_classes": {
-        "content": "unclassified",
-        "filename": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "content",
         "filename"
       ],
+      "args": {
+        "filename": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "workspace"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "delete_email",
       "internal_tool_id": "agentdojo.v1.workspace.delete_email",
       "impact_tier": 5,
-      "authority_arguments": [
-        "email_id"
-      ],
-      "field_trust_classes": {
-        "email_id": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "email_id"
       ],
+      "args": {
+        "email_id": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "workspace"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "delete_file",
       "internal_tool_id": "agentdojo.v1.workspace.delete_file",
       "impact_tier": 5,
-      "authority_arguments": [
-        "file_id"
-      ],
-      "field_trust_classes": {
-        "file_id": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "file_id"
       ],
+      "args": {
+        "file_id": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "workspace"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "get_all_car_rental_companies_in_city",
       "internal_tool_id": "agentdojo.v1.travel.get_all_car_rental_companies_in_city",
       "impact_tier": 1,
-      "authority_arguments": [
-        "city"
-      ],
-      "field_trust_classes": {
-        "city": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "city"
       ],
+      "args": {
+        "city": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "travel"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "get_all_hotels_in_city",
       "internal_tool_id": "agentdojo.v1.travel.get_all_hotels_in_city",
       "impact_tier": 1,
-      "authority_arguments": [
-        "city"
-      ],
-      "field_trust_classes": {
-        "city": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "city"
       ],
+      "args": {
+        "city": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "travel"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "get_all_restaurants_in_city",
       "internal_tool_id": "agentdojo.v1.travel.get_all_restaurants_in_city",
       "impact_tier": 1,
-      "authority_arguments": [
-        "city"
-      ],
-      "field_trust_classes": {
-        "city": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "city"
       ],
+      "args": {
+        "city": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "travel"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "get_balance",
       "internal_tool_id": "agentdojo.v1.banking.get_balance",
       "impact_tier": 1,
-      "authority_arguments": [],
-      "field_trust_classes": {},
+      "impact_tier_source": "policy default",
       "expected_keys": [],
+      "args": {},
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "banking"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "get_car_fuel_options",
       "internal_tool_id": "agentdojo.v1.travel.get_car_fuel_options",
       "impact_tier": 1,
-      "authority_arguments": [
-        "company_name"
-      ],
-      "field_trust_classes": {
-        "company_name": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "company_name"
       ],
+      "args": {
+        "company_name": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "travel"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "get_car_price_per_day",
       "internal_tool_id": "agentdojo.v1.travel.get_car_price_per_day",
       "impact_tier": 1,
-      "authority_arguments": [
-        "company_name"
-      ],
-      "field_trust_classes": {
-        "company_name": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "company_name"
       ],
+      "args": {
+        "company_name": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "travel"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "get_car_rental_address",
       "internal_tool_id": "agentdojo.v1.travel.get_car_rental_address",
       "impact_tier": 1,
-      "authority_arguments": [
-        "company_name"
-      ],
-      "field_trust_classes": {
-        "company_name": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "company_name"
       ],
+      "args": {
+        "company_name": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "travel"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "get_car_types_available",
       "internal_tool_id": "agentdojo.v1.travel.get_car_types_available",
       "impact_tier": 1,
-      "authority_arguments": [
-        "company_name"
-      ],
-      "field_trust_classes": {
-        "company_name": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "company_name"
       ],
+      "args": {
+        "company_name": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "travel"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "get_channels",
       "internal_tool_id": "agentdojo.v1.slack.get_channels",
       "impact_tier": 1,
-      "authority_arguments": [],
-      "field_trust_classes": {},
+      "impact_tier_source": "policy default",
       "expected_keys": [],
+      "args": {},
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "slack"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "get_contact_information_for_restaurants",
       "internal_tool_id": "agentdojo.v1.travel.get_contact_information_for_restaurants",
       "impact_tier": 1,
-      "authority_arguments": [
-        "restaurant_names"
-      ],
-      "field_trust_classes": {
-        "restaurant_names": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "restaurant_names"
       ],
+      "args": {
+        "restaurant_names": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "travel"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "get_cuisine_type_for_restaurants",
       "internal_tool_id": "agentdojo.v1.travel.get_cuisine_type_for_restaurants",
       "impact_tier": 1,
-      "authority_arguments": [
-        "restaurant_names"
-      ],
-      "field_trust_classes": {
-        "restaurant_names": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "restaurant_names"
       ],
+      "args": {
+        "restaurant_names": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "travel"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "get_current_day",
       "internal_tool_id": "agentdojo.v1.workspace.get_current_day",
       "impact_tier": 1,
-      "authority_arguments": [],
-      "field_trust_classes": {},
+      "impact_tier_source": "policy default",
       "expected_keys": [],
+      "args": {},
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "workspace"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "get_day_calendar_events",
       "internal_tool_id": "agentdojo.v1.travel.get_day_calendar_events",
       "impact_tier": 1,
-      "authority_arguments": [
-        "day"
-      ],
-      "field_trust_classes": {
-        "day": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "day"
       ],
+      "args": {
+        "day": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "travel",
         "workspace"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "get_dietary_restrictions_for_all_restaurants",
       "internal_tool_id": "agentdojo.v1.travel.get_dietary_restrictions_for_all_restaurants",
       "impact_tier": 1,
-      "authority_arguments": [
-        "restaurant_names"
-      ],
-      "field_trust_classes": {
-        "restaurant_names": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "restaurant_names"
       ],
+      "args": {
+        "restaurant_names": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "travel"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "get_draft_emails",
       "internal_tool_id": "agentdojo.v1.workspace.get_draft_emails",
       "impact_tier": 1,
-      "authority_arguments": [],
-      "field_trust_classes": {},
+      "impact_tier_source": "policy default",
       "expected_keys": [],
+      "args": {},
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "workspace"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "get_file_by_id",
       "internal_tool_id": "agentdojo.v1.workspace.get_file_by_id",
       "impact_tier": 1,
-      "authority_arguments": [
-        "file_id"
-      ],
-      "field_trust_classes": {
-        "file_id": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "file_id"
       ],
+      "args": {
+        "file_id": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "workspace"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "get_flight_information",
       "internal_tool_id": "agentdojo.v1.travel.get_flight_information",
       "impact_tier": 1,
-      "authority_arguments": [
-        "arrival_city",
-        "departure_city"
-      ],
-      "field_trust_classes": {
-        "arrival_city": "unclassified",
-        "departure_city": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "arrival_city",
         "departure_city"
       ],
+      "args": {
+        "arrival_city": "AUTHORITY_ARG",
+        "departure_city": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "travel"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "get_hotels_address",
       "internal_tool_id": "agentdojo.v1.travel.get_hotels_address",
       "impact_tier": 1,
-      "authority_arguments": [
-        "hotel_name"
-      ],
-      "field_trust_classes": {
-        "hotel_name": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "hotel_name"
       ],
+      "args": {
+        "hotel_name": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "travel"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "get_hotels_prices",
       "internal_tool_id": "agentdojo.v1.travel.get_hotels_prices",
       "impact_tier": 1,
-      "authority_arguments": [
-        "hotel_names"
-      ],
-      "field_trust_classes": {
-        "hotel_names": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "hotel_names"
       ],
+      "args": {
+        "hotel_names": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "travel"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "get_iban",
       "internal_tool_id": "agentdojo.v1.banking.get_iban",
       "impact_tier": 1,
-      "authority_arguments": [],
-      "field_trust_classes": {},
+      "impact_tier_source": "policy default",
       "expected_keys": [],
+      "args": {},
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "banking"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "get_most_recent_transactions",
       "internal_tool_id": "agentdojo.v1.banking.get_most_recent_transactions",
       "impact_tier": 1,
-      "authority_arguments": [
-        "n"
-      ],
-      "field_trust_classes": {
-        "n": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "n"
       ],
+      "args": {
+        "n": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "banking"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "get_price_for_restaurants",
       "internal_tool_id": "agentdojo.v1.travel.get_price_for_restaurants",
       "impact_tier": 1,
-      "authority_arguments": [
-        "restaurant_names"
-      ],
-      "field_trust_classes": {
-        "restaurant_names": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "restaurant_names"
       ],
+      "args": {
+        "restaurant_names": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "travel"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "get_rating_reviews_for_car_rental",
       "internal_tool_id": "agentdojo.v1.travel.get_rating_reviews_for_car_rental",
       "impact_tier": 1,
-      "authority_arguments": [
-        "company_name"
-      ],
-      "field_trust_classes": {
-        "company_name": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "company_name"
       ],
+      "args": {
+        "company_name": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "travel"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "get_rating_reviews_for_hotels",
       "internal_tool_id": "agentdojo.v1.travel.get_rating_reviews_for_hotels",
       "impact_tier": 1,
-      "authority_arguments": [
-        "hotel_names"
-      ],
-      "field_trust_classes": {
-        "hotel_names": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "hotel_names"
       ],
+      "args": {
+        "hotel_names": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "travel"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "get_rating_reviews_for_restaurants",
       "internal_tool_id": "agentdojo.v1.travel.get_rating_reviews_for_restaurants",
       "impact_tier": 1,
-      "authority_arguments": [
-        "restaurant_names"
-      ],
-      "field_trust_classes": {
-        "restaurant_names": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "restaurant_names"
       ],
+      "args": {
+        "restaurant_names": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "travel"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "get_received_emails",
       "internal_tool_id": "agentdojo.v1.camel_bypass_poc.get_received_emails",
       "impact_tier": 1,
-      "authority_arguments": [],
-      "field_trust_classes": {},
+      "impact_tier_source": "policy default",
       "expected_keys": [],
+      "args": {},
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "camel_bypass_poc",
         "workspace"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "get_restaurants_address",
       "internal_tool_id": "agentdojo.v1.travel.get_restaurants_address",
       "impact_tier": 1,
-      "authority_arguments": [
-        "restaurant_names"
-      ],
-      "field_trust_classes": {
-        "restaurant_names": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "restaurant_names"
       ],
+      "args": {
+        "restaurant_names": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "travel"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "get_scheduled_transactions",
       "internal_tool_id": "agentdojo.v1.banking.get_scheduled_transactions",
       "impact_tier": 1,
-      "authority_arguments": [],
-      "field_trust_classes": {},
+      "impact_tier_source": "policy default",
       "expected_keys": [],
+      "args": {},
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "banking"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "get_sent_emails",
       "internal_tool_id": "agentdojo.v1.workspace.get_sent_emails",
       "impact_tier": 1,
-      "authority_arguments": [],
-      "field_trust_classes": {},
+      "impact_tier_source": "policy default",
       "expected_keys": [],
+      "args": {},
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "workspace"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "get_unread_emails",
       "internal_tool_id": "agentdojo.v1.workspace.get_unread_emails",
       "impact_tier": 5,
-      "authority_arguments": [],
-      "field_trust_classes": {},
+      "impact_tier_source": "policy default",
       "expected_keys": [],
+      "args": {},
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "workspace"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "get_user_info",
       "internal_tool_id": "agentdojo.v1.banking.get_user_info",
       "impact_tier": 1,
-      "authority_arguments": [],
-      "field_trust_classes": {},
+      "impact_tier_source": "policy default",
       "expected_keys": [],
+      "args": {},
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "banking"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "get_user_information",
       "internal_tool_id": "agentdojo.v1.travel.get_user_information",
       "impact_tier": 1,
-      "authority_arguments": [],
-      "field_trust_classes": {},
+      "impact_tier_source": "policy default",
       "expected_keys": [],
+      "args": {},
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "travel"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "get_users_in_channel",
       "internal_tool_id": "agentdojo.v1.slack.get_users_in_channel",
       "impact_tier": 1,
-      "authority_arguments": [
-        "channel"
-      ],
-      "field_trust_classes": {
-        "channel": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "channel"
       ],
+      "args": {
+        "channel": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "slack"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "get_webpage",
       "internal_tool_id": "agentdojo.v1.slack.get_webpage",
       "impact_tier": 1,
-      "authority_arguments": [
-        "url"
-      ],
-      "field_trust_classes": {
-        "url": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "url"
       ],
+      "args": {
+        "url": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "slack"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "invite_user_to_slack",
       "internal_tool_id": "agentdojo.v1.slack.invite_user_to_slack",
       "impact_tier": 10,
-      "authority_arguments": [
-        "user",
-        "user_email"
-      ],
-      "field_trust_classes": {
-        "user": "unclassified",
-        "user_email": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "user",
         "user_email"
       ],
+      "args": {
+        "user": "AUTHORITY_ARG",
+        "user_email": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "slack"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "list_files",
       "internal_tool_id": "agentdojo.v1.workspace.list_files",
       "impact_tier": 1,
-      "authority_arguments": [],
-      "field_trust_classes": {},
+      "impact_tier_source": "policy default",
       "expected_keys": [],
+      "args": {},
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "workspace"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "post_webpage",
       "internal_tool_id": "agentdojo.v1.slack.post_webpage",
       "impact_tier": 10,
-      "authority_arguments": [
-        "url"
-      ],
-      "field_trust_classes": {
-        "content": "unclassified",
-        "url": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "content",
         "url"
       ],
+      "args": {
+        "url": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "slack"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "read_channel_messages",
       "internal_tool_id": "agentdojo.v1.slack.read_channel_messages",
       "impact_tier": 1,
-      "authority_arguments": [
-        "channel"
-      ],
-      "field_trust_classes": {
-        "channel": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "channel"
       ],
+      "args": {
+        "channel": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "slack"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "read_file",
       "internal_tool_id": "agentdojo.v1.banking.read_file",
       "impact_tier": 1,
-      "authority_arguments": [
-        "file_path"
-      ],
-      "field_trust_classes": {
-        "file_path": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "file_path"
       ],
+      "args": {
+        "file_path": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "banking"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "read_inbox",
       "internal_tool_id": "agentdojo.v1.slack.read_inbox",
       "impact_tier": 1,
-      "authority_arguments": [
-        "user"
-      ],
-      "field_trust_classes": {
-        "user": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "user"
       ],
+      "args": {
+        "user": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "slack"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "remove_user_from_slack",
       "internal_tool_id": "agentdojo.v1.slack.remove_user_from_slack",
       "impact_tier": 5,
-      "authority_arguments": [
-        "user"
-      ],
-      "field_trust_classes": {
-        "user": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "user"
       ],
+      "args": {
+        "user": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "slack"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "reschedule_calendar_event",
       "internal_tool_id": "agentdojo.v1.workspace.reschedule_calendar_event",
       "impact_tier": 5,
-      "authority_arguments": [
-        "event_id",
-        "new_end_time",
-        "new_start_time"
-      ],
-      "field_trust_classes": {
-        "event_id": "unclassified",
-        "new_end_time": "unclassified",
-        "new_start_time": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "event_id",
         "new_end_time",
         "new_start_time"
       ],
+      "args": {
+        "event_id": "AUTHORITY_ARG",
+        "new_end_time": "AUTHORITY_ARG",
+        "new_start_time": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "workspace"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "reserve_car_rental",
       "internal_tool_id": "agentdojo.v1.travel.reserve_car_rental",
       "impact_tier": 10,
-      "authority_arguments": [
-        "company",
-        "end_time",
-        "start_time"
-      ],
-      "field_trust_classes": {
-        "company": "unclassified",
-        "end_time": "unclassified",
-        "start_time": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "company",
         "end_time",
         "start_time"
       ],
+      "args": {
+        "company": "AUTHORITY_ARG",
+        "end_time": "AUTHORITY_ARG",
+        "start_time": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "travel"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "reserve_hotel",
       "internal_tool_id": "agentdojo.v1.travel.reserve_hotel",
       "impact_tier": 10,
-      "authority_arguments": [
-        "end_day",
-        "hotel",
-        "start_day"
-      ],
-      "field_trust_classes": {
-        "end_day": "unclassified",
-        "hotel": "unclassified",
-        "start_day": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "end_day",
         "hotel",
         "start_day"
       ],
+      "args": {
+        "end_day": "AUTHORITY_ARG",
+        "hotel": "AUTHORITY_ARG",
+        "start_day": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "travel"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "reserve_restaurant",
       "internal_tool_id": "agentdojo.v1.travel.reserve_restaurant",
       "impact_tier": 10,
-      "authority_arguments": [
-        "restaurant",
-        "start_time"
-      ],
-      "field_trust_classes": {
-        "restaurant": "unclassified",
-        "start_time": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "restaurant",
         "start_time"
       ],
+      "args": {
+        "restaurant": "AUTHORITY_ARG",
+        "start_time": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "travel"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "schedule_transaction",
       "internal_tool_id": "agentdojo.v1.banking.schedule_transaction",
       "impact_tier": 10,
-      "authority_arguments": [
-        "amount",
-        "date",
-        "recipient",
-        "recurring"
-      ],
-      "field_trust_classes": {
-        "amount": "unclassified",
-        "date": "unclassified",
-        "recipient": "unclassified",
-        "recurring": "unclassified",
-        "subject": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "amount",
         "date",
@@ -982,206 +1030,205 @@
         "recurring",
         "subject"
       ],
+      "args": {
+        "amount": "AUTHORITY_ARG",
+        "date": "AUTHORITY_ARG",
+        "recipient": "AUTHORITY_ARG",
+        "recurring": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "banking"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "search_calendar_events",
       "internal_tool_id": "agentdojo.v1.travel.search_calendar_events",
       "impact_tier": 1,
-      "authority_arguments": [
-        "date",
-        "query"
-      ],
-      "field_trust_classes": {
-        "date": "unclassified",
-        "query": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "date",
         "query"
       ],
+      "args": {
+        "date": "AUTHORITY_ARG",
+        "query": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "travel",
         "workspace"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "search_contacts_by_email",
       "internal_tool_id": "agentdojo.v1.workspace.search_contacts_by_email",
       "impact_tier": 1,
-      "authority_arguments": [
-        "query"
-      ],
-      "field_trust_classes": {
-        "query": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "query"
       ],
+      "args": {
+        "query": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "workspace"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "search_contacts_by_name",
       "internal_tool_id": "agentdojo.v1.workspace.search_contacts_by_name",
       "impact_tier": 1,
-      "authority_arguments": [
-        "query"
-      ],
-      "field_trust_classes": {
-        "query": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "query"
       ],
+      "args": {
+        "query": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "workspace"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "search_emails",
       "internal_tool_id": "agentdojo.v1.workspace.search_emails",
       "impact_tier": 1,
-      "authority_arguments": [
-        "query",
-        "sender"
-      ],
-      "field_trust_classes": {
-        "query": "unclassified",
-        "sender": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "query",
         "sender"
       ],
+      "args": {
+        "query": "AUTHORITY_ARG",
+        "sender": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "workspace"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "search_files",
       "internal_tool_id": "agentdojo.v1.workspace.search_files",
       "impact_tier": 1,
-      "authority_arguments": [
-        "query"
-      ],
-      "field_trust_classes": {
-        "query": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "query"
       ],
+      "args": {
+        "query": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "workspace"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "search_files_by_filename",
       "internal_tool_id": "agentdojo.v1.workspace.search_files_by_filename",
       "impact_tier": 1,
-      "authority_arguments": [
-        "filename"
-      ],
-      "field_trust_classes": {
-        "filename": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "filename"
       ],
+      "args": {
+        "filename": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "workspace"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "send_channel_message",
       "internal_tool_id": "agentdojo.v1.slack.send_channel_message",
       "impact_tier": 10,
-      "authority_arguments": [
-        "channel"
-      ],
-      "field_trust_classes": {
-        "body": "unclassified",
-        "channel": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "body",
         "channel"
       ],
+      "args": {
+        "channel": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "slack"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "send_direct_message",
       "internal_tool_id": "agentdojo.v1.slack.send_direct_message",
       "impact_tier": 10,
-      "authority_arguments": [
-        "recipient"
-      ],
-      "field_trust_classes": {
-        "body": "unclassified",
-        "recipient": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "body",
         "recipient"
       ],
+      "args": {
+        "recipient": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "slack"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "send_email",
       "internal_tool_id": "agentdojo.v1.camel_bypass_poc.send_email",
       "impact_tier": 10,
-      "authority_arguments": [
-        "recipient"
-      ],
-      "field_trust_classes": {
-        "body": "unclassified",
-        "recipient": "unclassified",
-        "subject": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "body",
         "recipient",
         "subject"
       ],
+      "args": {
+        "recipient": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "camel_bypass_poc"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "send_email",
       "internal_tool_id": "agentdojo.v1.travel.send_email",
       "impact_tier": 10,
-      "authority_arguments": [
-        "attachments",
-        "bcc",
-        "cc",
-        "recipients"
-      ],
-      "field_trust_classes": {
-        "attachments": "unclassified",
-        "bcc": "unclassified",
-        "body": "unclassified",
-        "cc": "unclassified",
-        "recipients": "unclassified",
-        "subject": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "attachments",
         "bcc",
@@ -1190,99 +1237,92 @@
         "recipients",
         "subject"
       ],
+      "args": {
+        "attachments": "AUTHORITY_ARG",
+        "bcc": "AUTHORITY_ARG",
+        "cc": "AUTHORITY_ARG",
+        "recipients": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "travel",
         "workspace"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "send_money",
       "internal_tool_id": "agentdojo.v1.banking.send_money",
       "impact_tier": 10,
-      "authority_arguments": [
-        "amount",
-        "date",
-        "recipient"
-      ],
-      "field_trust_classes": {
-        "amount": "unclassified",
-        "date": "unclassified",
-        "recipient": "unclassified",
-        "subject": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "amount",
         "date",
         "recipient",
         "subject"
       ],
+      "args": {
+        "amount": "AUTHORITY_ARG",
+        "date": "AUTHORITY_ARG",
+        "recipient": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "banking"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "share_file",
       "internal_tool_id": "agentdojo.v1.workspace.share_file",
       "impact_tier": 10,
-      "authority_arguments": [
-        "email",
-        "file_id",
-        "permission"
-      ],
-      "field_trust_classes": {
-        "email": "unclassified",
-        "file_id": "unclassified",
-        "permission": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "email",
         "file_id",
         "permission"
       ],
+      "args": {
+        "email": "AUTHORITY_ARG",
+        "file_id": "AUTHORITY_ARG",
+        "permission": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "workspace"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "update_password",
       "internal_tool_id": "agentdojo.v1.banking.update_password",
       "impact_tier": 5,
-      "authority_arguments": [
-        "password"
-      ],
-      "field_trust_classes": {
-        "password": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "password"
       ],
+      "args": {
+        "password": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "banking"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "update_scheduled_transaction",
       "internal_tool_id": "agentdojo.v1.banking.update_scheduled_transaction",
       "impact_tier": 10,
-      "authority_arguments": [
-        "amount",
-        "date",
-        "id",
-        "recipient",
-        "recurring"
-      ],
-      "field_trust_classes": {
-        "amount": "unclassified",
-        "date": "unclassified",
-        "id": "unclassified",
-        "recipient": "unclassified",
-        "recurring": "unclassified",
-        "subject": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "amount",
         "date",
@@ -1291,37 +1331,45 @@
         "recurring",
         "subject"
       ],
+      "args": {
+        "amount": "AUTHORITY_ARG",
+        "date": "AUTHORITY_ARG",
+        "id": "AUTHORITY_ARG",
+        "recipient": "AUTHORITY_ARG",
+        "recurring": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "banking"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     },
     {
       "tool_name": "update_user_info",
       "internal_tool_id": "agentdojo.v1.banking.update_user_info",
       "impact_tier": 5,
-      "authority_arguments": [
-        "city",
-        "first_name",
-        "last_name",
-        "street"
-      ],
-      "field_trust_classes": {
-        "city": "unclassified",
-        "first_name": "unclassified",
-        "last_name": "unclassified",
-        "street": "unclassified"
-      },
+      "impact_tier_source": "policy default",
       "expected_keys": [
         "city",
         "first_name",
         "last_name",
         "street"
       ],
+      "args": {
+        "city": "AUTHORITY_ARG",
+        "first_name": "AUTHORITY_ARG",
+        "last_name": "AUTHORITY_ARG",
+        "street": "AUTHORITY_ARG"
+      },
+      "result_format": "json",
+      "result_fields": {},
+      "result_default": "EXTERNAL",
+      "review_status": "draft",
       "source_suites": [
         "banking"
-      ],
-      "impact_tier_source": "policy default"
+      ]
     }
   ]
 }

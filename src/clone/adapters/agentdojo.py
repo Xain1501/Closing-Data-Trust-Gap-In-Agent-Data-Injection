@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 from ast import literal_eval
+from functools import partial
+import json
 from collections.abc import Callable, Mapping, Sequence
 from copy import deepcopy
 from typing import Any
 from uuid import uuid4
 
 from agentdojo.agent_pipeline.llms.google_llm import EMPTY_FUNCTION_NAME
-from agentdojo.agent_pipeline.tool_execution import ToolsExecutor
+from agentdojo.agent_pipeline.tool_execution import ToolsExecutor, tool_result_to_str
 from agentdojo.functions_runtime import EmptyEnv, Env, FunctionReturnType, FunctionsRuntime
 from agentdojo.types import ChatMessage, ChatToolResultMessage, text_content_block_from_string
 
@@ -32,13 +34,9 @@ class TrustVerificationToolsExecutor(ToolsExecutor):
         ledger: InterceptionLedger,
         tool_matrix: TrustMatrix | None = None,
     ) -> None:
-        if tool_output_formatter is None:
-            super().__init__()
-        else:
-            super().__init__(tool_output_formatter)
-        self.detector = detector
-        self.mode = mode
-        self.detector_timeout_s = detector_timeout_s
+        # D1: JSON output by default, so the format never depends on which AgentDojo
+        # copy is imported (the pip copy formats with YAML / Python repr).
+        super().__init__(tool_output_formatter or partial(tool_result_to_str, dump_fn=json.dumps))
         self.ledger = ledger
         self.tool_matrix = tool_matrix or load_tool_matrix()
         self.core = InterceptionCore(
@@ -48,6 +46,23 @@ class TrustVerificationToolsExecutor(ToolsExecutor):
             mode=mode,
             detector_timeout_s=detector_timeout_s,
         )
+
+    # A6: the settings live on the core only; these views cannot drift from it.
+    @property
+    def mode(self) -> Mode:
+        return self.core.mode
+
+    @mode.setter
+    def mode(self, mode: Mode) -> None:
+        self.core.set_mode(mode)
+
+    @property
+    def detector(self) -> Detector | None:
+        return self.core.detector
+
+    @property
+    def detector_timeout_s(self) -> float:
+        return self.core.detector_timeout_s
 
     def query(
         self,

@@ -23,8 +23,7 @@ def matrix_entry():
         internal_tool_id="test.calendar_search",
         impact_tier=5,
         impact_tier_source="policy default",
-        authority_arguments=("recipient",),
-        field_trust_classes={},
+        args=(("recipient", "AUTHORITY_ARG"),),
         expected_keys=("query",),
     )
 

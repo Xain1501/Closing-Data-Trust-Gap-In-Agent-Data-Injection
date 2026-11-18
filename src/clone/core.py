@@ -46,6 +46,9 @@ class DetectorDecision:
     schema_ok: bool | None = None      # None = no schema was checked
     parse_health: str | None = None
     decided_by: str | None = None      # detector stage that produced this decision
+    # Post-hop: the result's true field list (an object with ``to_dict()`` or a plain
+    # mapping). Core stores it on the ledger; it is never used to decide.
+    skeleton: Any = None
 
 
 Detector = Callable[..., bool | DetectorDecision]
@@ -71,8 +74,7 @@ class InterceptionCore:
         detector_name: str | None = None,
         detector_version: str | None = None,
     ) -> None:
-        if mode not in ("off", "passthrough", "enforce"):
-            raise ValueError(f"Unsupported interception mode: {mode}")
+        _check_mode(mode)
         if detector_timeout_s <= 0:
             raise ValueError("detector_timeout_s must be greater than zero")
         self.ledger = ledger
@@ -93,6 +95,13 @@ class InterceptionCore:
         self._detector_uses_context = (
             _detector_accepts_context(detector) if mode != "off" else False
         )
+
+    def set_mode(self, mode: Mode) -> None:
+        """Change the interception mode after construction (validated)."""
+        _check_mode(mode)
+        if mode != "off" and self.mode == "off":
+            self._detector_uses_context = _detector_accepts_context(self.detector)
+        self.mode = mode
 
     def check_call(
         self,
@@ -125,6 +134,7 @@ class InterceptionCore:
             detector_version=self.detector_version,
             matrix_schema_version=self.tool_matrix.schema_version,
             matrix_sha256=self.tool_matrix.source_sha256,
+            matrix_keys_match=None if entry.is_fallback else entry.keys_match,
         )
         if entry.is_fallback:
             self.ledger.transition(
@@ -203,7 +213,7 @@ class InterceptionCore:
         entry = (
             self._entry_for_record(pre_record)
             if pre_record is not None
-            else self.tool_matrix.lookup(tool, ())
+            else self.tool_matrix.lookup(tool)          # by name (C2)
         )
         record = self.ledger.capture(
             run_id,
@@ -226,6 +236,9 @@ class InterceptionCore:
                                   interception_id=record.interception_id, user_prompt=user_prompt,
                                   batch_id=batch_id)
         decision, error = self._inspect(record, text, context)
+        if error is None and decision is not None and decision.skeleton is not None:
+            skeleton = decision.skeleton
+            self.ledger.attach_skeleton(record, skeleton.to_dict() if hasattr(skeleton, "to_dict") else skeleton)
         evidence = self._evidence(decision, error)
         if error is None and decision is not None and decision.allowed:
             self.ledger.transition(
@@ -263,19 +276,12 @@ class InterceptionCore:
         return InterceptionVerdict(False, denial, record)
 
     def _entry_for_record(self, record: InterceptionRecord) -> ToolMatrixEntry:
-        for entry in self.tool_matrix.entries:
-            if entry.internal_tool_id == record.internal_tool_id:
-                return entry
-        return ToolMatrixEntry(
-            tool_name=record.internal_tool_id or "",
-            internal_tool_id=record.internal_tool_id or "",
-            impact_tier=record.impact_tier,
-            impact_tier_source=record.impact_tier_source or "unclassified",
-            authority_arguments=(),
-            field_trust_classes={},
-            expected_keys=(),
-            is_fallback=not record.matrix_classified,
-        )
+        """The pre-hop's matrix entry, by id (C3: dictionary lookup, no rebuilt fake entry)."""
+        entry = self.tool_matrix.by_id(record.internal_tool_id)
+        if entry is not None:
+            return entry
+        name = (record.internal_tool_id or "").removeprefix("unclassified:")
+        return self.tool_matrix.fallback(name)
 
     def _deliver_denial(
         self,
@@ -379,6 +385,11 @@ class InterceptionCore:
         if error is not None or decision is None:
             return "Blocked: detector unavailable"
         return _DENIAL_TEXT
+
+
+def _check_mode(mode: str) -> None:
+    if mode not in ("off", "passthrough", "enforce"):
+        raise ValueError(f"Unsupported interception mode: {mode}")
 
 
 def _run_detector(

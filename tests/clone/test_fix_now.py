@@ -33,8 +33,7 @@ SURROGATE = "bad \ud800 char"
 def _matrix(*names: str) -> TrustMatrix:
     return TrustMatrix(tuple(
         ToolMatrixEntry(tool_name=name, internal_tool_id=f"test.{name}", impact_tier=1,
-                        impact_tier_source="policy default", authority_arguments=(),
-                        field_trust_classes={"value": "unclassified"}, expected_keys=("value",))
+                        impact_tier_source="policy default", expected_keys=("value",))
         for name in (names or ("demo",))
     ))
 

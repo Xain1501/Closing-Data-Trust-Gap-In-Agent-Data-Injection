@@ -189,8 +189,6 @@ def _risk_context():
         internal_tool_id="test.demo",
         impact_tier=1,
         impact_tier_source="policy default",
-        authority_arguments=(),
-        field_trust_classes={"value": "unclassified"},
         expected_keys=("value",),
     )
     return DetectorContext("pre", "demo", "c1", entry)

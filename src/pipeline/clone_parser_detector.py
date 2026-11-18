@@ -29,6 +29,7 @@ def parser_detector(
         schema_ok=analysis.schema_ok,
         parse_health=analysis.parse_health,
         decided_by="parser",
+        skeleton=analysis.skeleton,
     )
 
 
