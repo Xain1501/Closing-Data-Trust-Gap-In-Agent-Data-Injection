@@ -58,7 +58,9 @@ def main() -> None:
         ]
     )
 
-    _, _, _, messages, _ = pipeline.query(task.PROMPT, runtime, environment)
+    _, _, _, messages, extra_args = pipeline.query(task.PROMPT, runtime, environment)
+    run_id = extra_args.get("_clone_tvm_run_id")
+    tagging_state = parser_detector.get_run_state(run_id) if isinstance(run_id, str) else None
     records = ledger.records
     restored = InterceptionLedger.import_ledger(storage_dir / "ledger.jsonl")
     persisted_raw = [
@@ -104,8 +106,17 @@ def main() -> None:
         ],
         "final_assistant_message_present": bool(messages and messages[-1]["role"] == "assistant"),
         "ledger_chain_valid": ledger.verify_chain(),
+        "tagging": {
+            "tag_count": sum(len(tags) for tags in tagging_state.tags_by_interception.values())
+            if tagging_state else 0,
+            "external_values_indexed": len(tagging_state.values) if tagging_state else 0,
+            "lineage_overflowed": tagging_state.overflowed if tagging_state else False,
+            "blind": tagging_state.blind if tagging_state else False,
+        },
     }
     (storage_dir / "summary.json").write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
+    if isinstance(run_id, str):
+        parser_detector.end_run(run_id)
     print(json.dumps(summary, indent=2))
 
 

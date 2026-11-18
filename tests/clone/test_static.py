@@ -1751,6 +1751,27 @@ def test_two_tool_rounds_share_run_id_and_sequence() -> None:
     assert messages[-1]["role"] == "assistant"
 
 
+def test_terminal_assistant_turn_clears_detector_run_state() -> None:
+    ended: list[str] = []
+
+    def detector(_payload, _context=None):
+        return True
+
+    detector.end_run = ended.append  # type: ignore[attr-defined]
+    executor = TrustVerificationToolsExecutor(
+        detector, mode="enforce", ledger=InterceptionLedger(),
+        tool_matrix=_test_tool_matrix(),
+    )
+    terminal = ChatAssistantMessage(role="assistant", content=None, tool_calls=None)
+
+    executor.query(
+        "done", _runtime([]), EmptyEnv(), [terminal],
+        {"_clone_tvm_run_id": "completed-run"},
+    )
+
+    assert ended == ["completed-run"]
+
+
 def test_second_call_denial_does_not_block_first_call() -> None:
     ledger = InterceptionLedger()
     calls: list[str] = []

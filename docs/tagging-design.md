@@ -4,6 +4,15 @@ Status: **approved for implementation (Phase 1)** · Branch: `zain/tagging` · O
 Scope of this document: the field-level tagging stage and its run-level lineage. The graph, classifier and
 detector wiring are referenced only where tagging must stay compatible with them.
 
+## Current implementation update (`zain/experimental`)
+
+The active project policy supersedes the older no-profile `UNKNOWN` rule below: object/array structure is
+`SYSTEM`, and every scalar leaf is `EXTERNAL` unless a caller supplies an approved profile override.
+`FieldTag.has_forgery` now maps counted parser findings to their owning fields. Lineage supports prompt
+matches, exact whole-field `SYSTEM_LINK`s, and exact/bounded-substring `EXTERNAL_LINK`s. `SYSTEM_LINK` is
+available when a caller supplies a profile marking a string field as `SYSTEM`; the default policy has no
+SYSTEM scalar leaves. Automatic profile loading, call screening, and a separate AuditTrail are not yet wired.
+
 ---
 
 ## 1. Purpose and position in the pipeline

@@ -2,15 +2,17 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import replace
 from classifier.wl_svm import WLGraphSVM
 from clone.core import DetectorContext, DetectorDecision
 from clone.ledger import DetectorPayload
 from pipeline.classifier_gate import classify_and_assess
 from pipeline.evidence_panel import EvidencePanel
 from pipeline.decision import decide
-from pipeline.parser_analysis import analyze_clone_payload
+from pipeline.tagging_stage import analyze_and_tag
 from pipeline.risk_gate import RiskAssessment, resolve_review
-from trust_graph import build_trust_graph, tag_fields
+from provenance.run_state import RunStateStore
+from trust_graph import build_trust_graph
 
 ReviewCallback = Callable[[RiskAssessment, EvidencePanel], str]
 
@@ -20,6 +22,7 @@ def make_risk_detector(
     *,
     reviewer: ReviewCallback | None = None,
     user_query: Callable[[DetectorContext], str] | None = None,
+    run_states: RunStateStore | None = None,
 ) -> Callable[[DetectorPayload, DetectorContext | None], DetectorDecision]:
     """Create a clone-compatible detector with graph classification and review.
 
@@ -28,10 +31,13 @@ def make_risk_detector(
     the evidence packet in a UI and return allow/deny/evidence_only.
     """
 
+    state_store = run_states or RunStateStore()
+
     def detector(payload: DetectorPayload, context: DetectorContext | None = None) -> DetectorDecision:
         if context is None:
             raise ValueError("Risk detector requires interception context.")
-        analysis = analyze_clone_payload(payload, context)
+        tagged = analyze_and_tag(payload, context, state_store)
+        analysis = tagged.analysis
         base_contains_adi = analysis.structural.hit_count > 0
         evidence = {"forgery_found": base_contains_adi, "schema_ok": analysis.schema_ok,
                     "parse_health": analysis.parse_health}
@@ -47,8 +53,7 @@ def make_risk_detector(
                                     "Trusted impact tier is unavailable.", base_contains_adi,
                                     decided_by="matrix", **evidence)
 
-        tagged = tag_fields(analysis.parsed, dict(context.matrix_entry.field_trust_classes))
-        graph = build_trust_graph(tagged, report.findings)
+        graph = build_trust_graph(list(tagged.tags), report.findings)
         result = classify_and_assess(
             graph,
             classifier,
@@ -57,21 +62,33 @@ def make_risk_detector(
             structural_hits=report.hit_count,
         )
         assessment = result.assessment
+        lineage_incomplete = tagged.run_state.blind or tagged.run_state.overflowed
+        if lineage_incomplete and context.matrix_entry.impact_tier >= 5:
+            assessment = replace(
+                assessment,
+                route="human_review",
+                review_reasons=(*assessment.review_reasons, "lineage_incomplete"),
+            )
         action = "allow" if assessment.route == "auto_allow" else None
 
+        parsed_by_path = {field.path: field for field in analysis.true_fields}
+        tagged_by_path = {field.path: field for field in tagged.tags}
+
         panel = EvidencePanel.from_evidence(
-            original_user_query=user_query(context) if user_query else "",
+            original_user_query=(user_query(context) if user_query else context.user_prompt or ""),
             direction=context.direction,
             tool_name=context.tool_name,
             proposed_call_or_result=payload,
             untrusted_content=[
-                str(field.value) for field in tagged
-                if field.trust.value == "UT" and isinstance(field.value, str)
+                str(parsed_by_path[path].value)
+                for path, field in tagged_by_path.items()
+                if path in parsed_by_path and field.trust.value == "UT"
+                and isinstance(parsed_by_path[path].value, str)
             ],
-            provenance=[f"{field.path}:{field.trust.value}" for field in tagged],
+            provenance=[f"{field.path}:{field.trust.value}" for field in tagged.tags],
             structural_warnings=[
                 f"{finding.kind} at {finding.path}" for finding in report.findings
-            ],
+            ] + (["Run lineage is incomplete; review required for this impact tier."] if lineage_incomplete else []),
             assessment=assessment,
             expected_side_effect=(
                 "Tool call may execute" if context.direction == "pre"
@@ -115,4 +132,6 @@ def make_risk_detector(
         )
 
     detector.__name__ = "risk_detector"
+    detector.end_run = state_store.end_run  # type: ignore[attr-defined]
+    detector.run_state_store = state_store  # type: ignore[attr-defined]
     return detector

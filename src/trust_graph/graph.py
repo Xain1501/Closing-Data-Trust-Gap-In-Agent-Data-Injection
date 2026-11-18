@@ -15,9 +15,28 @@ def build_trust_graph(
     edges: list[tuple[str, str]] = []
     field_paths = {field.path for field in fields}
     for field in fields:
-        node_labels[field.path] = f"{field.trust.value}:{field.value_type}:depth={field.depth}"
+        provenance = getattr(field, "provenance", None)
+        role = getattr(field, "role", None)
+        lineage = getattr(field, "lineage_status", None)
+        node_labels[field.path] = ":".join(
+            part for part in (
+                field.trust.value,
+                getattr(provenance, "value", "legacy"),
+                getattr(role, "value", "other"),
+                getattr(lineage, "value", "unlinked"),
+                field.value_type,
+                f"depth={field.depth}",
+            )
+        )
         if field.parent_path in field_paths:
             edges.append((field.parent_path, field.path))
+        for evidence in getattr(field, "derived_from", ()):
+            if evidence.source_tag_id:
+                source = f"source:{evidence.source_tag_id}"
+                source_provenance = getattr(evidence, "source_provenance", "EXTERNAL")
+                source_provenance = getattr(source_provenance, "value", source_provenance)
+                node_labels.setdefault(source, f"source:{source_provenance}:string")
+                edges.append((source, field.path))
     for index, finding in enumerate(findings):
         finding_id = f"finding:{index}:{finding.path}:{finding.kind}"
         node_labels[finding_id] = f"finding:{finding.kind}"

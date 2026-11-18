@@ -5,8 +5,8 @@ its JSON path: where the value came from (provenance), whether it may be trusted
 (trust, computed from provenance) and the part it plays (role). Tags never hold the
 raw value and the payload is never modified.
 
-Step 1.2 implements results (decisions 2-6). Arguments get roles but no lineage yet:
-they are ``DERIVED`` / ``UNLINKED`` until step 1.3.
+Result tags are built from the true result fields; argument tags link values to the
+prompt or earlier SYSTEM/EXTERNAL result leaves through the per-run state.
 
 The old two-argument call ``tag_fields(parse_result, field_trust_classes)`` used by
 ``src/pipeline`` still works unchanged; it is deprecated and goes away when tagging is
@@ -17,14 +17,12 @@ from __future__ import annotations
 import json
 import re
 import time
-import unicodedata
 import uuid
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from enum import Enum
 from types import MappingProxyType
 from typing import Any, Literal
-from urllib.parse import unquote
 
 from parser.models import ParsedField, ParseResult, TaggedField, Trust
 
@@ -48,6 +46,7 @@ class Role(str, Enum):
 
 class LineageStatus(str, Enum):
     USER_MATCH = "USER_MATCH"
+    SYSTEM_LINK = "SYSTEM_LINK"
     EXTERNAL_LINK = "EXTERNAL_LINK"
     UNLINKED = "UNLINKED"
     BELOW_MIN = "BELOW_MIN"
@@ -59,6 +58,7 @@ class Evidence:
     source_tag_id: str | None
     match_type: Literal["equal", "substring"]
     matched_length: int
+    source_provenance: Provenance = Provenance.EXTERNAL
 
 
 @dataclass(frozen=True)
@@ -73,10 +73,12 @@ class FieldTag:
     trust: Trust
     role: Role
     parent_path: str | None
+    depth: int
     value_type: str
     length: int | None
     lineage_status: LineageStatus
     derived_from: tuple[Evidence, ...] = ()
+    has_forgery: bool = False
 
 
 _RESULT_PROVENANCE = (Provenance.SYSTEM, Provenance.EXTERNAL)
@@ -113,12 +115,10 @@ class ProfileEntry:
 
 
 def normalise(value: str) -> str:
-    """Percent-decode once (never recursive), Unicode NFKC, casefold, strip (design doc 4.2).
+    """Compatibility export; canonical value normalization lives with lineage."""
+    from provenance.lineage import normalise as normalize_value
 
-    Lives here for step 1.2 (needed for ``FieldTag.length``); moves to
-    ``src/provenance/lineage.py`` in step 1.3.
-    """
-    return unicodedata.normalize("NFKC", unquote(value)).casefold().strip()
+    return normalize_value(value)
 
 
 def trust_for(provenance: Provenance, source_trusts: Sequence[Trust] = ()) -> Trust:
@@ -138,6 +138,10 @@ def tag_fields(
     run_state: Any = None,
     *,
     interception_id: str | None = None,
+    authority_arguments: Sequence[str] = (),
+    batch_id: int | None = None,
+    result_format: Literal["json", "text"] = "json",
+    findings: Sequence[Any] = (),
     clock: Callable[[], float] = time.time,
 ) -> list[FieldTag] | list[TaggedField]:
     """Tag every parsed field of one message.
@@ -145,7 +149,8 @@ def tag_fields(
     ``direction`` is ``"pre"`` (``fields`` are the parsed *arguments* object) or
     ``"post"`` (``fields`` are the parsed formatted result). ``profile_entry`` is the
     tool's profile, or ``None`` when the tool has none. ``run_state`` is the caller's
-    RunState; in step 1.2 only its ``run_id`` is read.
+    RunState; post-hop values are indexed there and pre-hop arguments are linked
+    against its prompt and earlier result values.
 
     Expected cases (no profile, draft entry, plain text) return tags; misuse raises.
     """
@@ -165,20 +170,54 @@ def tag_fields(
     fields = list(fields or ())
     make = _TagFactory(run_id, interception_id, direction, clock)
     if direction == "post":
-        return _tag_result(fields, profile_entry, make)
-    return _tag_arguments(fields, profile_entry, make)
+        forged_paths = _forged_field_paths(fields, findings)
+        tags = _tag_result(fields, profile_entry, make, result_format, forged_paths)
+        if run_state is not None:
+            from provenance.lineage import index_values
+
+            index_values(tags, fields, run_state, batch_id=batch_id)
+        return tags
+    forged_paths = _forged_field_paths(fields, findings)
+    tags = _tag_arguments(fields, profile_entry, make, authority_arguments, forged_paths)
+    if run_state is not None:
+        from provenance.lineage import link_arguments
+
+        return link_arguments(tags, fields, run_state, batch_id=batch_id)
+    return tags
 
 
 # ------------------------------------------------------------------ results ----
-def _tag_result(fields: list[ParsedField], entry: ProfileEntry | None, make: "_TagFactory") -> list[FieldTag]:
+def _tag_result(
+    fields: list[ParsedField], entry: ProfileEntry | None, make: "_TagFactory",
+    result_format: Literal["json", "text"], forged_paths: set[str],
+) -> list[FieldTag]:
+    effective_format = entry.result_format if entry is not None and entry.usable else result_format
     if entry is None or not entry.usable:
-        return [make(f, Provenance.UNKNOWN, Role.OTHER) for f in fields]
+        if effective_format == "text":
+            root = next((f for f in fields if f.path == "$"), None)
+            return [make(root, Provenance.EXTERNAL, _result_role(Provenance.EXTERNAL, root.value_type), root.path in forged_paths)] if root is not None else []
+        # The real object supplies trusted boundaries; its string/scalar leaves
+        # can still contain externally supplied data. Structure and values get
+        # separate provenance by default.
+        return [
+            make(
+                f,
+                Provenance.SYSTEM if f.value_type in ("object", "array") else Provenance.EXTERNAL,
+                _result_role(
+                    Provenance.SYSTEM if f.value_type in ("object", "array") else Provenance.EXTERNAL,
+                    f.value_type,
+                ),
+                f.path in forged_paths,
+            )
+            for f in fields
+        ]
 
-    if entry.result_format == "text":               # whole result is one field "$"
+    if effective_format == "text":                  # whole result is one field "$"
         root = next((f for f in fields if f.path == "$"), None)
         if root is None:
             return []
-        return [make(root, entry.result_default, _result_role(entry.result_default, root.value_type))]
+        default = entry.result_default if entry is not None and entry.usable else Provenance.EXTERNAL
+        return [make(root, default, _result_role(default, root.value_type), root.path in forged_paths)]
 
     patterns = [(_compile_pattern(p), prov) for p, prov in entry.result_fields.items()]
     by_path = {f.path: f for f in fields}
@@ -186,8 +225,10 @@ def _tag_result(fields: list[ParsedField], entry: ProfileEntry | None, make: "_T
     tags = []
     for f in fields:
         prov = _explicit_provenance(f, by_path, patterns, explicit)
-        final = prov if prov is not None else entry.result_default
-        tags.append(make(f, final, _result_role(final, f.value_type)))
+        final = prov if prov is not None else (
+            Provenance.SYSTEM if f.value_type in ("object", "array") else entry.result_default
+        )
+        tags.append(make(f, final, _result_role(final, f.value_type), f.path in forged_paths))
     return tags
 
 
@@ -233,10 +274,25 @@ def _strip_duplicate_suffix(path: str) -> str:
 
 
 # ---------------------------------------------------------------- arguments ----
-def _tag_arguments(fields: list[ParsedField], entry: ProfileEntry | None, make: "_TagFactory") -> list[FieldTag]:
-    """Roles from the profile; provenance from lineage (step 1.3). Until then DERIVED/UNLINKED."""
+def _tag_arguments(
+    fields: list[ParsedField], entry: ProfileEntry | None, make: "_TagFactory",
+    authority_arguments: Sequence[str] = (), forged_paths: set[str] | None = None,
+) -> list[FieldTag]:
+    """Assign argument roles before lineage attaches prompt/source provenance."""
     roles = dict(entry.args) if entry is not None and entry.usable else {}
-    return [make(f, Provenance.DERIVED, roles.get(_argument_name(f.path), Role.OTHER)) for f in fields]
+    authority = set(authority_arguments)
+    return [
+        make(
+            f,
+            Provenance.DERIVED,
+            roles.get(
+                _argument_name(f.path),
+                Role.AUTHORITY_ARG if _argument_name(f.path) in authority else Role.OTHER,
+            ),
+            f.path in (forged_paths or set()),
+        )
+        for f in fields
+    ]
 
 
 _IDENT_ROOT = re.compile(r"^\$\.([A-Za-z_]\w*)")
@@ -258,15 +314,32 @@ class _TagFactory:
                  clock: Callable[[], float]) -> None:
         self.run_id, self.interception_id, self.direction, self.clock = run_id, interception_id, direction, clock
 
-    def __call__(self, f: ParsedField, provenance: Provenance, role: Role) -> FieldTag:
+    def __call__(self, f: ParsedField, provenance: Provenance, role: Role,
+                 has_forgery: bool = False) -> FieldTag:
         length = len(normalise(f.value)) if isinstance(f.value, str) else None
         return FieldTag(
             run_id=self.run_id, interception_id=self.interception_id, direction=self.direction,
             path=f.path, tag_id=str(uuid.uuid4()), created_at=self.clock(),
             provenance=provenance, trust=trust_for(provenance), role=role,
-            parent_path=f.parent_path, value_type=f.value_type, length=length,
-            lineage_status=LineageStatus.UNLINKED, derived_from=(),
+            parent_path=f.parent_path, depth=f.depth, value_type=f.value_type, length=length,
+            lineage_status=LineageStatus.UNLINKED, derived_from=(), has_forgery=has_forgery,
         )
+
+
+def _forged_field_paths(fields: Sequence[ParsedField], findings: Sequence[Any]) -> set[str]:
+    """Attach each counted parser finding to its most specific true field owner."""
+    owners: set[str] = set()
+    for finding in findings:
+        path = str(getattr(finding, "path", "")).split("#", 1)[0]
+        candidates = [
+            field.path for field in fields
+            if path == field.path
+            or path.startswith(field.path + ".")
+            or path.startswith(field.path + "[")
+        ]
+        if candidates:
+            owners.add(max(candidates, key=len))
+    return owners
 
 
 # -------------------------------------------------------- deprecated legacy ----

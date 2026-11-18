@@ -167,6 +167,7 @@ def record_task(suite_name: str, task_id: str) -> dict[str, Any]:
     ])
     with frozen_clock():
         pipeline.query(task.PROMPT, FunctionsRuntime(suite.tools), environment, extra_args={_RUN_ID_KEY: run_id})
+    parser_detector.end_run(run_id)
 
     # Interception ids are random; renumber them in order so the files are stable.
     stable_id = {context.interception_id: f"i-{n}" for n, (_, context, _, _) in enumerate(seen, start=1)}

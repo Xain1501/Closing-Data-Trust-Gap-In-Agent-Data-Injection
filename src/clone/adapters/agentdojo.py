@@ -16,6 +16,7 @@ from clone.ledger import InterceptionLedger
 from clone.tvm import TrustMatrix, load_tool_matrix
 
 _RUN_ID_KEY = "_clone_tvm_run_id"
+_BATCH_ID_KEY = "_clone_tvm_batch_id"
 
 
 class TrustVerificationToolsExecutor(ToolsExecutor):
@@ -63,6 +64,14 @@ class TrustVerificationToolsExecutor(ToolsExecutor):
             or messages[-1]["role"] != "assistant"
             or not messages[-1]["tool_calls"]
         ):
+            # ToolsExecutionLoop calls the executor once more after the model
+            # produces its terminal assistant response. Release run-local
+            # prompts and lineage values at that point.
+            if messages and messages[-1]["role"] == "assistant" and not messages[-1]["tool_calls"]:
+                run_id = extra_args.get(_RUN_ID_KEY)
+                end_run = getattr(self.detector, "end_run", None)
+                if isinstance(run_id, str) and callable(end_run):
+                    end_run(run_id)
             return query, runtime, env, messages, extra_args
 
         updated_extra_args = dict(extra_args)
@@ -70,6 +79,11 @@ class TrustVerificationToolsExecutor(ToolsExecutor):
         if not isinstance(run_id, str) or not run_id:
             run_id = str(uuid4())
             updated_extra_args[_RUN_ID_KEY] = run_id
+        previous_batch = updated_extra_args.get(_BATCH_ID_KEY, 0)
+        if isinstance(previous_batch, bool) or not isinstance(previous_batch, int) or previous_batch < 0:
+            raise ValueError(f"{_BATCH_ID_KEY} must be a non-negative integer")
+        batch_id = previous_batch + 1
+        updated_extra_args[_BATCH_ID_KEY] = batch_id
         run_metadata = updated_extra_args.get("_clone_tvm_run_meta")
         if run_metadata is not None:
             if not isinstance(run_metadata, Mapping):
@@ -115,6 +129,7 @@ class TrustVerificationToolsExecutor(ToolsExecutor):
                 expected_keys,
                 schema=definition.parameters if definition is not None else None,
                 user_prompt=query,
+                batch_id=batch_id,
             )
             if not call_verdict.allowed:
                 denial = call_verdict.denial_text or "Blocked"
@@ -159,7 +174,14 @@ class TrustVerificationToolsExecutor(ToolsExecutor):
                 tool_error=error,
                 schema=definition.return_type if definition is not None else None,
                 raw_result=tool_result,
+                result_format=(
+                    "json"
+                    if isinstance(tool_result, (Mapping, list, tuple))
+                    or (hasattr(tool_result, "model_dump") and not isinstance(tool_result, type))
+                    else "text"
+                ),
                 user_prompt=query,
+                batch_id=batch_id,
             )
             observation = result if result_verdict.allowed else (
                 result_verdict.denial_text or "Blocked"

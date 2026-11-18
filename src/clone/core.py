@@ -32,6 +32,7 @@ class DetectorContext:
     result_format: str = "json"        # how the result text was formatted
     interception_id: str | None = None  # ledger id of this call/result (joins tags, ledger and audit)
     user_prompt: str | None = None     # the user's request for this run, when the adapter knows it
+    batch_id: int | None = None        # tool calls in one assistant message are simultaneous
 
 
 @dataclass(frozen=True)
@@ -102,6 +103,7 @@ class InterceptionCore:
         expected_keys: set[str] | frozenset[str],
         schema: Any | None = None,
         user_prompt: str | None = None,
+        batch_id: int | None = None,
     ) -> InterceptionVerdict:
         """Capture and decide whether a tool call may execute."""
         if self.mode == "off":
@@ -133,7 +135,8 @@ class InterceptionCore:
             )
 
         context = DetectorContext("pre", tool, call_id, entry, schema, run_id=run_id,
-                                  interception_id=record.interception_id, user_prompt=user_prompt)
+                                  interception_id=record.interception_id, user_prompt=user_prompt,
+                                  batch_id=batch_id)
         decision, error = self._inspect(record, payload, context)
         evidence = self._evidence(decision, error)
         if error is None and decision is not None and decision.allowed:
@@ -188,6 +191,7 @@ class InterceptionCore:
         raw_result: Any = None,
         result_format: str = "json",
         user_prompt: str | None = None,
+        batch_id: int | None = None,
     ) -> InterceptionVerdict:
         """Capture and decide whether the original tool observation may be released."""
         if not isinstance(text, str):
@@ -219,7 +223,8 @@ class InterceptionCore:
         )
         context = DetectorContext("post", tool, call_id, entry, schema, run_id=run_id,
                                   raw_result=raw_result, result_format=result_format,
-                                  interception_id=record.interception_id, user_prompt=user_prompt)
+                                  interception_id=record.interception_id, user_prompt=user_prompt,
+                                  batch_id=batch_id)
         decision, error = self._inspect(record, text, context)
         evidence = self._evidence(decision, error)
         if error is None and decision is not None and decision.allowed:

@@ -15,8 +15,10 @@ flowchart TD
     F -- Yes --> H[Structural scan: findings, hit count, S]
     H --> I{Detector selected}
     I -- Parser-only --> J[Allow iff no structural hits]
-    I -- Risk composition --> K[Tag fields from TVM provenance]
-    K --> L[Build trust graph]
+    I -- Risk composition --> K[Tag result skeleton: SYSTEM structure / EXTERNAL leaves]
+    K --> K2[Store external strings and prompt in bounded run state]
+    K2 --> K3[Link next-call arguments to prompt or earlier results]
+    K3 --> L[Build trust graph]
     L --> M[Classifier probability + impact]
     M --> N[Risk formula and review policy]
     N --> O[Allow, deny, or evidence-only]
@@ -114,19 +116,13 @@ executor = TrustVerificationToolsExecutor(
 
 The bridge requires context; calling `parser_detector(payload)` without it raises `ValueError`. Existing one-argument detectors remain supported by clone, but this parser bridge specifically needs the contextual callback form.
 
-## Next stage: field-by-field tagging
+## Tagging and lineage
 
-The next detector stage is tagging. Its input should be the **cloned pre/post payload**, not a replacement payload reconstructed from ledger state. The parser's structural score is an output of parser analysis that the pipeline can pass to later stages. Per the intended interface, tagging should inspect/tag each field of the cloned call/result and may consume the parser score, but it should not require the TVM/ledger or depend on a `ParseResult` being passed as its primary input.
+`pipeline.tagging_stage.analyze_and_tag` runs parser analysis and produces field tags plus a per-run lineage state. Structured post-hop results use the raw-result skeleton for true field boundaries; text results, including JSON-looking strings, remain one opaque leaf for tagging. The active default is SYSTEM for object/array structure and EXTERNAL for every scalar leaf, following the selected project policy.
 
-The parser-only callback returns a single `DetectorDecision`. The optional composed classifier path now tags parser fields using explicit TVM field trust classes, builds a provenance graph, classifies it, and applies risk/review policy. The pipeline-owned intermediate contract carries:
+`provenance.lineage.index_values` indexes normalized SYSTEM/EXTERNAL string leaves. `link_arguments` checks short values, the user prompt, whole SYSTEM values, and then exact or bounded-substring EXTERNAL values. It records `USER_MATCH`, `SYSTEM_LINK`, `EXTERNAL_LINK`, `UNLINKED`, or `BELOW_MIN`; evidence identifies source tag IDs. The adapter's batch ID prevents a tool call from linking to a result produced by a sibling call in the same assistant message. `FieldTag.has_forgery` maps counted parser findings to the owning field.
 
-1. **Clone input:** the deep-copied pre-hop dict or post-hop string plus `DetectorContext`.
-2. **Parser stage output:** parse status, structural findings/report, and score.
-3. **Tagging stage output:** field-level tags produced from the cloned traffic, associated with stable field paths and direction.
-4. **Later analysis:** tool-dependency graph, WL-kernel representation, and SVM/classifier outputs.
-5. **Final decision:** allowed/blocked, label, score(s), ADI result, and a reason that clone can record and enforce.
-
-Keep this shared multi-stage state in `src/pipeline`, not `InterceptionCore`. Do not put parsed results, tags, graph state, or classifier implementation into the clone ledger. The ledger is the audit trail; the pipeline owns intermediate detector artifacts.
+This state is in memory, bounded per run, and cleared at the terminal assistant turn when the detector exposes `end_run`. Parser tagging records evidence; the default `parser_detector` still makes its decision from parser policy. The optional risk detector consumes tags in its graph and risk path. Call screening, a separate stage-by-stage AuditTrail, SYSTEM-field profiles, and run-level classifiers are later work. Do not put tags or intermediate state into the clone ledger.
 
 Suggested implementation sequence for the next contributor/agent:
 
@@ -140,7 +136,7 @@ Suggested implementation sequence for the next contributor/agent:
 The following reusable components are now available:
 
 - `classifier.wl_svm`: `GraphSnapshot`, deterministic Weisfeiler-Lehman subtree features, and a linear SVM with sigmoid probability calibration. It expects the graph builder to supply categorical trust/provenance node labels and edges; it does not create graphs from raw parser output.
-- `trust_graph.tagging.tag_fields`: tags each parsed field from its top-level TVM class; unknown classes default to `UT`. Nested fields inherit their top-level argument class.
+- `trust_graph.tagging.tag_fields`: creates side-record field tags; the tagging stage attaches per-run lineage and parser forgery findings.
 - `trust_graph.graph.build_trust_graph`: builds parent-child field edges and attaches structural finding nodes.
 - `classifier.train`: trains an artifact from labeled graph JSONL. Each row contains a unique `case_id`, `label` (`benign` or `attack`), and `graph` with `node_labels` and `edges`. Each class needs at least two examples for calibration.
 - `pipeline.classifier_gate.classify_and_assess`: applies classifier probability to trusted impact tier (1/5/10) and keeps parser structural density as separate evidence.
