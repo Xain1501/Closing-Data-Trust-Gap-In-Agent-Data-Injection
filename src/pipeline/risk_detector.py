@@ -133,5 +133,6 @@ def make_risk_detector(
 
     detector.__name__ = "risk_detector"
     detector.end_run = state_store.end_run  # type: ignore[attr-defined]
+    detector.get_run_state = state_store.get  # type: ignore[attr-defined]
     detector.run_state_store = state_store  # type: ignore[attr-defined]
     return detector

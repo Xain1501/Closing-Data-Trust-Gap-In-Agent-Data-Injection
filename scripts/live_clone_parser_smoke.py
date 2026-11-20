@@ -24,6 +24,7 @@ from pipeline.clone_parser_detector import parser_detector
 def main() -> None:
     arg_parser = argparse.ArgumentParser(description=__doc__)
     arg_parser.add_argument("--attack", action="store_true", help="Use the official workspace task 0 syntactic injection")
+    arg_parser.add_argument("--risk-model", type=Path, help="Use a trained WL-SVM risk detector instead of parser-only mode")
     args = arg_parser.parse_args()
     load_dotenv(".env", override=False)
     if not os.getenv("GROQ_API_KEY"):
@@ -42,8 +43,14 @@ def main() -> None:
     ledger = InterceptionLedger(storage_dir=storage_dir)
     formatter = partial(tool_result_to_str, dump_fn=json.dumps)
     llm = get_llm("groq", model, None, "tool")
+    detector = parser_detector
+    if args.risk_model:
+        from classifier.wl_svm import WLGraphSVM
+        from pipeline.risk_detector import make_risk_detector
+
+        detector = make_risk_detector(WLGraphSVM.load(args.risk_model))
     executor = TrustVerificationToolsExecutor(
-        parser_detector,
+        detector,
         ledger=ledger,
         tool_matrix=load_tool_matrix(),
         mode="enforce",
@@ -60,7 +67,8 @@ def main() -> None:
 
     _, _, _, messages, extra_args = pipeline.query(task.PROMPT, runtime, environment)
     run_id = extra_args.get("_clone_tvm_run_id")
-    tagging_state = parser_detector.get_run_state(run_id) if isinstance(run_id, str) else None
+    state_reader = getattr(detector, "get_run_state", None)
+    tagging_state = state_reader(run_id) if isinstance(run_id, str) and callable(state_reader) else None
     records = ledger.records
     restored = InterceptionLedger.import_ledger(storage_dir / "ledger.jsonl")
     persisted_raw = [
@@ -116,7 +124,9 @@ def main() -> None:
     }
     (storage_dir / "summary.json").write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
     if isinstance(run_id, str):
-        parser_detector.end_run(run_id)
+        end_run = getattr(detector, "end_run", None)
+        if callable(end_run):
+            end_run(run_id)
     print(json.dumps(summary, indent=2))
 
 

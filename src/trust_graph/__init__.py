@@ -23,6 +23,7 @@ __all__ = [
     "Provenance",
     "Role",
     "build_trust_graph",
+    "build_trace_graph",
     "normalise",
     "tag_fields",
     "trust_for",
@@ -33,3 +34,9 @@ def build_trust_graph(*args, **kwargs):
     from .graph import build_trust_graph as _build_trust_graph
 
     return _build_trust_graph(*args, **kwargs)
+
+
+def build_trace_graph(*args, **kwargs):
+    from .graph import build_trace_graph as _build_trace_graph
+
+    return _build_trace_graph(*args, **kwargs)

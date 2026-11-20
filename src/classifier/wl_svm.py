@@ -89,10 +89,26 @@ class WLGraphSVM:
         self.random_state = random_state
         self._vectorizer: DictVectorizer | None = None
         self._model: CalibratedClassifierCV | None = None
+        self._training_group_ids: frozenset[str] | None = None
 
-    def fit(self, graphs: Sequence[GraphSnapshot], labels: Sequence[str]) -> "WLGraphSVM":
+    @property
+    def training_group_ids(self) -> frozenset[str] | None:
+        return self._training_group_ids
+
+    def fit(
+        self,
+        graphs: Sequence[GraphSnapshot],
+        labels: Sequence[str],
+        *,
+        group_ids: Sequence[str] | None = None,
+    ) -> "WLGraphSVM":
         if len(graphs) != len(labels) or not graphs:
             raise ValueError("graphs and labels must have the same non-zero length")
+        if group_ids is not None and (
+            len(group_ids) != len(graphs)
+            or any(not isinstance(group, str) or not group for group in group_ids)
+        ):
+            raise ValueError("group_ids must contain one non-empty string per graph")
         counts = Counter(labels)
         if set(counts) != {"benign", "attack"}:
             raise ValueError("training labels must contain both 'benign' and 'attack'")
@@ -115,6 +131,7 @@ class WLGraphSVM:
         model.fit(matrix, list(labels))
         self._vectorizer = vectorizer
         self._model = model
+        self._training_group_ids = frozenset(group_ids) if group_ids is not None else None
         return self
 
     def predict(self, graph: GraphSnapshot) -> ClassifierResult:
@@ -133,18 +150,25 @@ class WLGraphSVM:
         if self._model is None or self._vectorizer is None:
             raise RuntimeError("cannot save an unfitted classifier")
         joblib.dump({
-            "format_version": 1,
+            "format_version": 2,
             "iterations": self.iterations,
             "c": self.c,
             "random_state": self.random_state,
             "vectorizer": self._vectorizer,
             "model": self._model,
+            "training_group_ids": (
+                sorted(self._training_group_ids)
+                if self._training_group_ids is not None else None
+            ),
         }, path)
 
     @classmethod
     def load(cls, path: str | Path) -> "WLGraphSVM":
         artifact = joblib.load(path)
-        if not isinstance(artifact, dict) or artifact.get("format_version") != 1:
+        if (
+            not isinstance(artifact, dict)
+            or artifact.get("format_version") not in (1, 2)
+        ):
             raise ValueError("unsupported classifier artifact")
         instance = cls(
             iterations=artifact["iterations"],
@@ -153,4 +177,11 @@ class WLGraphSVM:
         )
         instance._vectorizer = artifact["vectorizer"]
         instance._model = artifact["model"]
+        group_ids = artifact.get("training_group_ids")
+        if group_ids is not None:
+            if not isinstance(group_ids, list) or any(
+                not isinstance(group, str) or not group for group in group_ids
+            ):
+                raise ValueError("invalid training group metadata in classifier artifact")
+            instance._training_group_ids = frozenset(group_ids)
         return instance

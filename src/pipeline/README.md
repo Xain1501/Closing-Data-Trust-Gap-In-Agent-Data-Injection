@@ -127,7 +127,7 @@ This state is in memory, bounded per run, and cleared at the terminal assistant 
 Suggested implementation sequence for the next contributor/agent:
 
 1. Expand TVM field trust annotations from their current `unclassified` defaults using verified provenance policy.
-2. Train and validate the SVM using labeled graph JSONL from project/AgentDojo runs.
+2. Build and validate graph JSONL from labeled project/AgentDojo runs.
 3. Connect a human review callback/UI to display `EvidencePanel` and capture the reviewer action.
 4. Run provider-backed AgentDojo evaluation and populate evaluation JSONL.
 
@@ -148,16 +148,20 @@ The following reusable components are now available:
 Example commands (run from the repository root in PowerShell):
 
 ```powershell
+$env:PYTHONPATH = "src;agentdojo/src"
+python -m classifier.graph_dataset --output-dir .\out\wl_svm_data
+python -m classifier.train .\out\wl_svm_data\graphs_train.jsonl .\out\wl_svm_data\wl_svm.joblib
+python -m classifier.evaluate .\out\wl_svm_data\wl_svm.joblib .\out\wl_svm_data\graphs_test.jsonl
+
 $env:PYTHONPATH = "src"
-python -m classifier.train .\graphs.jsonl .\wl_svm.joblib
 python -m pipeline.evaluation .\evaluation_cases.jsonl
 ```
 
-Training graph JSONL and evaluation JSONL must come from labeled project/AgentDojo runs; this repository does not fabricate training data. Evaluation rows require `case_id`, `label`, `task_success`, and `flagged`; attack rows also require `attack_success`. Optional `human_decision` is `allow`, `deny`, or `evidence_only`. Human approval accuracy counts `allow` as correct for benign cases and any non-allow action as correct for attack cases.
+`classifier.graph_dataset` now creates graph JSONL from the checked-in benign traces and the completed attack runs. It preserves run-level lineage, nested parent-child edges, structural finding nodes, and forgery labels. Related suite/task groups are kept together in train or test to reduce variant leakage. The generated data is reproducible and belongs under `out/` or `runs/`, not source control. Evaluation rows require `case_id`, `label`, `task_success`, and `flagged`; attack rows also require `attack_success`. Optional `human_decision` is `allow`, `deny`, or `evidence_only`. Human approval accuracy counts `allow` as correct for benign cases and any non-allow action as correct for attack cases.
 
 The classifier/gate path is available as an opt-in detector factory; the default `parser_detector` example still uses parser/schema policy only. Effective risk enforcement depends on a trained model and a reviewer callback for review-tier cases. Current TVM impact tiers are policy defaults and current field classes are all `unclassified`, so those fields conservatively tag as `UT`. Post-hop review can withhold a result from the agent but cannot undo a side effect the tool has already completed.
 
-To opt in after training a model, construct the executor with `make_risk_detector(WLGraphSVM.load("wl_svm.joblib"), reviewer=your_review_callback)`. The callback receives `(RiskAssessment, EvidencePanel)` and returns `allow`, `deny`, or `evidence_only`. Keep the matrix's current `unclassified` values as untrusted until the project has evidence to assign trusted provenance; the current checked-in matrix has no explicit trusted field annotations. If no reviewer callback is provided, moderate/high risk is denied. Post-hop review controls only whether the response reaches the agent; it cannot reverse an already executed side effect.
+To opt in after training a model, construct the executor with `make_risk_detector(WLGraphSVM.load("wl_svm.joblib"), reviewer=your_review_callback)`. The live smoke script accepts the same wiring with `--risk-model .\out\wl_svm_data\wl_svm.joblib`. The callback receives `(RiskAssessment, EvidencePanel)` and returns `allow`, `deny`, or `evidence_only`. Keep the matrix's current `unclassified` values as untrusted until the project has evidence to assign trusted provenance; the current checked-in matrix has no explicit trusted field annotations. If no reviewer callback is provided, moderate/high risk is denied. Post-hop review controls only whether the response reaches the agent; it cannot reverse an already executed side effect.
 
 ## Testing and validation
 

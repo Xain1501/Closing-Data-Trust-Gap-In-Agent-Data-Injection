@@ -49,6 +49,18 @@ def test_wl_svm_fits_and_returns_calibrated_attack_probability():
     assert attack.attack_probability > benign.attack_probability
 
 
+def test_wl_svm_artifact_retains_training_groups(tmp_path):
+    labels = ["benign"] * 6 + ["attack"] * 6
+    graphs = [_graph(label == "attack", index) for index, label in enumerate(labels)]
+    groups = [f"group-{index}" for index in range(len(labels))]
+    model_path = tmp_path / "wl_svm.joblib"
+
+    WLGraphSVM(iterations=1).fit(graphs, labels, group_ids=groups).save(model_path)
+    loaded = WLGraphSVM.load(model_path)
+
+    assert loaded.training_group_ids == frozenset(groups)
+
+
 def test_risk_thresholds_match_proposal_and_remove_allow_at_high_risk():
     low = assess_risk(0.0, 0.0, 5)
     moderate = assess_risk(0.2, 0.2, 5)

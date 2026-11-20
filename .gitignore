@@ -54,6 +54,7 @@ Thumbs.db
 
 # Generated outputs
 outputs/
+out/
 results/
 # Test / coverage
 .pytest_cache/

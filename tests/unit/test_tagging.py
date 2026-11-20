@@ -11,7 +11,7 @@ from trust_graph.tagging import (
     Role,
     tag_fields,
 )
-from trust_graph.graph import build_trust_graph
+from trust_graph.graph import build_trace_graph, build_trust_graph
 
 
 def parsed(payload, direction=Direction.POST_HOP):
@@ -64,9 +64,12 @@ def test_graph_preserves_source_provenance_for_lineage_edges():
         "pre", "demo", args.fields, run_state=state, interception_id="pre-1",
     )
 
-    graph = build_trust_graph(argument_tags)
-    source_node = f"source:{result_tags[1].tag_id}"
-    assert graph.node_labels[source_node] == "source:SYSTEM:string:forgery=false"
+    graph = build_trace_graph([result_tags, argument_tags])
+    source_node = "event:0:$.id"
+    target_node = "event:1:$.id"
+    assert graph.node_labels[source_node].startswith("T:SYSTEM")
+    assert (source_node, target_node) in graph.edges
+    assert all("forgery=false" in label for label in graph.node_labels.values())
 
 
 def test_text_result_stays_one_external_leaf_even_if_its_text_looks_like_json():
