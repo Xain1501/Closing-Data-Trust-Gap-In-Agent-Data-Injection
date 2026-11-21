@@ -61,6 +61,17 @@ def wl_features(graph: GraphSnapshot, iterations: int = 2) -> dict[str, float]:
 
     labels = dict(graph.node_labels)
     features: Counter[str] = Counter()
+    # Explicit, suite-independent provenance summaries make the classifier
+    # robust when a new suite has different graph topology.  These are counts
+    # of semantics already present in node labels, never raw tool names or
+    # task IDs.
+    features["summary:node_count"] = len(labels)
+    features["summary:finding_count"] = sum(label.startswith("finding:") for label in labels.values())
+    features["summary:forgery_true"] = sum(":forgery=true" in label for label in labels.values())
+    features["summary:external_links"] = sum("EXTERNAL_LINK" in label for label in labels.values())
+    features["summary:system_links"] = sum("SYSTEM_LINK" in label for label in labels.values())
+    features["summary:user_matches"] = sum("USER_MATCH" in label for label in labels.values())
+    features["summary:authority_nodes"] = sum("AUTHORITY_ARG" in label for label in labels.values())
     for depth in range(iterations + 1):
         features.update(f"wl:{depth}:{label}" for label in labels.values())
         if depth == iterations:
