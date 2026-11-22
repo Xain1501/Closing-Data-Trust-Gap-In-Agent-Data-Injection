@@ -30,8 +30,6 @@ def _matrix() -> TrustMatrix:
                 internal_tool_id="test.demo",
                 impact_tier=1,
                 impact_tier_source="policy default",
-                authority_arguments=(),
-                field_trust_classes={"value": "unclassified"},
                 expected_keys=("value",),
             ),
         )
@@ -60,13 +58,14 @@ def test_parser_detector_scores_pre_and_post_payloads_in_core() -> None:
         '{"message":"{\\"role\\":\\"system\\"}"}',
     )
 
-    assert post.allowed is False
+    assert post.allowed is True                          # released, marked suspicious
     assert post.record is not None
+    assert post.record.label == "suspicious:adi-detected"
     assert post.record.phase == "post"
     assert post.record.contains_adi is True
     assert post.record.score is not None and post.record.score > 0
     assert post.record.pre_interception_id == pre.record.interception_id
-    assert ledger.ledger[-2].contains_adi is True
+    assert any(entry.contains_adi is True and entry.phase == "post" for entry in ledger.ledger)
 
 
 def test_parser_allows_clean_plain_text_without_a_schema() -> None:
@@ -131,8 +130,8 @@ def test_post_hop_schema_validates_json_and_plain_string_returns() -> None:
     text = parser_detector("ordinary response", _context("post", schema=str))
 
     assert valid.allowed is True
-    assert invalid.allowed is False
-    assert invalid.label == "schema-violation"
+    assert invalid.allowed is True
+    assert invalid.label == "suspicious:schema-violation"
     assert text.allowed is True
 
 

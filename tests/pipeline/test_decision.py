@@ -86,6 +86,9 @@ def test_detector_returns_the_same_verdict_as_decide():
     for payload in ("clean text", ATTACK, "[" * 40 + "]" * 40):
         analysis, verdict = run(payload)
         decision = parser_detector(payload, ctx())
+        # Post-hop: a blocking verdict is released and marked suspicious.
+        expected_label = verdict.label if verdict.allowed else f"suspicious:{verdict.label}"
         assert (decision.allowed, decision.label, decision.contains_adi) == (
-            verdict.allowed, verdict.label, verdict.contains_adi)
+            True, expected_label, verdict.contains_adi)
+        assert decision.suspicious is (not verdict.allowed)
         assert decision.score == analysis.structural.structural_score

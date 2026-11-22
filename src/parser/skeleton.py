@@ -24,9 +24,11 @@ from dataclasses import dataclass, field
 from typing import Any, Literal
 
 try:
+    from .inner import inner_fields as _inner_fields, split_records
     from .models import ParsedField
     from .parser import _Ctx, _Pairs, _TooDeep, _TooManyFields, _walk
 except ImportError:  # flat-folder layout
+    from inner import inner_fields as _inner_fields, split_records
     from models import ParsedField
     from parser import _Ctx, _Pairs, _TooDeep, _TooManyFields, _walk
 
@@ -144,6 +146,23 @@ class Skeleton:
         """String values: the only places an outsider can write free text."""
         return tuple(f for f in self.fields if f.value_type == "string")
 
+    @property
+    def inner_fields(self) -> tuple[ParsedField, ...]:
+        """Rows and cells written inside string leaves (``parser.inner``), e.g.
+        ``$[0].content.@row[12].@col[1]``. Kept apart from ``fields``, which stay the
+        object's own boundaries. Empty unless the skeleton is structured."""
+        cached = self.__dict__.get("_inner")
+        if cached is None:
+            out: list[ParsedField] = []
+            if self.structured:
+                for leaf in self.string_leaves:
+                    records = split_records(leaf.value) if isinstance(leaf.value, str) else None
+                    if records is not None:
+                        out.extend(_inner_fields(records, leaf.path, leaf.depth))
+            cached = tuple(out)
+            object.__setattr__(self, "_inner", cached)
+        return cached
+
     def get(self, path: str) -> ParsedField | None:
         return self._by_path.get(path)
 
@@ -157,6 +176,7 @@ class Skeleton:
             "interception_id": self.interception_id,
             "field_count": len(self.fields),
             "fields": [f.model_dump(mode="json") for f in self.fields],
+            "inner_fields": [f.model_dump(mode="json") for f in self.inner_fields],
         }
 
 

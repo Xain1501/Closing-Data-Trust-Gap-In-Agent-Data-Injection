@@ -57,8 +57,13 @@ class ParserAnalysis:
 
     @property
     def true_fields(self) -> tuple[ParsedField, ...]:
-        """The field list later stages should tag: the skeleton when there is one, else the parser's."""
-        return self.skeleton_fields or tuple(self.parsed.fields)
+        """The field list later stages should tag: the skeleton when there is one, else the parser's.
+
+        With a skeleton, rows and cells written inside its string leaves follow its own
+        fields, so tagging, lineage and the graph see each record as its own node."""
+        if self.skeleton_fields:
+            return self.skeleton_fields + self.skeleton.inner_fields
+        return tuple(self.parsed.fields)
 
     @property
     def schema_ok(self) -> bool | None:

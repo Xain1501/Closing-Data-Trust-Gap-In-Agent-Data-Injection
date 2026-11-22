@@ -17,7 +17,7 @@ from clone.canonical import canonical_json, text_sha256
 Phase = Literal["pre", "post"]
 DetectorPayload = dict[str, Any] | str
 _GENESIS_ENTRY_SHA256 = "0" * 64
-_ENTRY_SCHEMA_VERSION = 2   # v2: forgery_found, schema_ok, parse_health, decided_by
+_ENTRY_SCHEMA_VERSION = 3   # v2: forgery_found, schema_ok, parse_health, decided_by; v3: matrix_keys_match, skeleton_sha256
 
 
 @dataclass
@@ -55,6 +55,8 @@ class InterceptionRecord:
     schema_ok: bool | None = None         # None = no schema was checked
     parse_health: str | None = None       # clean | salvaged_repr | salvaged_repaired | uninspectable
     decided_by: str | None = None         # who produced the outcome: detector name/stage, "matrix", "detector-error", "policy"
+    matrix_keys_match: bool | None = None  # False: tool matched by name but its live argument names differ
+    skeleton_sha256: str | None = None    # hash of the result skeleton stored in skeletons.jsonl (post-hop)
 
 
 @dataclass(frozen=True)
@@ -94,6 +96,8 @@ class LedgerEntry:
     schema_ok: bool | None = None         # None = no schema was checked
     parse_health: str | None = None       # clean | salvaged_repr | salvaged_repaired | uninspectable
     decided_by: str | None = None         # who produced the outcome: detector name/stage, "matrix", "detector-error", "policy"
+    matrix_keys_match: bool | None = None  # False: tool matched by name but its live argument names differ
+    skeleton_sha256: str | None = None    # hash of the result skeleton stored in skeletons.jsonl (post-hop)
 
 
 @dataclass(frozen=True)
@@ -130,7 +134,10 @@ class InterceptionLedger:
         self.storage_dir = Path(storage_dir) if storage_dir is not None else None
         self._persisted_entries = 0
         self._persisted_payloads = 0
+        self._persisted_skeletons = 0
         self._files_started = False
+        self.skeletons: list[dict[str, Any]] = []     # true field lists of results, one row per result
+        self._skeleton_index: dict[str, int] = {}
 
     def set_run_metadata(self, run_id: str, mapping: Mapping[str, Any]) -> None:
         if not isinstance(mapping, Mapping):
@@ -156,6 +163,7 @@ class InterceptionLedger:
         detector_version: str | None = None,
         matrix_schema_version: int | None = None,
         matrix_sha256: str | None = None,
+        matrix_keys_match: bool | None = None,
     ) -> InterceptionRecord:
         # Pre-hop payloads are frozen into their canonical JSON text here, once.
         # That text is what is hashed, stored and (decoded) inspected.
@@ -184,6 +192,7 @@ class InterceptionLedger:
                 detector_version=detector_version,
                 matrix_schema_version=matrix_schema_version,
                 matrix_sha256=matrix_sha256,
+                matrix_keys_match=matrix_keys_match,
             )
             self.records.append(record)
             self._records_by_id[record.interception_id] = record
@@ -196,8 +205,36 @@ class InterceptionLedger:
             return record
 
     def get_record(self, interception_id: str) -> InterceptionRecord | None:
+        """A COPY of the record: changing it does not change the ledger (L7)."""
         with self._lock:
-            return self._records_by_id.get(interception_id)
+            record = self._records_by_id.get(interception_id)
+            return replace(record) if record is not None else None
+
+    def attach_skeleton(self, record: InterceptionRecord, skeleton: Mapping[str, Any]) -> str:
+        """Store a result's skeleton (the true field list) and link it to the record.
+
+        The skeleton row goes to ``skeletons.jsonl``; its hash is set on the record,
+        so the next ledger entry for this interception carries it and the hash chain
+        covers it. Returns the hash.
+        """
+        if record.phase != "post":
+            raise ValueError("Skeletons belong to post-hop results.")
+        row = _jsonable({"run_id": record.run_id, "interception_id": record.interception_id,
+                         "skeleton": dict(skeleton)})
+        digest = text_sha256(canonical_json(row["skeleton"]))
+        with self._lock:
+            if record.interception_id in self._skeleton_index:
+                raise ValueError(f"Skeleton already attached for {record.interception_id}.")
+            self._skeleton_index[record.interception_id] = len(self.skeletons)
+            self.skeletons.append(row)
+            record.skeleton_sha256 = digest
+            self._persist_locked()
+        return digest
+
+    def get_skeleton(self, interception_id: str) -> dict[str, Any] | None:
+        with self._lock:
+            index = self._skeleton_index.get(interception_id)
+            return deepcopy(self.skeletons[index]["skeleton"]) if index is not None else None
 
     def get_payload(self, interception_id: str) -> str | None:
         """The frozen payload text captured for an interception."""
@@ -310,6 +347,8 @@ class InterceptionLedger:
             schema_ok=record.schema_ok,
             parse_health=record.parse_health,
             decided_by=record.decided_by,
+            matrix_keys_match=record.matrix_keys_match,
+            skeleton_sha256=record.skeleton_sha256,
         )
         self.ledger.append(replace(entry, entry_sha256=_ledger_entry_hash(entry)))
         self._event_seq = event_seq
@@ -380,8 +419,11 @@ class InterceptionLedger:
             self._raw_payload_index.clear()
             self._run_metadata.clear()
             self._event_seq = 0
+            self.skeletons.clear()
+            self._skeleton_index.clear()
             self._persisted_entries = 0
             self._persisted_payloads = 0
+            self._persisted_skeletons = 0
             self._files_started = False       # next persist truncates the files
             self._persist_locked()
             self._persist_metadata_locked()
@@ -395,8 +437,10 @@ class InterceptionLedger:
                      [asdict(entry) for entry in self.ledger[self._persisted_entries:]], mode)
         _write_jsonl(self.storage_dir / "raw-payloads.jsonl",
                      [asdict(payload) for payload in self.raw_payloads[self._persisted_payloads:]], mode)
+        _write_jsonl(self.storage_dir / "skeletons.jsonl", self.skeletons[self._persisted_skeletons:], mode)
         self._persisted_entries = len(self.ledger)
         self._persisted_payloads = len(self.raw_payloads)
+        self._persisted_skeletons = len(self.skeletons)
         if not self._files_started:
             self._files_started = True
             self._persist_metadata_locked()

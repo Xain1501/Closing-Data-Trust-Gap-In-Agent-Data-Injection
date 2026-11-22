@@ -197,19 +197,13 @@ def _tag_result(
         if effective_format == "text":
             root = next((f for f in fields if f.path == "$"), None)
             return [make(root, Provenance.EXTERNAL, _result_role(Provenance.EXTERNAL, root.value_type), root.path in forged_paths)] if root is not None else []
-        # The real object supplies trusted boundaries; its string/scalar leaves
-        # can still contain externally supplied data. Structure and values get
-        # separate provenance by default.
+        # The real object supplies trusted boundaries. Scope section 6: keys, nesting,
+        # numbers, booleans and nulls are SYSTEM; any string an outsider could write is
+        # EXTERNAL (a server-generated string id needs an approved profile to be SYSTEM).
         return [
-            make(
-                f,
-                Provenance.SYSTEM if f.value_type in ("object", "array") else Provenance.EXTERNAL,
-                _result_role(
-                    Provenance.SYSTEM if f.value_type in ("object", "array") else Provenance.EXTERNAL,
-                    f.value_type,
-                ),
-                f.path in forged_paths,
-            )
+            make(f, _default_provenance(f.value_type),
+                 _result_role(_default_provenance(f.value_type), f.value_type),
+                 f.path in forged_paths)
             for f in fields
         ]
 
@@ -231,6 +225,10 @@ def _tag_result(
         )
         tags.append(make(f, final, _result_role(final, f.value_type), f.path in forged_paths))
     return tags
+
+
+def _default_provenance(value_type: str) -> Provenance:
+    return Provenance.EXTERNAL if value_type == "string" else Provenance.SYSTEM
 
 
 def _explicit_provenance(f, by_path, patterns, memo) -> Provenance | None:

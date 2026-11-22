@@ -18,6 +18,12 @@ class StoredValue:
     has_forgery: bool = False
 
 
+def number_key(value: float | int) -> str:
+    """One text form per number, so 98.7, 98.70 and "98.70" compare equal."""
+    as_float = float(value)
+    return str(int(as_float)) if as_float.is_integer() else repr(as_float)
+
+
 # Retain the original exported type name for callers that only store EXTERNAL values.
 StoredExternalValue = StoredValue
 
@@ -58,15 +64,16 @@ class RunState:
                 )
             for tag in tags:
                 source = by_path.get(tag.path)
-                if (
-                    source is None
-                    or source.value_type != "string"
-                    or not isinstance(source.value, str)
-                    or tag.provenance not in (Provenance.SYSTEM, Provenance.EXTERNAL)
-                ):
+                if source is None or tag.provenance not in (Provenance.SYSTEM, Provenance.EXTERNAL):
                     continue
-                value = normalise(source.value)
-                if len(value) < self.min_length:
+                if (source.value_type == "number" and isinstance(source.value, (int, float))
+                        and not isinstance(source.value, bool)):
+                    value = number_key(source.value)    # numbers: canonical text, no length rule
+                elif source.value_type == "string" and isinstance(source.value, str):
+                    value = normalise(source.value)
+                    if len(value) < self.min_length:
+                        continue
+                else:
                     continue
                 if len(self.values) >= self.max_values or self._char_count + len(value) > self.max_chars:
                     self.overflowed = True
@@ -78,6 +85,11 @@ class RunState:
                                 batch_id, tag.provenance.value, tag.has_forgery)
                 )
                 self._char_count += len(value)
+
+    def snapshot_values(self) -> tuple[StoredValue, ...]:
+        """The indexed values, read under the lock (another thread may be appending)."""
+        with self._lock:
+            return tuple(self.values)
 
     def record_argument_tags(self, tags: list[Any]) -> None:
         with self._lock:

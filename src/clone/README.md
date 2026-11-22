@@ -9,7 +9,7 @@ The clone is the source of detector payloads. The TVM and ledger provide classif
 - `core.py` is framework-agnostic. It handles capture, detector invocation with a timeout, enforcement modes, and release/block decisions.
 - `adapters/agentdojo.py` is the AgentDojo adapter. It translates AgentDojo tool messages to core calls and translates verdicts back to tool result messages.
 - `interceptor.py` preserves the old import path by re-exporting adapter/core names.
-- `tvm.py` loads the read-only tool matrix. A lookup returns tool metadata, or a logged `unclassified` fallback for a missing tool/schema.
+- `tvm.py` loads the read-only tool matrix (schema v2). A lookup matches by tool name (argument names pick between same-name tools); an unknown tool gets a logged `unclassified` fallback. `entry.profile()` gives the tagging stage its `ProfileEntry`.
 - `ledger.py` stores interception records, state-change events, raw payload snapshots, optional run metadata, and hash-chain fields.
 - The parser bridge currently lives at `src/pipeline/clone_parser_detector.py`; pipeline stages and their handoff are described in [the pipeline README](../pipeline/README.md).
 
@@ -64,7 +64,9 @@ Detectors may return `True`, `False`, or `DetectorDecision`. A boolean maps to l
 
 ## Matrix, ledger, and hashes
 
-Load the matrix with `load_tool_matrix()`. The matrix records tool names, internal IDs, impact tiers, argument metadata, and expected keys. The checked-in tiers are policy defaults. A missing tool or schema gets an `unclassified` fallback and is blocked in enforce mode. Matrix metadata is included in detector context and records, but currently does not determine the parser score.
+Load the matrix with `load_tool_matrix()`. Schema v2 records, per tool: name, internal ID, impact tier, expected keys, `args` (argument roles, e.g. `AUTHORITY_ARG`), `result_format`, `result_fields` (optional `SYSTEM`/`EXTERNAL` overrides by path), `result_default` and `review_status` (`draft` until reviewed). There are no per-field trust classes: field boundaries come from the result object (`parser.skeleton`), and trust comes from lineage. The checked-in tiers are policy defaults. A tool matched by name whose live argument names differ is still classified, and its records carry `matrix_keys_match=False`. An unknown tool gets an `unclassified` fallback and is blocked in enforce mode.
+
+The ledger stores each post-hop result's skeleton (its true field list) in `skeletons.jsonl`; the record's `skeleton_sha256` links to it and is covered by the hash chain. Read one back with `ledger.get_skeleton(interception_id)`.
 
 The ledger distinguishes:
 

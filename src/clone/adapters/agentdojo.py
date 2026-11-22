@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 from ast import literal_eval
+from functools import partial
+import json
 from collections.abc import Callable, Mapping, Sequence
 from copy import deepcopy
 from typing import Any
 from uuid import uuid4
 
 from agentdojo.agent_pipeline.llms.google_llm import EMPTY_FUNCTION_NAME
-from agentdojo.agent_pipeline.tool_execution import ToolsExecutor
+from agentdojo.agent_pipeline.tool_execution import ToolsExecutor, tool_result_to_str
 from agentdojo.functions_runtime import EmptyEnv, Env, FunctionReturnType, FunctionsRuntime
 from agentdojo.types import ChatMessage, ChatToolResultMessage, text_content_block_from_string
 
@@ -32,13 +34,9 @@ class TrustVerificationToolsExecutor(ToolsExecutor):
         ledger: InterceptionLedger,
         tool_matrix: TrustMatrix | None = None,
     ) -> None:
-        if tool_output_formatter is None:
-            super().__init__()
-        else:
-            super().__init__(tool_output_formatter)
-        self.detector = detector
-        self.mode = mode
-        self.detector_timeout_s = detector_timeout_s
+        # D1: JSON output by default, so the format never depends on which AgentDojo
+        # copy is imported (the pip copy formats with YAML / Python repr).
+        super().__init__(tool_output_formatter or partial(tool_result_to_str, dump_fn=json.dumps))
         self.ledger = ledger
         self.tool_matrix = tool_matrix or load_tool_matrix()
         self.core = InterceptionCore(
@@ -48,6 +46,44 @@ class TrustVerificationToolsExecutor(ToolsExecutor):
             mode=mode,
             detector_timeout_s=detector_timeout_s,
         )
+        # Runs this executor has started and not yet ended (see end_run).
+        self._active_runs: set[str] = set()
+
+    def end_run(self, run_id: str) -> bool:
+        """Release the detector's run-local state (prompt, indexed values, tags).
+
+        AgentDojo's ToolsExecutionLoop stops without calling the executor once the
+        model gives its final answer, so the executor cannot see the end of a run by
+        itself. It is ended here when the harness calls this, when the executor is
+        called after a final answer, or when this executor starts its next run.
+        A wrapped detector is followed through ``__wrapped__`` to find ``end_run``."""
+        self._active_runs.discard(run_id)
+        detector = self.detector
+        seen = 0
+        while detector is not None and seen < 10:
+            end = getattr(detector, "end_run", None)
+            if callable(end):
+                return bool(end(run_id))
+            detector = getattr(detector, "__wrapped__", None)
+            seen += 1
+        return False
+
+    # A6: the settings live on the core only; these views cannot drift from it.
+    @property
+    def mode(self) -> Mode:
+        return self.core.mode
+
+    @mode.setter
+    def mode(self, mode: Mode) -> None:
+        self.core.set_mode(mode)
+
+    @property
+    def detector(self) -> Detector | None:
+        return self.core.detector
+
+    @property
+    def detector_timeout_s(self) -> float:
+        return self.core.detector_timeout_s
 
     def query(
         self,
@@ -69,9 +105,8 @@ class TrustVerificationToolsExecutor(ToolsExecutor):
             # prompts and lineage values at that point.
             if messages and messages[-1]["role"] == "assistant" and not messages[-1]["tool_calls"]:
                 run_id = extra_args.get(_RUN_ID_KEY)
-                end_run = getattr(self.detector, "end_run", None)
-                if isinstance(run_id, str) and callable(end_run):
-                    end_run(run_id)
+                if isinstance(run_id, str):
+                    self.end_run(run_id)
             return query, runtime, env, messages, extra_args
 
         updated_extra_args = dict(extra_args)
@@ -84,6 +119,13 @@ class TrustVerificationToolsExecutor(ToolsExecutor):
             raise ValueError(f"{_BATCH_ID_KEY} must be a non-negative integer")
         batch_id = previous_batch + 1
         updated_extra_args[_BATCH_ID_KEY] = batch_id
+        if previous_batch == 0:
+            # First tool batch of a run: AgentDojo runs tasks one after another, so any
+            # other run this executor started has finished. End it (bug: run state was
+            # never cleared, and the shared store filled up across runs).
+            for finished in [r for r in self._active_runs if r != run_id]:
+                self.end_run(finished)
+        self._active_runs.add(run_id)
         run_metadata = updated_extra_args.get("_clone_tvm_run_meta")
         if run_metadata is not None:
             if not isinstance(run_metadata, Mapping):

@@ -26,17 +26,19 @@ def tag_post(payload, state, profile=None, interception_id="post-1"):
     )
 
 
-def test_default_result_tags_keep_structure_system_and_leaves_external():
+def test_default_result_tags_keep_structure_and_scalars_system_strings_external():
     state = RunState("run-1")
     tags = tag_post({"id": "evt-1", "count": 4, "details": {"body": "untrusted text"}}, state)
     by_path = {tag.path: tag for tag in tags}
 
     assert by_path["$"].provenance is Provenance.SYSTEM
     assert by_path["$.details"].provenance is Provenance.SYSTEM
-    for path in ("$.id", "$.count", "$.details.body"):
+    # Scope section 6: numbers, booleans and nulls are SYSTEM; strings are EXTERNAL.
+    assert by_path["$.count"].provenance is Provenance.SYSTEM
+    for path in ("$.id", "$.details.body"):
         assert by_path[path].provenance is Provenance.EXTERNAL
         assert by_path[path].trust is Trust.UT
-    assert len(state.values) == 2  # only string leaves are kept for value lineage
+    assert len(state.values) == 3  # the two strings and the number are indexed for lineage
 
 
 def test_approved_profile_can_mark_a_result_path_system():
