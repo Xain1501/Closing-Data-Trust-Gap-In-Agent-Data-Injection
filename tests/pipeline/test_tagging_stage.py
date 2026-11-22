@@ -152,10 +152,12 @@ def test_json_looking_text_result_is_kept_as_one_external_leaf():
     tagged = analyze_and_tag(raw, context, states)
 
     assert tagged.analysis.parsed.fields  # parser still analyzes the visible text
-    assert len(tagged.tags) == 1
+    # The whole text stays one EXTERNAL leaf "$". The JSON written inside it gets
+    # inferred nodes under "$.@" (never trusted boundaries), all EXTERNAL.
     assert tagged.tags[0].path == "$"
-    assert tagged.tags[0].provenance is Provenance.EXTERNAL
-    assert [value.normalized_value for value in tagged.run_state.values] == [raw.casefold()]
+    assert all(t.path == "$" or t.path.startswith("$.@") for t in tagged.tags)
+    assert {t.provenance for t in tagged.tags} == {Provenance.EXTERNAL}
+    assert raw.casefold() in [value.normalized_value for value in tagged.run_state.values]
 
 
 def test_clone_adapter_links_a_text_result_to_the_next_turn_argument():

@@ -57,7 +57,10 @@ class RunState:
             raise ValueError("RunState limits must be non-negative and min_length positive")
         if self.user_prompt and not self.prompts:
             self.prompts.append(self.user_prompt)
-        self._seen: set[tuple[str | None, str]] = set()
+        # (interception, leaf path) -> indexed value of that leaf, so a row, cell or token
+        # that equals its own leaf is not stored twice. Other fields with the same value
+        # (a SYSTEM id and an EXTERNAL body) are each kept: every source is recorded.
+        self._seen: dict[tuple[str | None, str], str] = {}
 
     def add_result_tags(self, tags: list[Any], fields: list[Any], batch_id: int | None = None) -> None:
         """Index normalized SYSTEM/EXTERNAL string leaves; never export raw values."""
@@ -86,9 +89,13 @@ class RunState:
                         continue
                 else:
                     continue
-                seen_key = (tag.interception_id, value)
-                if seen_key in self._seen:
-                    continue                    # a cell equal to its whole leaf: index once
+                leaf_path = tag.path.split(".@", 1)[0]
+                inner_key = (tag.interception_id, leaf_path + "|" + value)
+                if ".@" in tag.path and (self._seen.get((tag.interception_id, leaf_path)) == value
+                                         or inner_key in self._seen):
+                    # Equals its own leaf, or a row/cell of the same leaf already indexed
+                    # (cells come before tokens and carry the row's flags): index once.
+                    continue
                 if len(self.values) >= self.max_values or self._char_count + len(value) > self.max_chars:
                     self.overflowed = True
                     self.blind = True           # dropped values leave lineage incomplete
@@ -101,7 +108,10 @@ class RunState:
                                 getattr(tag, "has_mimicry", False), stripped(value))
                 )
                 self._char_count += len(value)
-                self._seen.add(seen_key)
+                if ".@" not in tag.path:
+                    self._seen[(tag.interception_id, tag.path)] = value
+                else:
+                    self._seen[inner_key] = value
 
     def add_mentions(self, tags: list[Any], fields: list[Any]) -> None:
         """Record where one result field's value is written inside another untrusted field

@@ -177,9 +177,24 @@ def _number_evidence(value: float | int, prompt: str, earlier: tuple) -> list[Ev
     for stored in reversed(earlier):
         if len(out) >= _MAX_EVIDENCE:
             break
-        if stored.normalized_value == key:
+        if stored.normalized_value == key or _as_number_key(stored.normalized_value) == key:
             out.append(_evidence(stored, "equal", _strength(stored, True), "number", len(key)))
     return out
+
+
+_PLAIN_NUMBER = re.compile(r"^[$€£]?\s?-?\d{1,3}(?:,\d{3})*(?:\.\d+)?$|^-?\d+(?:\.\d+)?$")
+
+
+def _as_number_key(text: str) -> str | None:
+    """A stored text that is only a number ("98.70", "1,250.00", "$5") in canonical form."""
+    from provenance.run_state import number_key
+
+    if not text or not _PLAIN_NUMBER.match(text):
+        return None
+    try:
+        return number_key(float(re.sub(r"[^\d.-]", "", text)))
+    except ValueError:
+        return None
 
 
 def _with_lineage(tag: FieldTag, evidence: list[Evidence]) -> FieldTag:

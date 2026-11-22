@@ -238,7 +238,9 @@ def _trace_graph(
             tagged = analyze_and_tag(payload, context, states)
             groups.append(tagged.tags)
             finding_groups.append(tagged.analysis.structural.findings)
-        graph = build_trace_graph(groups, finding_groups)
+        state = states.get(run_id)
+        graph = build_trace_graph(groups, finding_groups,
+                                  mentions=tuple(state.mentions) if state is not None else ())
     finally:
         states.end_run(run_id)
 

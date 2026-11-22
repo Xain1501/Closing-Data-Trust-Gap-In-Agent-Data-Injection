@@ -63,6 +63,10 @@ class ParserAnalysis:
         fields, so tagging, lineage and the graph see each record as its own node."""
         if self.skeleton_fields:
             return self.skeleton_fields + self.skeleton.inner_fields
+        if self.skeleton is not None and self.skeleton.result_kind == "str":
+            # A text result: the parser's single leaf "$" plus the rows, cells and
+            # tokens inferred inside it (they sit under "$").
+            return tuple(self.parsed.fields) + self.skeleton.inner_fields
         return tuple(self.parsed.fields)
 
     @property

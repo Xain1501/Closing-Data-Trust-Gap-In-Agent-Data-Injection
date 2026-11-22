@@ -53,7 +53,8 @@ def make_risk_detector(
                                     "Trusted impact tier is unavailable.", base_contains_adi,
                                     decided_by="matrix", **evidence)
 
-        graph = build_trust_graph(list(tagged.tags), report.findings)
+        graph = build_trust_graph(list(tagged.tags), report.findings,
+                                  mentions=tuple(getattr(tagged.run_state, "mentions", ())))
         result = classify_and_assess(
             graph,
             classifier,

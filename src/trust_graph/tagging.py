@@ -181,6 +181,7 @@ def tag_fields(
     if direction == "post":
         forged_paths = _forged_field_paths(fields, findings)
         tags = _tag_result(fields, profile_entry, make, result_format, forged_paths)
+        tags = _inherit_inner_provenance(tags)
         mimic_paths = _forged_field_paths(
             fields, [f for f in findings if getattr(f, "kind", None) == "mimicry"])
         if mimic_paths:
@@ -208,7 +209,13 @@ def _tag_result(
     if entry is None or not entry.usable:
         if effective_format == "text":
             root = next((f for f in fields if f.path == "$"), None)
-            return [make(root, Provenance.EXTERNAL, _result_role(Provenance.EXTERNAL, root.value_type), root.path in forged_paths)] if root is not None else []
+            if root is None:
+                return []
+            # The whole text is one EXTERNAL leaf; its inferred rows, cells and tokens
+            # (paths under "$.@") are tagged too and inherit EXTERNAL.
+            return [make(f, Provenance.EXTERNAL, _result_role(Provenance.EXTERNAL, f.value_type),
+                         f.path in forged_paths)
+                    for f in fields if f.path == "$" or f.path.startswith("$.@")]
         # The real object supplies trusted boundaries. Scope section 6: keys, nesting,
         # numbers, booleans and nulls are SYSTEM; any string an outsider could write is
         # EXTERNAL (a server-generated string id needs an approved profile to be SYSTEM).
@@ -237,6 +244,26 @@ def _tag_result(
         )
         tags.append(make(f, final, _result_role(final, f.value_type), f.path in forged_paths))
     return tags
+
+
+def _inherit_inner_provenance(tags: list[FieldTag]) -> list[FieldTag]:
+    """Rows, cells and tokens inferred inside a leaf (paths with ``.@``) carry the
+    leaf's provenance (an amount token inside an EXTERNAL body is EXTERNAL, not SYSTEM)
+    and, when the whole leaf is flagged, its forgery flag."""
+    by_path = {t.path: t for t in tags}
+    out = []
+    for t in tags:
+        if ".@" in t.path:
+            leaf = by_path.get(t.path.split(".@", 1)[0])
+            if leaf is not None and t.provenance is not leaf.provenance:
+                t = replace(t, provenance=leaf.provenance, trust=trust_for(leaf.provenance),
+                            role=_result_role(leaf.provenance, t.value_type))
+            # A finding on the whole leaf (a delimiter forgery) cannot be placed on one
+            # row or token, so everything inside that leaf carries it.
+            if leaf is not None and leaf.has_forgery and not t.has_forgery:
+                t = replace(t, has_forgery=True)
+        out.append(t)
+    return out
 
 
 def _default_provenance(value_type: str) -> Provenance:

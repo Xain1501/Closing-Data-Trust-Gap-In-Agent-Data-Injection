@@ -29,9 +29,9 @@ def analyze_and_tag(
 ) -> TaggingResult:
     """Tag true result-object fields when available, otherwise parser fields.
 
-    Tool-matrix authority arguments affect roles only. Result leaves default to
-    EXTERNAL and containers to SYSTEM; callers may supply an approved path
-    profile explicitly. Automatic profile loading is not wired yet.
+    Tool-matrix authority arguments affect roles only. String leaves default to
+    EXTERNAL; containers, numbers, booleans and nulls to SYSTEM. A matrix entry
+    whose profile is approved is applied automatically (a draft one never is).
     """
     analysis = analyze_clone_payload(payload, context)
     run_id = context.run_id or f"ephemeral:{context.interception_id or context.tool_call_id or uuid4()}"
@@ -47,6 +47,8 @@ def analyze_and_tag(
         state.blind = True
     entry = context.matrix_entry
     authority_arguments = entry.authority_arguments if entry is not None else ()
+    if profile_entry is None and entry is not None and getattr(entry, "review_status", None) == "approved":
+        profile_entry = entry.profile()
     fields: tuple[ParsedField, ...] = analysis.true_fields
     if context.direction == "post" and context.result_format == "text":
         # A scalar/string tool response has no trusted object boundaries. The
@@ -62,10 +64,11 @@ def analyze_and_tag(
         else:
             value = str(value)
             value_type = "string"
+        inner = analysis.skeleton.inner_fields if analysis.skeleton is not None else ()
         fields = (ParsedField(
             path="$", key=None, parent_path=None, depth=0,
             value_type=value_type, value=value,
-        ),)
+        ), *inner)
     # Core stops waiting at the deadline and decides without this detector. A late
     # detector must not index values or tags afterwards; the run is marked blind instead,
     # because a result the run state never saw leaves lineage incomplete.

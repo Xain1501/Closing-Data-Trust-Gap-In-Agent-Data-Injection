@@ -228,7 +228,10 @@ def test_skeleton_matches_parser_on_every_benign_ground_truth_result():
             if a.skeleton_matches is not True:
                 mismatches.append((suite_name, task_id, tool, a.skeleton_diff))
         else:
-            assert a.skeleton_fields == () and a.true_fields == tuple(a.parsed.fields)
+            # Text results: the parser's fields first, then rows/cells/tokens under "$".
+            assert a.skeleton_fields == ()
+            assert a.true_fields[:len(a.parsed.fields)] == tuple(a.parsed.fields)
+            assert all(f.path.startswith("$.@") for f in a.true_fields[len(a.parsed.fields):])
     assert total > 300, total                                # the suites really ran
     assert {"model", "list", "dict", "str", "none"} <= set(kinds), kinds
     assert mismatches == []

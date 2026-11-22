@@ -1,6 +1,7 @@
 """Convert tagged fields and cross-call lineage into graph snapshots."""
 from __future__ import annotations
 
+import re
 from collections.abc import Sequence
 from parser.models import Finding, TaggedField
 from trust_graph.tagging import FieldTag
@@ -25,27 +26,37 @@ def _label(field: Tagged) -> str:
             f"depth={field.depth}",
             f"direction={getattr(direction, 'value', direction)}",
             f"forgery={str(bool(getattr(field, 'has_forgery', False))).lower()}",
+            f"mimicry={str(bool(getattr(field, 'has_mimicry', False))).lower()}",
         )
     )
+
+
+_REAL_FIELD = re.compile(r"real field (\S+)")
 
 
 def build_trust_graph(
     fields: Sequence[Tagged],
     findings: Sequence[Finding] = (),
+    mentions: Sequence[tuple[str, str]] = (),
 ) -> GraphSnapshot:
     """Build one field graph, including structural finding nodes."""
-    return _build_graph((fields,), trace=False, finding_groups=(findings,))
+    return _build_graph((fields,), trace=False, finding_groups=(findings,), mentions=mentions)
 
 
 def build_trace_graph(
     field_groups: Sequence[Sequence[Tagged]],
     findings: Sequence[Sequence[Finding]] = (),
+    mentions: Sequence[tuple[str, str]] = (),
 ) -> GraphSnapshot:
-    """Build a trace graph with one namespace per interception and real lineage edges."""
+    """Build a trace graph with one namespace per interception and real lineage edges.
+
+    ``mentions`` are (untrusted leaf tag id, mentioned field tag id) pairs from run
+    state. They and mimicry findings become typed relation nodes (``rel:mentions``,
+    ``rel:mimics``) between the two fields, since graph edges carry no labels."""
     if findings and len(findings) != len(field_groups):
         raise ValueError("findings must have one group per field group")
     finding_groups = tuple(findings) if findings else tuple(() for _ in field_groups)
-    return _build_graph(field_groups, trace=True, finding_groups=finding_groups)
+    return _build_graph(field_groups, trace=True, finding_groups=finding_groups, mentions=mentions)
 
 
 def _build_graph(
@@ -53,6 +64,7 @@ def _build_graph(
     *,
     trace: bool,
     finding_groups: Sequence[Sequence[Finding]],
+    mentions: Sequence[tuple[str, str]] = (),
 ) -> GraphSnapshot:
     if not any(field_groups):
         raise ValueError("at least one tagged field is required to build a graph")
@@ -115,5 +127,23 @@ def _build_graph(
                 target = max(candidates, key=lambda item: len(item[0]))[1] if candidates else None
             if target is not None:
                 edges.append((target, finding_id))
+            # Mimicry: link the claim to the real field it copies.
+            if finding.kind == "mimicry" and target is not None:
+                real = _REAL_FIELD.search(finding.detail or "")
+                real_node = path_nodes.get(real.group(1)) if real else None
+                if real_node is not None:
+                    rel = f"{prefix}rel:mimics:{finding.path}"
+                    node_labels[rel] = "rel:mimics"
+                    edges.append((target, rel))
+                    edges.append((rel, real_node))
+
+    for index, (leaf_tag, other_tag) in enumerate(mentions):
+        leaf_node, other_node = tag_nodes.get(leaf_tag), tag_nodes.get(other_tag)
+        if leaf_node is None or other_node is None:
+            continue
+        rel = f"rel:mentions:{index}"
+        node_labels[rel] = "rel:mentions"
+        edges.append((leaf_node, rel))
+        edges.append((rel, other_node))
 
     return GraphSnapshot(node_labels=node_labels, edges=tuple(dict.fromkeys(edges)))

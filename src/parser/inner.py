@@ -460,10 +460,14 @@ _QUOTE_BLOCK = re.compile(r"^\s*(>|-{3,}\s*forwarded|begin forwarded|-{3,}\s*ori
 
 
 def canonical_key(key: str | None) -> str:
-    """A key as a comparable name: 'author_association' -> 'role', 'user.login' -> 'author'."""
+    """A key as a comparable name: 'author_association' -> 'role', 'user.login' -> 'author'.
+    "" for index-like or numeric keys ('[1]', '+1', '2024'): they name positions or
+    counters, never a field an attacker could impersonate."""
     if not key:
         return ""
     k = normalise_key(key.replace(".", " ").replace("_", " ").replace("-", " "))
+    if not re.search(r"[a-z]", k):
+        return ""
     return _GROUP_OF.get(k, k)
 
 
