@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from inspect import Signature, signature
 from queue import Empty, Queue
 from threading import Thread
-from time import perf_counter_ns
+from time import monotonic, perf_counter_ns
 from typing import Any, Literal
 
 from clone.canonical import canonical_json
@@ -33,6 +33,9 @@ class DetectorContext:
     interception_id: str | None = None  # ledger id of this call/result (joins tags, ledger and audit)
     user_prompt: str | None = None     # the user's request for this run, when the adapter knows it
     batch_id: int | None = None        # tool calls in one assistant message are simultaneous
+    # time.monotonic() after which core has stopped waiting for the detector. A detector
+    # still running after it must not write run state (core already decided without it).
+    deadline: float | None = None
 
 
 @dataclass(frozen=True)
@@ -46,6 +49,9 @@ class DetectorDecision:
     schema_ok: bool | None = None      # None = no schema was checked
     parse_health: str | None = None
     decided_by: str | None = None      # detector stage that produced this decision
+    # Temporary: evidence says "look at this" without blocking (results are never blocked
+    # by the parser; blocking belongs to the risk tier / human review stage).
+    suspicious: bool | None = None
     # Post-hop: the result's true field list (an object with ``to_dict()`` or a plain
     # mapping). Core stores it on the ledger; it is never used to decide.
     skeleton: Any = None
@@ -146,7 +152,8 @@ class InterceptionCore:
 
         context = DetectorContext("pre", tool, call_id, entry, schema, run_id=run_id,
                                   interception_id=record.interception_id, user_prompt=user_prompt,
-                                  batch_id=batch_id)
+                                  batch_id=batch_id,
+                                  deadline=monotonic() + self.detector_timeout_s)
         decision, error = self._inspect(record, payload, context)
         evidence = self._evidence(decision, error)
         if error is None and decision is not None and decision.allowed:
@@ -234,7 +241,8 @@ class InterceptionCore:
         context = DetectorContext("post", tool, call_id, entry, schema, run_id=run_id,
                                   raw_result=raw_result, result_format=result_format,
                                   interception_id=record.interception_id, user_prompt=user_prompt,
-                                  batch_id=batch_id)
+                                  batch_id=batch_id,
+                                  deadline=monotonic() + self.detector_timeout_s)
         decision, error = self._inspect(record, text, context)
         if error is None and decision is not None and decision.skeleton is not None:
             skeleton = decision.skeleton

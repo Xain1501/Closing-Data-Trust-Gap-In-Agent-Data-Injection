@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 from typing import Any, Sequence
+import re
 import unicodedata
 from urllib.parse import unquote
 
@@ -48,13 +49,21 @@ def link_arguments(
     """
     field_by_path = {field.path: field for field in fields}
     prompt = normalise(run_state.user_prompt or "")
+    snapshot = (run_state.snapshot_values() if hasattr(run_state, "snapshot_values")
+                else tuple(run_state.values))
+    # A value indexed without a batch number (a direct check_result) is treated as
+    # earlier; only a value known to be from the same or a later batch is excluded.
     earlier_values = tuple(
-        value for value in run_state.values
-        if batch_id is None or (value.batch_id is not None and value.batch_id < batch_id)
+        value for value in snapshot
+        if batch_id is None or value.batch_id is None or value.batch_id < batch_id
     )
     output: list[FieldTag] = []
     for tag in tags:
         source = field_by_path.get(tag.path)
+        if (source is not None and source.value_type == "number"
+                and isinstance(source.value, (int, float)) and not isinstance(source.value, bool)):
+            output.append(_link_number(tag, source.value, prompt, earlier_values))
+            continue
         if source is None or source.value_type != "string" or not isinstance(source.value, str):
             output.append(replace(tag, lineage_status=LineageStatus.UNLINKED,
                                   provenance=Provenance.DERIVED, trust=Trust.UT))
@@ -64,7 +73,7 @@ def link_arguments(
             output.append(replace(tag, lineage_status=LineageStatus.BELOW_MIN,
                                   provenance=Provenance.DERIVED, trust=Trust.UT))
             continue
-        if prompt and _contains(prompt, candidate):
+        if prompt and _grounds(candidate) and _contains(prompt, candidate):
             output.append(replace(tag, lineage_status=LineageStatus.USER_MATCH,
                                   provenance=Provenance.USER,
                                   trust=trust_for(Provenance.USER)))
@@ -112,6 +121,43 @@ def link_arguments(
                                   provenance=Provenance.DERIVED, trust=Trust.UT))
     run_state.record_argument_tags(list(output))
     return output
+
+
+_NUMBER_IN_TEXT = re.compile(r"(?<![\w.])-?\d+(?:[.,]\d+)?(?!\w)")
+_MIN_NUMBER_DIGITS = 3
+
+
+def _grounds(candidate: str) -> bool:
+    """Whether a prompt match can ground this value. A single plain word shorter than
+    8 letters ("send", "today") appears in many prompts and proves nothing; names,
+    ids, addresses, numbers and multi-word values can."""
+    return len(candidate) >= 8 or not candidate.isalpha()
+
+
+def _link_number(tag: FieldTag, value: float | int, prompt: str, earlier: tuple) -> FieldTag:
+    """Number arguments: same evidence as strings, compared by numeric value."""
+    from provenance.run_state import number_key
+
+    key = number_key(value)
+    if len(key.replace("-", "").replace(".", "")) < _MIN_NUMBER_DIGITS:
+        return replace(tag, lineage_status=LineageStatus.BELOW_MIN,
+                       provenance=Provenance.DERIVED, trust=Trust.UT)
+    prompt_numbers = {number_key(float(m.replace(",", "."))) for m in _NUMBER_IN_TEXT.findall(prompt)}
+    if key in prompt_numbers:
+        return replace(tag, lineage_status=LineageStatus.USER_MATCH,
+                       provenance=Provenance.USER, trust=trust_for(Provenance.USER))
+    for wanted, status, trust in ((Provenance.SYSTEM, LineageStatus.SYSTEM_LINK, Trust.T),
+                                  (Provenance.EXTERNAL, LineageStatus.EXTERNAL_LINK, Trust.UT)):
+        match = next((v for v in reversed(earlier)
+                      if v.provenance == wanted.value and v.normalized_value == key), None)
+        if match is not None:
+            return replace(tag, lineage_status=status, provenance=Provenance.DERIVED, trust=trust,
+                           derived_from=(Evidence(source_tag_id=match.source_tag_id,
+                                                  match_type="equal", matched_length=len(key),
+                                                  source_provenance=wanted,
+                                                  source_has_forgery=match.has_forgery),))
+    return replace(tag, lineage_status=LineageStatus.UNLINKED,
+                   provenance=Provenance.DERIVED, trust=Trust.UT)
 
 
 def _contains(haystack: str, needle: str) -> bool:

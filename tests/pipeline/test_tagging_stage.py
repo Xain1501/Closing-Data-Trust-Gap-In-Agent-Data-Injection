@@ -173,8 +173,9 @@ def test_clone_adapter_links_a_text_result_to_the_next_turn_argument():
     runtime.register_function(read_record)
     runtime.register_function(use_account)
     matrix = TrustMatrix((
-        ToolMatrixEntry("read_record", "test.read_record", 1, "policy default", (), {}, ()),
-        ToolMatrixEntry("use_account", "test.use_account", 5, "policy default", ("value",), {}, ("value",)),
+        ToolMatrixEntry("read_record", "test.read_record", 1, "policy default", expected_keys=()),
+        ToolMatrixEntry("use_account", "test.use_account", 5, "policy default",
+                        expected_keys=("value",), args=(("value", "AUTHORITY_ARG"),)),
     ))
     executor = TrustVerificationToolsExecutor(
         parser_detector, mode="passthrough", ledger=InterceptionLedger(), tool_matrix=matrix,

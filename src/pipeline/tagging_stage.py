@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from time import monotonic
 from uuid import uuid4
 
 from clone.core import DetectorContext
@@ -65,12 +66,20 @@ def analyze_and_tag(
             path="$", key=None, parent_path=None, depth=0,
             value_type=value_type, value=value,
         ),)
+    # Core stops waiting at the deadline and decides without this detector. A late
+    # detector must not index values or tags afterwards; the run is marked blind instead,
+    # because a result the run state never saw leaves lineage incomplete.
+    deadline = getattr(context, "deadline", None)
+    late = deadline is not None and monotonic() > deadline
+    if late:
+        state.blind = True
     tags = tag_fields(
         direction=context.direction,
         tool_name=context.tool_name,
         fields=fields,
         profile_entry=profile_entry,
-        run_state=state,
+        # A throwaway state keeps tag ids and run id without touching the shared one.
+        run_state=RunState(run_id=state.run_id, user_prompt=state.user_prompt, blind=True) if late else state,
         interception_id=context.interception_id,
         authority_arguments=authority_arguments,
         batch_id=context.batch_id,

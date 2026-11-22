@@ -19,9 +19,15 @@ def parser_detector(
     tagged = analyze_and_tag(payload, context, _RUN_STATES)
     analysis = tagged.analysis
     verdict = decide(analysis)
+    # Results are never blocked here (scope: results are inspected, not withheld). A
+    # result the parser would have blocked is released and marked suspicious; its label
+    # ("suspicious:<rule>") is what the ledger keeps. Blocking is left to the risk tier
+    # and human review stage.
+    suspicious = not verdict.allowed
+    released = context.direction == "post" and suspicious
     return DetectorDecision(
-        allowed=verdict.allowed,
-        label=verdict.label,
+        allowed=verdict.allowed or released,
+        label=f"suspicious:{verdict.label}" if released else verdict.label,
         score=analysis.structural.structural_score,
         reason=verdict.reason,
         contains_adi=verdict.contains_adi,
@@ -30,6 +36,7 @@ def parser_detector(
         parse_health=analysis.parse_health,
         decided_by="parser",
         skeleton=analysis.skeleton,
+        suspicious=suspicious,
     )
 
 

@@ -243,8 +243,9 @@ def test_b1_python_literal_result_gets_the_same_schema_check_as_json():
     assert (ok_repr.schema_ok, ok_repr.released, ok_repr.parse_health) == (True, True, "salvaged_repr")
     bad_json = _post('{"id": 1, "subject": "a", "role": "admin"}', Tx)
     bad_repr = _post("{'id': 1, 'subject': 'a', 'role': 'admin'}", Tx)
-    assert (bad_json.label, bad_json.schema_ok) == ("schema-violation", False)
-    assert (bad_repr.label, bad_repr.schema_ok) == ("schema-violation", False)
+    # Results are released and marked suspicious, never blocked by the parser.
+    assert (bad_json.label, bad_json.schema_ok) == ("suspicious:schema-violation", False)
+    assert (bad_repr.label, bad_repr.schema_ok) == ("suspicious:schema-violation", False)
 
 
 # ---- adapter: A3 / A4 / A5 / C5 -------------------------------------------------
