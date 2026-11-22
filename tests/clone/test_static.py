@@ -1248,18 +1248,17 @@ def test_parser_adapter_receives_runtime_schemas_on_both_hops() -> None:
         tool_matrix=_test_tool_matrix(),
     ).query("", _runtime(calls), messages=[message])
 
-    # The generated Function.parameters schema is passed to the pre-hop parser;
-    # the extra argument is rejected before record() runs. The second call
-    # executes, and its str return annotation is used to validate post-hop text.
-    assert calls == ["reverse:second"]
-    assert result[3][1]["content"][0]["content"] == "Blocked by Trust Verification Matrix."
-    assert "Tool schema validation failed" in ledger.records[0].error
+    # The generated Function.parameters schema is passed to the pre-hop parser. The
+    # parser no longer blocks: the extra argument marks the call suspicious, it runs,
+    # and the ledger keeps the reason. The str return annotation validates post-hop text.
+    assert calls == ["first", "reverse:second"]
     assert result[3][2]["content"][0]["content"] == "dnoces"
     pre_calls = [record for record in ledger.records if record.phase == "pre"]
-    assert pre_calls[0].label == "schema-violation"
+    assert pre_calls[0].label == "suspicious:schema-violation"
+    assert pre_calls[0].suspicious is True and pre_calls[0].schema_ok is False
     assert pre_calls[1].label == "no-adi-detected"
     post_records = [record for record in ledger.records if record.phase == "post"]
-    assert len(post_records) == 2  # denial delivery plus inspected tool result
+    assert len(post_records) == 2
     assert post_records[-1].label == "no-adi-detected"
 
 
@@ -1560,7 +1559,7 @@ def test_ledger_hash_chain_verifies_and_survives_export_import(tmp_path) -> None
     ledger = _make_chained_ledger()
     assert ledger.verify_chain() is True
     assert ledger.ledger[0].prev_entry_sha256 == "0" * 64
-    assert all(entry.entry_schema_version == 3 for entry in ledger.ledger)
+    assert all(entry.entry_schema_version == 4 for entry in ledger.ledger)
     assert all(entry.entry_sha256 for entry in ledger.ledger)
 
     path = tmp_path / "chained-ledger.jsonl"

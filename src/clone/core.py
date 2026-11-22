@@ -384,6 +384,7 @@ class InterceptionCore:
             "schema_ok": decision.schema_ok,
             "parse_health": decision.parse_health,
             "decided_by": decision.decided_by or self.detector_name or "detector",
+            "suspicious": decision.suspicious,
         }
 
     @staticmethod

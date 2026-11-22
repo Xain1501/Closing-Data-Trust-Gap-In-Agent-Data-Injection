@@ -17,7 +17,7 @@ from clone.canonical import canonical_json, text_sha256
 Phase = Literal["pre", "post"]
 DetectorPayload = dict[str, Any] | str
 _GENESIS_ENTRY_SHA256 = "0" * 64
-_ENTRY_SCHEMA_VERSION = 3   # v2: forgery_found, schema_ok, parse_health, decided_by; v3: matrix_keys_match, skeleton_sha256
+_ENTRY_SCHEMA_VERSION = 4   # v2: forgery_found, schema_ok, parse_health, decided_by; v3: matrix_keys_match, skeleton_sha256; v4: suspicious
 
 
 @dataclass
@@ -57,6 +57,7 @@ class InterceptionRecord:
     decided_by: str | None = None         # who produced the outcome: detector name/stage, "matrix", "detector-error", "policy"
     matrix_keys_match: bool | None = None  # False: tool matched by name but its live argument names differ
     skeleton_sha256: str | None = None    # hash of the result skeleton stored in skeletons.jsonl (post-hop)
+    suspicious: bool | None = None        # detector evidence says "look at this"; it did not block
 
 
 @dataclass(frozen=True)
@@ -98,6 +99,7 @@ class LedgerEntry:
     decided_by: str | None = None         # who produced the outcome: detector name/stage, "matrix", "detector-error", "policy"
     matrix_keys_match: bool | None = None  # False: tool matched by name but its live argument names differ
     skeleton_sha256: str | None = None    # hash of the result skeleton stored in skeletons.jsonl (post-hop)
+    suspicious: bool | None = None        # detector evidence says "look at this"; it did not block
 
 
 @dataclass(frozen=True)
@@ -109,10 +111,28 @@ class RawPayload:
     payload: DetectorPayload
 
 
+def _without_values(skeleton: dict[str, Any]) -> dict[str, Any]:
+    """A skeleton row with each field's value replaced by its SHA-256 (privacy default)."""
+    out = dict(skeleton)
+    for key in ("fields", "inner_fields"):
+        rows = []
+        for field in skeleton.get(key, []) or []:
+            field = dict(field)
+            if field.get("value") is not None:
+                field["value_sha256"] = text_sha256(canonical_json(field["value"]))
+            field.pop("value", None)
+            rows.append(field)
+        if key in skeleton:
+            out[key] = rows
+    out["values_stored"] = False
+    return out
+
+
 class InterceptionLedger:
     """Thread-safe trace of intercepted tool inputs, observations, and state changes."""
 
-    def __init__(self, storage_dir: str | Path | None = None) -> None:
+    def __init__(self, storage_dir: str | Path | None = None, *,
+                 store_skeleton_values: bool = False) -> None:
         """Create an in-memory ledger, optionally persisting it to JSONL.
 
         With ``storage_dir`` set, ``ledger.jsonl`` and ``raw-payloads.jsonl`` are
@@ -121,7 +141,12 @@ class InterceptionLedger:
         set; captured tool data may be private. A payload's final label is in
         ``ledger.jsonl`` (and in ``export_raw_payloads``); the appended raw row
         is written at capture time, before any label exists.
+
+        Skeletons are stored as paths, types and a hash per value by default
+        (``store_skeleton_values=False``): the hash proves what was captured without
+        keeping private text. Set it to True for offline research data.
         """
+        self.store_skeleton_values = store_skeleton_values
         self.records: list[InterceptionRecord] = []
         self.ledger: list[LedgerEntry] = []
         self.raw_payloads: list[RawPayload] = []
@@ -221,7 +246,10 @@ class InterceptionLedger:
             raise ValueError("Skeletons belong to post-hop results.")
         row = _jsonable({"run_id": record.run_id, "interception_id": record.interception_id,
                          "skeleton": dict(skeleton)})
+        # The hash always covers the full skeleton, values included.
         digest = text_sha256(canonical_json(row["skeleton"]))
+        if not self.store_skeleton_values:
+            row["skeleton"] = _without_values(row["skeleton"])
         with self._lock:
             if record.interception_id in self._skeleton_index:
                 raise ValueError(f"Skeleton already attached for {record.interception_id}.")
@@ -259,6 +287,7 @@ class InterceptionLedger:
         schema_ok: bool | None = None,
         parse_health: str | None = None,
         decided_by: str | None = None,
+        suspicious: bool | None = None,
     ) -> None:
         if score is not None and not (isinstance(score, (int, float)) and math.isfinite(score)):
             score = None                      # NaN / infinity is not valid JSON
@@ -272,6 +301,8 @@ class InterceptionLedger:
                 record.parse_health = parse_health
             if decided_by is not None:
                 record.decided_by = decided_by
+            if suspicious is not None:
+                record.suspicious = suspicious
             if detector_decision is not None:
                 record.detector_decision = detector_decision
             if released is not None:
@@ -349,6 +380,7 @@ class InterceptionLedger:
             decided_by=record.decided_by,
             matrix_keys_match=record.matrix_keys_match,
             skeleton_sha256=record.skeleton_sha256,
+            suspicious=record.suspicious,
         )
         self.ledger.append(replace(entry, entry_sha256=_ledger_entry_hash(entry)))
         self._event_seq = event_seq

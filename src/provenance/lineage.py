@@ -48,7 +48,8 @@ def link_arguments(
     establish that the requested action is authorized.
     """
     field_by_path = {field.path: field for field in fields}
-    prompt = normalise(run_state.user_prompt or "")
+    prompts = getattr(run_state, "prompts", None) or [run_state.user_prompt or ""]
+    prompt = normalise("\n".join(p for p in prompts if p))
     snapshot = (run_state.snapshot_values() if hasattr(run_state, "snapshot_values")
                 else tuple(run_state.values))
     # A value indexed without a batch number (a direct check_result) is treated as
@@ -63,6 +64,9 @@ def link_arguments(
         if (source is not None and source.value_type == "number"
                 and isinstance(source.value, (int, float)) and not isinstance(source.value, bool)):
             output.append(_link_number(tag, source.value, prompt, earlier_values))
+            continue
+        if source is not None and source.value_type in ("object", "array"):
+            output.append(tag)               # containers: NOT_APPLICABLE, their leaves are linked
             continue
         if source is None or source.value_type != "string" or not isinstance(source.value, str):
             output.append(replace(tag, lineage_status=LineageStatus.UNLINKED,

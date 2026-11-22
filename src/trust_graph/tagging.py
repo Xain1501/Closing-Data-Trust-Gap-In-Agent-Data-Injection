@@ -50,6 +50,7 @@ class LineageStatus(str, Enum):
     EXTERNAL_LINK = "EXTERNAL_LINK"
     UNLINKED = "UNLINKED"
     BELOW_MIN = "BELOW_MIN"
+    NOT_APPLICABLE = "NOT_APPLICABLE"   # result fields and argument containers: nothing to link
 
 
 @dataclass(frozen=True)
@@ -321,7 +322,10 @@ class _TagFactory:
             path=f.path, tag_id=str(uuid.uuid4()), created_at=self.clock(),
             provenance=provenance, trust=trust_for(provenance), role=role,
             parent_path=f.parent_path, depth=f.depth, value_type=f.value_type, length=length,
-            lineage_status=LineageStatus.UNLINKED, derived_from=(), has_forgery=has_forgery,
+            lineage_status=(LineageStatus.NOT_APPLICABLE
+                            if self.direction == "post" or f.value_type in ("object", "array")
+                            else LineageStatus.UNLINKED),
+            derived_from=(), has_forgery=has_forgery,
         )
 
 

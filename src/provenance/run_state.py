@@ -40,6 +40,7 @@ class RunState:
     dropped_values: int = 0
     dropped_chars: int = 0
     values: list[StoredValue] = field(default_factory=list)
+    prompts: list[str] = field(default_factory=list)   # every user prompt of a multi-turn run
     tags_by_interception: dict[str, tuple[Any, ...]] = field(default_factory=dict)
     _char_count: int = 0
     _lock: RLock = field(default_factory=RLock, repr=False, compare=False)
@@ -49,6 +50,9 @@ class RunState:
             raise ValueError("run_id must not be empty")
         if self.max_values < 0 or self.max_chars < 0 or self.min_length < 1:
             raise ValueError("RunState limits must be non-negative and min_length positive")
+        if self.user_prompt and not self.prompts:
+            self.prompts.append(self.user_prompt)
+        self._seen: set[tuple[str | None, str]] = set()
 
     def add_result_tags(self, tags: list[Any], fields: list[Any], batch_id: int | None = None) -> None:
         """Index normalized SYSTEM/EXTERNAL string leaves; never export raw values."""
@@ -75,8 +79,12 @@ class RunState:
                         continue
                 else:
                     continue
+                seen_key = (tag.interception_id, value)
+                if seen_key in self._seen:
+                    continue                    # a cell equal to its whole leaf: index once
                 if len(self.values) >= self.max_values or self._char_count + len(value) > self.max_chars:
                     self.overflowed = True
+                    self.blind = True           # dropped values leave lineage incomplete
                     self.dropped_values += 1
                     self.dropped_chars += len(value)
                     continue
@@ -85,6 +93,7 @@ class RunState:
                                 batch_id, tag.provenance.value, tag.has_forgery)
                 )
                 self._char_count += len(value)
+                self._seen.add(seen_key)
 
     def snapshot_values(self) -> tuple[StoredValue, ...]:
         """The indexed values, read under the lock (another thread may be appending)."""
@@ -102,6 +111,8 @@ class RunState:
         """Forget prompts, raw-derived values, and tags at the end of a run."""
         with self._lock:
             self.user_prompt = None
+            self.prompts.clear()
+            self._seen.clear()
             self.values.clear()
             self.tags_by_interception.clear()
             self._char_count = 0
@@ -145,9 +156,10 @@ class RunStateStore:
                 if user_prompt is not None:
                     if state.user_prompt is None:
                         state.user_prompt = user_prompt
-                    elif state.user_prompt != user_prompt:
-                        # Never ground a value against an ambiguous prompt.
-                        state.blind = True
+                    if user_prompt not in state.prompts:
+                        # A later turn of a multi-turn chat: every prompt the user wrote
+                        # can ground a value. (Setting blind here made every real chat blind.)
+                        state.prompts.append(user_prompt)
             return state
 
     def get(self, run_id: str) -> RunState | None:

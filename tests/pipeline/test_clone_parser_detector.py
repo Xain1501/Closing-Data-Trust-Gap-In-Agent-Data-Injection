@@ -115,8 +115,9 @@ def test_pre_hop_schema_flags_arguments_ignored_by_agentdojo_model() -> None:
 
     decision = parser_detector(payload, context)
 
-    assert decision.allowed is False
-    assert decision.label == "schema-violation"
+    assert decision.allowed is True                      # evidence, not a gate
+    assert decision.suspicious is True
+    assert decision.label == "suspicious:schema-violation"
     assert "unexpected_key at $.extra" in (decision.reason or "")
     assert decision.contains_adi is True
 
