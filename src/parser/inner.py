@@ -28,6 +28,7 @@ import io
 import json
 import re
 from collections import Counter
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import Literal
 
@@ -75,6 +76,7 @@ class Records:
     truncated: bool = False             # rows beyond MAX_ROWS were not split
     conflicts: tuple[tuple[int, str], ...] = field(default=())   # kv: (row, key) pairs that conflict
     header: tuple[str, ...] = ()        # tables: normalised column names from a header row
+    header_row: int = 0                 # index of that header row
 
 
 @dataclass(frozen=True)
@@ -101,7 +103,7 @@ _CLAIMS = (
                r"(?:[^(\n]{0,40}\((?P<role>[A-Za-z_ ]{2,30})\))?"),
     re.compile(r"^\s*>?\s*On .{0,80}?,\s*(?P<author>[^,<>\n]{2,60}?)\s*(?:<[^>]+>\s*)?wrote:"),
 )
-_EMPHASIS = re.compile(r"[*_`]{1,3}")
+_EMPHASIS = re.compile(r"\*{1,3}|`+|(?<!\w)_{1,2}|_{1,2}(?!\w)")   # keeps snake_case keys
 
 
 def is_identifier(value: str) -> bool:
@@ -217,23 +219,26 @@ def _table(text: str) -> Records | None:
                     parts = parts[:-1]
         rows.append(Row(tuple(Cell(str(i), p.strip(), n) for i, p in enumerate(parts)), line.strip()))
     width = mode + 1 if sep != "|" else Counter(len(r.cells) for r in rows).most_common(1)[0][0]
+    header, header_row = _header(rows, width)
     return Records("table", tuple(rows), width=width, separator=sep, truncated=truncated,
-                   header=_header(rows))
+                   header=header, header_row=header_row)
 
 
-def _header(rows: list[Row]) -> tuple[str, ...]:
-    """Normalised column names when the first row is a header: every cell is a short
-    name (no digits-only value, no identifier) and the row does not repeat later."""
-    if len(rows) < 2 or not rows[0].cells:
-        return ()
-    first = [c.value for c in rows[0].cells]
+def _header(rows: list[Row], width: int) -> tuple[tuple[str, ...], int]:
+    """Normalised column names and the header's row index, when the first full-width
+    row (after any preamble such as "Review summary:") is a header: every cell is a
+    short name (no number, no identifier) and the row does not repeat later."""
+    idx = next((i for i, r in enumerate(rows) if len(r.cells) == width), None)
+    if idx is None or idx >= len(rows) - 1:
+        return (), 0
+    first = [c.value for c in rows[idx].cells]
     if any(not v or len(v) > 40 or is_identifier(v) or re.fullmatch(r"[\d.,\s%$€£-]+", v)
            for v in first):
-        return ()
+        return (), 0
     names = tuple(normalise_key(v) or v.lower() for v in first)
-    if len(set(names)) != len(names) or any(r.text == rows[0].text for r in rows[1:]):
-        return ()
-    return names
+    if len(set(names)) != len(names) or any(r.text == rows[idx].text for r in rows[idx + 1:]):
+        return (), 0
+    return names, idx
 
 
 def _looks_like_prose(numbered: list[tuple[int, str]]) -> bool:
@@ -338,7 +343,7 @@ def cell_key(records: Records, i: int, cell: Cell) -> str | None:
     themselves have none)."""
     if records.kind in ("kv", "json"):
         return cell.label
-    if records.header and i > 0:
+    if records.header and i > records.header_row:
         col = int(cell.label)
         return records.header[col] if col < len(records.header) else None
     return None
@@ -437,3 +442,104 @@ def scan_leaf(text: str, leaf_path: str) -> tuple[list[Finding], list[Finding]]:
     if records is None:
         return [], []
     return record_findings(records, leaf_path)
+
+
+# ---------------------------------------------------------------- mimicry ----
+# Untrusted text that copies a trusted field. The trusted reference is the result
+# object's own structure: its key names and each field's own value (from the skeleton).
+# Text inside one field cannot rename another field or change its value.
+_KEY_GROUPS = {
+    "author": ("author", "login", "user login", "username", "user", "sender", "from",
+               "owner login", "commenter"),
+    "role": ("role", "author association", "association", "permission", "permissions",
+             "user role"),
+    "recipient": ("recipient", "recipients", "to", "receiver"),
+}
+_GROUP_OF = {k: g for g, keys in _KEY_GROUPS.items() for k in keys}
+_QUOTE_BLOCK = re.compile(r"^\s*(>|-{3,}\s*forwarded|begin forwarded|-{3,}\s*original message)", re.I)
+
+
+def canonical_key(key: str | None) -> str:
+    """A key as a comparable name: 'author_association' -> 'role', 'user.login' -> 'author'."""
+    if not key:
+        return ""
+    k = normalise_key(key.replace(".", " ").replace("_", " ").replace("-", " "))
+    return _GROUP_OF.get(k, k)
+
+
+def _same(a: object, b: object) -> bool:
+    def norm(v: object) -> str:
+        return str(v).strip().lstrip("@").casefold()
+    return norm(a) == norm(b)
+
+
+def _common_prefix(a: str, b: str) -> int:
+    n = 0
+    for x, y in zip(a, b):
+        if x != y:
+            break
+        n += 1
+    return n
+
+
+def mimicry_findings(
+    real_fields: Sequence[ParsedField], inner: Sequence[ParsedField],
+) -> tuple[list[Finding], list[Finding]]:
+    """Counted ``mimicry`` and logged ``weak_signal`` findings.
+
+    Contradiction (counted): an inner node's key names a real field of the same object
+      and its value differs from that field's value (body says ``role: OWNER``, the
+      comment's real ``author_association`` is ``NONE``).
+    Shadow key (logged): the key names a real field, values agree.
+    Claims inside a quoted or forwarded block are logged only: quoting is normal.
+    A counted finding is reported on the inner node, its row and the row's cells.
+    """
+    reference: dict[str, list[ParsedField]] = {}
+    for f in real_fields:
+        if f.value_type in ("object", "array") or f.key is None:
+            continue
+        names = {canonical_key(f.key)}
+        parent = f.parent_path.rsplit(".", 1)[-1] if f.parent_path and "." in f.parent_path else ""
+        if parent and not parent.startswith("$"):
+            names.add(canonical_key(f"{parent} {f.key}"))
+        for name in names:
+            if name:
+                reference.setdefault(name, []).append(f)
+    if not reference:
+        return [], []
+    by_path = {f.path: f for f in inner}
+    children: dict[str, list[ParsedField]] = {}
+    for f in inner:
+        if f.parent_path:
+            children.setdefault(f.parent_path, []).append(f)
+
+    counted: list[Finding] = []
+    logged: list[Finding] = []
+    for node in inner:
+        if node.key is None or ".@tok[" in node.path or node.value in (None, ""):
+            continue
+        name = canonical_key(node.key)
+        candidates = reference.get(name)
+        if not candidates:
+            continue
+        leaf = node.path.split(".@", 1)[0]
+        real = max(candidates, key=lambda f: _common_prefix(f.path, leaf))
+        if real.path == leaf:
+            continue
+        row = by_path.get(node.parent_path or "")
+        quoted = row is not None and isinstance(row.value, str) and bool(_QUOTE_BLOCK.match(row.value))
+        if _same(node.value, real.value):
+            logged.append(Finding(kind="weak_signal", path=node.path,
+                                  detail=f"mimicry_shadow: repeats real field {real.path}"))
+            continue
+        detail = f"mimicry: '{node.key}' contradicts real field {real.path}"
+        if quoted:
+            logged.append(Finding(kind="weak_signal", path=node.path, detail=f"{detail} (quoted)"))
+            continue
+        targets = [node.path]
+        if row is not None:
+            targets += [row.path] + [c.path for c in children.get(row.path, [])]
+        for path in dict.fromkeys(targets):
+            counted.append(Finding(kind="mimicry", path=path, detail=detail))
+    return counted, logged
+

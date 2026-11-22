@@ -128,6 +128,7 @@ def analyze_clone_payload(payload: DetectorPayload, context: DetectorContext) ->
     source_fields = skeleton.fields if skeleton is not None and skeleton.structured else None
     structural = structural_flags(
         parsed, schema_findings=schema_findings, source_fields=source_fields,
+        inner_fields=skeleton.inner_fields if source_fields is not None else (),
     )
     schema_invalid = any(
         finding.kind in ("unexpected_key", "schema_violation")

@@ -28,11 +28,11 @@ from pydantic import TypeAdapter, ValidationError
 try:
     from .models import Finding, ParseResult, ParseStatus, StructuralReport, ToolTraffic
     from .parser import _child_path, payload_text
-    from .inner import scan_leaf
+    from .inner import mimicry_findings, scan_leaf
 except ImportError:  # flat-folder layout
     from models import Finding, ParseResult, ParseStatus, StructuralReport, ToolTraffic
     from parser import _child_path, payload_text
-    from inner import scan_leaf
+    from inner import mimicry_findings, scan_leaf
 
 _Q = "\"'\u201c\u201d\u2018\u2019`"      # quote look-alikes
 _QK = _Q + "$"                            # '$' is used as a quote in the paper ({$k$:$v$}) - key/value shape only
@@ -205,6 +205,7 @@ def structural_flags(
     schema_findings: Sequence[Finding] = (),
     *,
     source_fields: Sequence[Any] | None = None,
+    inner_fields: Sequence[Any] = (),
 ) -> StructuralReport:
     """S = min(1, forged fields / string fields)   (policy research 10.1).
 
@@ -235,6 +236,11 @@ def structural_flags(
             weak.extend(inner_logged)
         if f.key:                                         # attacker-controlled key names too
             _scan_string(f.key, f"{f.path}#key", counted, weak)
+    # Mimicry needs the object's own fields as the trusted reference: only with a skeleton.
+    if source_fields is not None and inner_fields:
+        mim_counted, mim_logged = mimicry_findings(source_fields, inner_fields)
+        counted.extend(mim_counted)
+        weak.extend(mim_logged)
     for sf in schema_findings:
         (counted if sf.kind == "unexpected_key" else weak).append(sf)
 
