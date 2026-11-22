@@ -120,6 +120,7 @@ def _evidence(stored: Any, match_type: str, strength: str, form: str, length: in
         source_tag_id=stored.source_tag_id, match_type=match_type, matched_length=length,
         source_provenance=Provenance(stored.provenance), source_has_forgery=stored.has_forgery,
         source_has_mimicry=getattr(stored, "has_mimicry", False),
+        source_leaf_forged=getattr(stored, "leaf_forged", False),
         match_strength=strength, match_form=form,
     )
 
@@ -203,7 +204,8 @@ def _with_lineage(tag: FieldTag, evidence: list[Evidence]) -> FieldTag:
                        provenance=Provenance.DERIVED, trust=Trust.UT, derived_from=())
     evidence.sort(key=lambda e: _STRENGTH_RANK[e.match_strength])
     has = {e.source_provenance for e in evidence}
-    flagged = any(e.source_has_forgery or e.source_has_mimicry for e in evidence)
+    flagged = any(e.source_has_forgery or e.source_has_mimicry or e.source_leaf_forged
+                  for e in evidence)
     if Provenance.USER in has:
         status, provenance, trust = LineageStatus.USER_MATCH, Provenance.USER, trust_for(Provenance.USER)
     elif Provenance.SYSTEM in has:

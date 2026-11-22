@@ -544,6 +544,35 @@ def mimicry_findings(
         if row is not None:
             targets += [row.path] + [c.path for c in children.get(row.path, [])]
         for path in dict.fromkeys(targets):
-            counted.append(Finding(kind="mimicry", path=path, detail=detail))
+            counted.append(Finding(kind="mimicry", path=path, detail=detail, ref_path=real.path))
     return counted, logged
+
+
+def localise(text: str, leaf_path: str, matches: Sequence[str]) -> list[str]:
+    """Paths of the rows, cells and tokens on the line(s) where a delimiter match was
+    found, so a forgery flag lands on those values and not on everything in the leaf."""
+    if not isinstance(text, str) or len(text) > MAX_TEXT_CHARS:
+        return []
+    spans: list[tuple[int, int]] = []
+    for m in matches:
+        start = text.find(m)
+        if start < 0:
+            continue
+        line_start = text.rfind("\n", 0, start) + 1
+        end = text.find("\n", start + len(m))
+        spans.append((line_start, len(text) if end < 0 else end))
+    if not spans:
+        return []
+    lines = {text.count("\n", 0, s) for s, _ in spans} | {text.count("\n", 0, e) for _, e in spans}
+    out: list[str] = []
+    records = split_records(text)
+    if records is not None:
+        for i, row in enumerate(records.rows):
+            if any(c.line in lines for c in row.cells):
+                out.append(row_path(leaf_path, i))
+                out.extend(cell_path(leaf_path, i, j) for j in range(len(row.cells)))
+    for k, tok in enumerate(split_tokens(text)):
+        if any(s <= tok.offset < e for s, e in spans):
+            out.append(token_path(leaf_path, k))
+    return out
 

@@ -18,6 +18,7 @@ import html
 import json
 import re
 import unicodedata
+import ast
 from collections.abc import Sequence
 from types import UnionType
 from typing import Annotated, Any, Union, get_args, get_origin
@@ -28,11 +29,11 @@ from pydantic import TypeAdapter, ValidationError
 try:
     from .models import Finding, ParseResult, ParseStatus, StructuralReport, ToolTraffic
     from .parser import _child_path, payload_text
-    from .inner import mimicry_findings, scan_leaf
+    from .inner import localise, mimicry_findings, scan_leaf
 except ImportError:  # flat-folder layout
     from models import Finding, ParseResult, ParseStatus, StructuralReport, ToolTraffic
     from parser import _child_path, payload_text
-    from inner import mimicry_findings, scan_leaf
+    from inner import localise, mimicry_findings, scan_leaf
 
 _Q = "\"'\u201c\u201d\u2018\u2019`"      # quote look-alikes
 _QK = _Q + "$"                            # '$' is used as a quote in the paper ({$k$:$v$}) - key/value shape only
@@ -75,6 +76,14 @@ def _variants(s: str) -> list[str]:
     return [s] if t == s else [s, t]
 
 
+def _prose_quote(match: str) -> bool:
+    """A kv_forgery hit quoted only with apostrophes, whose value is a bare number."""
+    if any(ch in match for ch in '"\u201c\u201d\uff02\\'):
+        return False
+    value = match.split(":", 1)[-1].split("\uff1a", 1)[-1].strip()
+    return value[:1].isdigit() and ("'" in match or "\u2019" in match or "\u2018" in match)
+
+
 def _scan_string(s: str, path: str, counted: list[Finding], weak: list[Finding],
                  array_element: bool = False) -> None:
     variants = _variants(s)
@@ -91,6 +100,12 @@ def _scan_string(s: str, path: str, counted: list[Finding], weak: list[Finding],
         for name, pat in table.items():
             for v in variants:
                 if m := pat.search(v):        # one finding per pattern per field
+                    if name == "kv_forgery" and _prose_quote(m.group(0)):
+                        # "the 'truest' :5 rating": apostrophes around a word and a
+                        # number after the colon read as prose, not a forged pair.
+                        weak.append(Finding(kind="weak_signal", path=path,
+                                            detail=f"kv_forgery_prose: {m.group(0)!r}"))
+                        break
                     out.append(Finding(kind=kind, path=path, detail=f"{name}: {m.group(0)!r}"))  # type: ignore[arg-type]
                     break
     t = s.strip()
@@ -194,10 +209,18 @@ def check_schema(traffic: ToolTraffic, expected: Any) -> list[Finding]:
     return out
 
 
+def _match_text(detail: str) -> str | None:
+    """The matched text from a finding detail ``"rule: '<repr>'"``."""
+    try:
+        return ast.literal_eval(detail.split(": ", 1)[1])
+    except (IndexError, ValueError, SyntaxError):
+        return None
+
+
 def _field_of(path: str) -> str:
     """Finding path -> the field it belongs to ('$.a#key', '$.a#2' and the inner-record
-    paths '$.a.@row[3]', '$.a.@row[3].@col[1]' all belong to field '$.a')."""
-    return path.split("#", 1)[0].split(".@row[", 1)[0]
+    paths '$.a.@row[3]', '$.a.@row[3].@col[1]', '$.a.@tok[0]' all belong to field '$.a')."""
+    return path.split("#", 1)[0].split(".@", 1)[0]
 
 
 def structural_flags(
@@ -228,8 +251,16 @@ def structural_flags(
         if len(counted) >= _MAX_FINDINGS:                 # a flood adds no evidence
             break
         if f.value_type == "string" and isinstance(f.value, str):
+            before = len(counted)
             _scan_string(f.value, f.path, counted, weak,
                          array_element=f.key is None and f.parent_path is not None)
+            # Pin each delimiter forgery to the line it sits on: the rows, cells and tokens
+            # there get the forgery flag; the rest of the leaf only inherits a weaker one.
+            hits = [x for x in counted[before:] if x.kind == "illegal_delimiter"]
+            texts = [_match_text(x.detail) for x in hits]
+            for located in localise(f.value, f.path, [t for t in texts if t]):
+                counted.append(Finding(kind="illegal_delimiter", path=located,
+                                       detail="located: on the line of a delimiter forgery"))
             # Records written inside the string (a table, key-value lines): forged rows.
             inner_counted, inner_logged = scan_leaf(f.value, f.path)
             counted.extend(inner_counted)
@@ -247,7 +278,9 @@ def structural_flags(
     forged = len({_field_of(f.path) for f in counted})
     string_fields = sum(1 for f in fields_to_scan if f.value_type == "string")
     return StructuralReport(
-        findings=counted, uncounted_findings=weak, hit_count=len(counted),
+        # Located findings only pin an existing hit to its line; they are not new hits.
+        findings=counted, uncounted_findings=weak,
+        hit_count=sum(1 for f in counted if not f.detail.startswith("located:")),
         boundary_count=result.boundary_count,
         structural_score=min(1.0, forged / max(1, string_fields)),
         forged_fields=forged,

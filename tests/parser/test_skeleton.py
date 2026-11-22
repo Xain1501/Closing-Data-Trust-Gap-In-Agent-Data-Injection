@@ -275,5 +275,6 @@ def test_skeleton_matches_parser_when_every_injection_vector_carries_forged_text
         leaves = {f.path for f in a.skeleton.string_leaves}
         for finding in a.structural.findings:
             flagged += 1
-            assert finding.path in leaves, (tool, finding.path)
+            # Located findings sit on rows/tokens inside a true string field.
+            assert finding.path.split(".@", 1)[0] in leaves, (tool, finding.path)
     assert flagged > 0

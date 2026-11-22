@@ -132,9 +132,11 @@ def test_bug5_real_literals_still_match(text):
     assert "kv_forgery" in rules(S(json.dumps({"body": text})))
 
 
-def test_bug5_known_limit_quoted_word_colon_number_is_flagged():
-    # 'word' :5 is exactly the forged key-value shape; it cannot be told apart from prose.
-    assert rules(S(json.dumps({"body": "the 'truest' :5 items"}))) == ["kv_forgery"]
+def test_bug5_quoted_word_colon_number_is_logged_not_counted():
+    # 'word' :5 with apostrophes and a bare number reads as prose: logged only now.
+    assert rules(S(json.dumps({"body": "the 'truest' :5 items"}))) == []
+    # A double-quoted pair is still counted.
+    assert rules(S(json.dumps({"body": 'the "truest" :5 items'}))) == ["kv_forgery"]
 
 
 # ---- 6 ------------------------------------------------------------------------

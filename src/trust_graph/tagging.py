@@ -62,6 +62,7 @@ class Evidence:
     source_provenance: Provenance = Provenance.EXTERNAL
     source_has_forgery: bool = False
     source_has_mimicry: bool = False
+    source_leaf_forged: bool = False           # the source sits inside a forged leaf (weaker)
     match_strength: Literal["whole_field", "token", "fragment"] = "whole_field"
     match_form: Literal["equal", "stripped", "number"] = "equal"
 
@@ -85,6 +86,9 @@ class FieldTag:
     derived_from: tuple[Evidence, ...] = ()
     has_forgery: bool = False
     has_mimicry: bool = False          # this field copies a trusted field (parser mimicry finding)
+    # Inside a leaf with a forgery that could not be pinned to this node: weaker than
+    # has_forgery (the leaf is forged; this value may or may not be).
+    leaf_forged: bool = False
     # The status names the strongest trusted source; this flag says an untrusted,
     # forged or mimicking source ALSO holds the value (the decision stage weighs it).
     untrusted_also: bool = False
@@ -178,8 +182,12 @@ def tag_fields(
 
     fields = list(fields or ())
     make = _TagFactory(run_id, interception_id, direction, clock)
+    # Forgery and mimicry are kept apart: has_forgery comes from record conflicts and
+    # delimiter forgery, has_mimicry from mimicry findings (the parser's suspicious mark
+    # still counts both).
+    forgery_findings = [f for f in findings if getattr(f, "kind", None) != "mimicry"]
     if direction == "post":
-        forged_paths = _forged_field_paths(fields, findings)
+        forged_paths = _forged_field_paths(fields, forgery_findings)
         tags = _tag_result(fields, profile_entry, make, result_format, forged_paths)
         tags = _inherit_inner_provenance(tags)
         mimic_paths = _forged_field_paths(
@@ -191,7 +199,7 @@ def tag_fields(
 
             index_values(tags, fields, run_state, batch_id=batch_id)
         return tags
-    forged_paths = _forged_field_paths(fields, findings)
+    forged_paths = _forged_field_paths(fields, forgery_findings)
     tags = _tag_arguments(fields, profile_entry, make, authority_arguments, forged_paths)
     if run_state is not None:
         from provenance.lineage import link_arguments
@@ -249,7 +257,7 @@ def _tag_result(
 def _inherit_inner_provenance(tags: list[FieldTag]) -> list[FieldTag]:
     """Rows, cells and tokens inferred inside a leaf (paths with ``.@``) carry the
     leaf's provenance (an amount token inside an EXTERNAL body is EXTERNAL, not SYSTEM)
-    and, when the whole leaf is flagged, its forgery flag."""
+    and, when the whole leaf is flagged, the weaker ``leaf_forged`` flag."""
     by_path = {t.path: t for t in tags}
     out = []
     for t in tags:
@@ -258,10 +266,9 @@ def _inherit_inner_provenance(tags: list[FieldTag]) -> list[FieldTag]:
             if leaf is not None and t.provenance is not leaf.provenance:
                 t = replace(t, provenance=leaf.provenance, trust=trust_for(leaf.provenance),
                             role=_result_role(leaf.provenance, t.value_type))
-            # A finding on the whole leaf (a delimiter forgery) cannot be placed on one
-            # row or token, so everything inside that leaf carries it.
+            # A forgery on the whole leaf that was not pinned to this node: the weaker flag.
             if leaf is not None and leaf.has_forgery and not t.has_forgery:
-                t = replace(t, has_forgery=True)
+                t = replace(t, leaf_forged=True)
         out.append(t)
     return out
 

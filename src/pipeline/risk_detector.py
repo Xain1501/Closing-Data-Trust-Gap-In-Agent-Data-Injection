@@ -12,7 +12,7 @@ from pipeline.decision import decide
 from pipeline.tagging_stage import analyze_and_tag
 from pipeline.risk_gate import RiskAssessment, resolve_review
 from provenance.run_state import RunStateStore
-from trust_graph import build_trust_graph
+from trust_graph import build_trace_graph, build_trust_graph
 
 ReviewCallback = Callable[[RiskAssessment, EvidencePanel], str]
 
@@ -53,8 +53,18 @@ def make_risk_detector(
                                     "Trusted impact tier is unavailable.", base_contains_adi,
                                     decided_by="matrix", **evidence)
 
-        graph = build_trust_graph(list(tagged.tags), report.findings,
-                                  mentions=tuple(getattr(tagged.run_state, "mentions", ())))
+        # The run graph, built the same way as the training data (graph_dataset):
+        # every interception of this run so far, with its findings and mentions.
+        run = tagged.run_state
+        with run._lock:
+            groups = [tags for tags in run.tags_by_interception.values() if tags]
+            finding_groups = [run.findings_by_interception.get(iid, ())
+                              for iid, tags in run.tags_by_interception.items() if tags]
+            mentions = tuple(run.mentions)
+        if groups:
+            graph = build_trace_graph(groups, finding_groups, mentions=mentions)
+        else:
+            graph = build_trust_graph(list(tagged.tags), report.findings, mentions=mentions)
         result = classify_and_assess(
             graph,
             classifier,

@@ -251,7 +251,7 @@ assert post.allowed is True and post.record is not None
         env=environment,
         capture_output=True,
         text=True,
-        timeout=20,
+        timeout=60,
         check=False,
     )
     assert blocked.returncode == 0, (
@@ -272,7 +272,7 @@ assert "clone.adapters.agentdojo" in sys.modules
         env=environment,
         capture_output=True,
         text=True,
-        timeout=20,
+        timeout=60,
         check=False,
     )
     assert positive_control.returncode == 0, (

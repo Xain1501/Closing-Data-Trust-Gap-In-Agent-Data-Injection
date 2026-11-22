@@ -17,6 +17,10 @@ from clone.core import Detector, DetectorDecision, InterceptionCore, Mode
 from clone.ledger import InterceptionLedger
 from clone.tvm import TrustMatrix, load_tool_matrix
 
+# A7, adapter contract: the run id and batch number travel in AgentDojo's extra_args,
+# the only per-run channel its pipeline offers. A harness may set _clone_tvm_run_id to
+# name a run; otherwise one is generated on the first call. Detectors read them only
+# through DetectorContext (run_id, batch_id) and never write them.
 _RUN_ID_KEY = "_clone_tvm_run_id"
 _BATCH_ID_KEY = "_clone_tvm_batch_id"
 

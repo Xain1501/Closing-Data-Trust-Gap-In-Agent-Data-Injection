@@ -89,4 +89,7 @@ def analyze_and_tag(
         result_format=context.result_format,
         findings=analysis.structural.findings,
     )
+    if not late and context.interception_id:
+        with state._lock:
+            state.findings_by_interception[context.interception_id] = tuple(analysis.structural.findings)
     return TaggingResult(analysis, tuple(tags), state)

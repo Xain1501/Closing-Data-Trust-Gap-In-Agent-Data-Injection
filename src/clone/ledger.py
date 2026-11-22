@@ -132,7 +132,8 @@ class InterceptionLedger:
     """Thread-safe trace of intercepted tool inputs, observations, and state changes."""
 
     def __init__(self, storage_dir: str | Path | None = None, *,
-                 store_skeleton_values: bool = False) -> None:
+                 store_skeleton_values: bool = False,
+                 store_raw_payloads: bool = True) -> None:
         """Create an in-memory ledger, optionally persisting it to JSONL.
 
         With ``storage_dir`` set, ``ledger.jsonl`` and ``raw-payloads.jsonl`` are
@@ -147,6 +148,9 @@ class InterceptionLedger:
         keeping private text. Set it to True for offline research data.
         """
         self.store_skeleton_values = store_skeleton_values
+        # L4: with False, raw-payloads.jsonl is not written (the hash in ledger.jsonl
+        # still proves what was captured); in-memory payloads are kept for the run.
+        self.store_raw_payloads = store_raw_payloads
         self.records: list[InterceptionRecord] = []
         self.ledger: list[LedgerEntry] = []
         self.raw_payloads: list[RawPayload] = []
@@ -335,6 +339,13 @@ class InterceptionLedger:
             self._append_ledger_locked(record, state)
             self._persist_locked()
 
+    def note_event(self, record: InterceptionRecord, event: str) -> None:
+        """Append an event entry (e.g. ``detector_late``) without changing the record's
+        state: the outcome was already decided; this only documents what came after."""
+        with self._lock:
+            self._append_ledger_locked(record, event)
+            self._persist_locked()
+
     def _append_ledger_locked(self, record: InterceptionRecord, state: str) -> None:
         event_seq = self._event_seq + 1
         previous_hash = (
@@ -467,8 +478,9 @@ class InterceptionLedger:
         mode = "a" if self._files_started else "w"
         _write_jsonl(self.storage_dir / "ledger.jsonl",
                      [asdict(entry) for entry in self.ledger[self._persisted_entries:]], mode)
-        _write_jsonl(self.storage_dir / "raw-payloads.jsonl",
-                     [asdict(payload) for payload in self.raw_payloads[self._persisted_payloads:]], mode)
+        if self.store_raw_payloads:
+            _write_jsonl(self.storage_dir / "raw-payloads.jsonl",
+                         [asdict(payload) for payload in self.raw_payloads[self._persisted_payloads:]], mode)
         _write_jsonl(self.storage_dir / "skeletons.jsonl", self.skeletons[self._persisted_skeletons:], mode)
         self._persisted_entries = len(self.ledger)
         self._persisted_payloads = len(self.raw_payloads)

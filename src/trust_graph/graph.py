@@ -25,13 +25,20 @@ def _label(field: Tagged) -> str:
             field.value_type,
             f"depth={field.depth}",
             f"direction={getattr(direction, 'value', direction)}",
-            f"forgery={str(bool(getattr(field, 'has_forgery', False))).lower()}",
+            f"forgery={_forgery_value(field)}",
             f"mimicry={str(bool(getattr(field, 'has_mimicry', False))).lower()}",
         )
     )
 
 
 _REAL_FIELD = re.compile(r"real field (\S+)")
+
+
+def _forgery_value(field: object) -> str:
+    """'true' (forgery on this node), 'leaf' (inside a forged leaf), or 'false'."""
+    if getattr(field, "has_forgery", False):
+        return "true"
+    return "leaf" if getattr(field, "leaf_forged", False) else "false"
 
 
 def build_trust_graph(
@@ -103,7 +110,9 @@ def _build_graph(
                     )
                     source_provenance = getattr(evidence, "source_provenance", "EXTERNAL")
                     source_provenance = getattr(source_provenance, "value", source_provenance)
-                    source_forgery = str(bool(getattr(evidence, "source_has_forgery", False))).lower()
+                    source_forgery = ("true" if getattr(evidence, "source_has_forgery", False)
+                                      else "leaf" if getattr(evidence, "source_leaf_forged", False)
+                                      else "false")
                     node_labels.setdefault(
                         source,
                         f"source:{source_provenance}:string:forgery={source_forgery}",
@@ -129,8 +138,11 @@ def _build_graph(
                 edges.append((target, finding_id))
             # Mimicry: link the claim to the real field it copies.
             if finding.kind == "mimicry" and target is not None:
-                real = _REAL_FIELD.search(finding.detail or "")
-                real_node = path_nodes.get(real.group(1)) if real else None
+                ref = getattr(finding, "ref_path", None)
+                if ref is None:                       # older findings: read it from the text
+                    match = _REAL_FIELD.search(finding.detail or "")
+                    ref = match.group(1) if match else None
+                real_node = path_nodes.get(ref) if ref else None
                 if real_node is not None:
                     rel = f"{prefix}rel:mimics:{finding.path}"
                     node_labels[rel] = "rel:mimics"

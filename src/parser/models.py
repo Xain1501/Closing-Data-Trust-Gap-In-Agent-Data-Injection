@@ -77,6 +77,7 @@ class Finding(BaseModel):
     kind: FindingKind
     path: str
     detail: str
+    ref_path: str | None = None    # mimicry: the real field the claim copies
 
 
 class ParseResult(BaseModel):

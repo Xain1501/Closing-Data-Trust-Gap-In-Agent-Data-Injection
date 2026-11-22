@@ -5,7 +5,7 @@ import json
 from dataclasses import dataclass
 from inspect import Signature, signature
 from queue import Empty, Queue
-from threading import Thread
+from threading import Event, Thread
 from time import monotonic, perf_counter_ns
 from typing import Any, Literal
 
@@ -342,6 +342,7 @@ class InterceptionCore:
             context,
             self.detector_timeout_s,
             self._detector_uses_context,
+            on_late=lambda: self.ledger.note_event(record, "detector_late"),
         )
         latency_ms = (perf_counter_ns() - started_ns) / 1_000_000
         if error is not None:
@@ -407,11 +408,13 @@ def _run_detector(
     context: DetectorContext,
     timeout_s: float,
     detector_uses_context: bool,
+    on_late: Callable[[], None] | None = None,
 ) -> tuple[DetectorDecision | None, str | None]:
     if detector is None:
         return None, "No detector configured."
 
     response: Queue[tuple[bool | DetectorDecision | None, Exception | None]] = Queue(maxsize=1)
+    gave_up = Event()
 
     def invoke() -> None:
         try:
@@ -419,11 +422,20 @@ def _run_detector(
             response.put((result, None))
         except Exception as error:
             response.put((None, error))
+        # C1: a thread cannot be killed in Python. When core has already given up, the
+        # finished detector is recorded as a "detector_late" event; its result is unused,
+        # and it could not write run state (the deadline in its context had passed).
+        if gave_up.is_set() and on_late is not None:
+            try:
+                on_late()
+            except Exception:
+                pass
 
     Thread(target=invoke, name="tvm-detector", daemon=True).start()
     try:
         result, error = response.get(timeout=timeout_s)
     except Empty:
+        gave_up.set()
         return None, f"Detector timed out after {timeout_s:g} seconds."
     if error is not None:
         return None, f"Detector error: {type(error).__name__}: {error}"

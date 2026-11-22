@@ -17,7 +17,8 @@ class StoredValue:
     provenance: str = "EXTERNAL"
     has_forgery: bool = False
     has_mimicry: bool = False
-    stripped_value: str = ""            # no spaces, dashes or punctuation: IBAN groups, phones
+    stripped_value: str = ""
+    leaf_forged: bool = False            # no spaces, dashes or punctuation: IBAN groups, phones
 
 
 def number_key(value: float | int) -> str:
@@ -47,6 +48,7 @@ class RunState:
     # another untrusted field of the same result. Graph edges, never forgery flags.
     mentions: list[tuple[str, str]] = field(default_factory=list)
     tags_by_interception: dict[str, tuple[Any, ...]] = field(default_factory=dict)
+    findings_by_interception: dict[str, tuple[Any, ...]] = field(default_factory=dict)
     _char_count: int = 0
     _lock: RLock = field(default_factory=RLock, repr=False, compare=False)
 
@@ -105,7 +107,8 @@ class RunState:
                 self.values.append(
                     StoredValue(value, tag.tag_id, tag.interception_id, tag.path,
                                 batch_id, tag.provenance.value, tag.has_forgery,
-                                getattr(tag, "has_mimicry", False), stripped(value))
+                                getattr(tag, "has_mimicry", False), stripped(value),
+                                getattr(tag, "leaf_forged", False))
                 )
                 self._char_count += len(value)
                 if ".@" not in tag.path:
@@ -161,6 +164,7 @@ class RunState:
             self._seen.clear()
             self.values.clear()
             self.tags_by_interception.clear()
+            self.findings_by_interception.clear()
             self._char_count = 0
             self.overflowed = False
             self.blind = False
