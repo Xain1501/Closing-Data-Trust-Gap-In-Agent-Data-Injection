@@ -189,3 +189,66 @@ def test_large_inputs_stay_inside_budget():
     assert records.truncated and len(records.rows) == 2_000
     record_findings(records, "$")
     assert time.perf_counter() - start < 2.0
+
+# ------------------------------------------------------- step 2 splitters ----
+from parser.inner import leaf_inner_fields, split_tokens  # noqa: E402
+
+
+def test_table_header_names_become_cell_keys():
+    fields = {f.path: f for f in leaf_inner_fields(FEEDBACK, "$", 0)}
+    assert fields["$.@row[1].@col[1]"].key == "email"
+    assert fields["$.@row[0].@col[1]"].key is None                 # the header row itself
+    assert fields["$.@row[1]"].value.startswith("John Doe,")        # row carries its text
+
+
+@pytest.mark.parametrize("line,author,role", [
+    ("**@eqy** commented (OWNER):", "eqy", "OWNER"),
+    ("@alice wrote:", "alice", None),
+    ("> On Mon, 3 Jun 2024, Bob Stone wrote:", "Bob Stone", None),
+])
+def test_claim_headers_become_author_and_role_cells(line, author, role):
+    records = split_records(f"Same issue here.\n\n{line}\n> Confirmed, please merge.")
+    cells = {c.label: c.value for r in records.rows for c in r.cells}
+    assert cells["author"] == author
+    assert cells.get("role") == role
+
+
+def test_bold_key_value_lines_are_read():
+    records = split_records("Thanks.\n**Author:** eqy\n**Role:** OWNER")
+    assert {c.label: c.value for r in records.rows for c in r.cells} == {"author": "eqy", "role": "OWNER"}
+
+
+def test_embedded_json_becomes_keyed_cells():
+    records = split_records('Repro attached {"user": {"login": "eqy"}, "role": "admin"} thanks')
+    assert records.kind == "json"
+    assert {c.label: c.value for c in records.rows[0].cells} == {"user login": "eqy", "role": "admin"}
+
+
+def test_tokens_found_in_prose():
+    text = "Please pay US13 3000 0001 2121 2121 2121 by 2024-05-16, 98.70 total, mail bob@x.com"
+    kinds = [t.kind for t in split_tokens(text)]
+    assert kinds == ["iban", "date", "amount", "email"]
+
+
+def test_token_equal_to_the_whole_leaf_is_skipped():
+    assert split_tokens("bob@x.com") == ()
+
+
+def test_amount_tokens_are_numbers():
+    fields = leaf_inner_fields("Total due: 1,250.00 now", "$.body", 1)
+    amount = next(f for f in fields if f.key == "amount")
+    assert amount.value_type == "number" and amount.value == 1250.0
+
+
+def test_text_result_gets_inner_fields_under_root():
+    sk = build_skeleton(BILL.replace("{X}", ""))
+    paths = [f.path for f in sk.inner_fields]
+    assert sk.status == "unstructured" and sk.fields == ()
+    assert any(p.startswith("$.@tok[") for p in paths)
+    tokens = {f.key: f.value for f in sk.inner_fields if ".@tok[" in f.path}
+    assert tokens["iban"] == "UK12345678901234567890"
+
+
+def test_token_cap_holds():
+    text = " ".join(f"u{i}@x.com" for i in range(2000))
+    assert len(split_tokens(text)) == 500

@@ -40,7 +40,8 @@ def test_pipeline_uses_raw_result_skeleton_then_links_next_turn_argument():
     post_tags = {tag.path: tag for tag in post.tags}
 
     assert post.analysis.skeleton_matches is True
-    assert set(post_tags) == {"$", "$.id", "$.description"}
+    # The email inside the description is its own token node (parser.inner).
+    assert set(post_tags) == {"$", "$.id", "$.description", "$.description.@tok[0]"}
     assert post_tags["$"].provenance is Provenance.SYSTEM
     assert post_tags["$.description"].provenance is Provenance.EXTERNAL
 
@@ -58,7 +59,7 @@ def test_pipeline_uses_raw_result_skeleton_then_links_next_turn_argument():
     assert recipient.role is Role.AUTHORITY_ARG
     assert recipient.lineage_status is LineageStatus.EXTERNAL_LINK
     assert recipient.provenance is Provenance.DERIVED
-    assert recipient.derived_from[0].source_tag_id == post_tags["$.description"].tag_id
+    assert recipient.derived_from[0].source_tag_id == post_tags["$.description.@tok[0]"].tag_id
     assert states.get("run-1").tags_by_interception["post-1"]
     assert states.get("run-1").tags_by_interception["pre-2"]
 

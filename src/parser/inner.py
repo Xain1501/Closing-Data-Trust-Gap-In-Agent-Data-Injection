@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import csv
 import io
+import json
 import re
 from collections import Counter
 from dataclasses import dataclass, field
@@ -62,16 +63,45 @@ class Cell:
 @dataclass(frozen=True)
 class Row:
     cells: tuple[Cell, ...]
+    text: str = ""                      # the row's own text: a copied whole row links to it
 
 
 @dataclass(frozen=True)
 class Records:
-    kind: Literal["table", "kv"]
+    kind: Literal["table", "kv", "json"]
     rows: tuple[Row, ...]
     width: int = 0                      # dominant column count (tables)
     separator: str | None = None
     truncated: bool = False             # rows beyond MAX_ROWS were not split
     conflicts: tuple[tuple[int, str], ...] = field(default=())   # kv: (row, key) pairs that conflict
+    header: tuple[str, ...] = ()        # tables: normalised column names from a header row
+
+
+@dataclass(frozen=True)
+class Token:
+    kind: str                           # iban | email | url | phone | amount | date
+    value: str
+    offset: int
+
+
+MAX_TOKENS = 500
+_TOKENS = (
+    ("email", re.compile(r"(?<![\w.+-])[\w.+-]+@[\w-]+(?:\.[\w-]+)*\.[A-Za-z]{2,}\b")),
+    ("url", re.compile(r"\bhttps?://[^\s<>\"')\]]+|\bwww\.[^\s<>\"')\]]+")),
+    ("iban", re.compile(r"\b[A-Z]{2}\d{2}(?: ?[A-Z0-9]{4}){2,7}(?: ?[A-Z0-9]{1,4})?\b")),
+    ("phone", re.compile(r"(?<![\w+])\+\d[\d\s().-]{7,}\d\b")),
+    ("date", re.compile(r"\b\d{4}-\d{2}-\d{2}(?:[ T]\d{2}:\d{2}(?::\d{2})?)?\b")),
+    ("amount", re.compile(r"(?<![\w.,-])(?:[$€£]\s?)?\d{1,3}(?:,\d{3})*\.\d{1,2}(?![\w.])"
+                          r"|(?<![\w.,-])[$€£]\s?\d+(?![\w.])")),
+)
+# Markdown / mail claim headers: who says they wrote this, and in which role.
+_CLAIMS = (
+    re.compile(r"^\s*(?:[*_]{1,2})?@?(?P<author>[A-Za-z0-9][\w.-]{0,38})(?:[*_]{1,2})?\s+"
+               r"(?:commented|wrote|replied|said|approved|reviewed)\b"
+               r"(?:[^(\n]{0,40}\((?P<role>[A-Za-z_ ]{2,30})\))?"),
+    re.compile(r"^\s*>?\s*On .{0,80}?,\s*(?P<author>[^,<>\n]{2,60}?)\s*(?:<[^>]+>\s*)?wrote:"),
+)
+_EMPHASIS = re.compile(r"[*_`]{1,3}")
 
 
 def is_identifier(value: str) -> bool:
@@ -91,10 +121,67 @@ def normalise_key(key: str) -> str:
 
 # ------------------------------------------------------------------ splitting ----
 def split_records(text: str) -> Records | None:
-    """Rows and cells of a table or key-value block written inside ``text``, else None."""
-    if not isinstance(text, str) or "\n" not in text or len(text) > MAX_TEXT_CHARS:
+    """Rows and cells of a table, key-value block or embedded JSON inside ``text``, else None."""
+    if not isinstance(text, str) or len(text) > MAX_TEXT_CHARS:
         return None
-    return _table(text) or _kv(text)
+    if "\n" not in text:
+        return _embedded_json(text)
+    return _table(text) or _kv(text) or _embedded_json(text)
+
+
+def split_tokens(text: str) -> tuple[Token, ...]:
+    """Identifier and number tokens anywhere in a text (IBAN, email, URL, phone, date,
+    amount), in order, without overlaps. A token that is the whole text is skipped:
+    the leaf itself already carries that value."""
+    if not isinstance(text, str) or len(text) > MAX_TEXT_CHARS:
+        return ()
+    found: list[Token] = []
+    taken: list[tuple[int, int]] = []
+    for kind, rx in _TOKENS:
+        for m in rx.finditer(text):
+            start, end = m.span()
+            if any(start < e and s < end for s, e in taken):
+                continue
+            value = m.group(0).rstrip(".,;:")
+            if value.strip() == text.strip():
+                continue
+            taken.append((start, start + len(value)))
+            found.append(Token(kind, value, start))
+    found.sort(key=lambda t: t.offset)
+    return tuple(found[:MAX_TOKENS])
+
+
+def _embedded_json(text: str) -> Records | None:
+    """A JSON object or array written inside a string: its leaves as one record whose
+    cell labels are dotted key paths (``role``, ``user.login``)."""
+    start = next((i for i, ch in enumerate(text) if ch in "{["), None)
+    if start is None:
+        return None
+    try:
+        value, _ = json.JSONDecoder().raw_decode(text[start:])
+    except ValueError:
+        return None
+    if not isinstance(value, (dict, list)) or not value:
+        return None
+    cells: list[Cell] = []
+
+    def walk(node, prefix: str) -> None:
+        if len(cells) >= MAX_ROWS:
+            return
+        if isinstance(node, dict):
+            for k, v in node.items():
+                walk(v, f"{prefix}.{k}" if prefix else str(k))
+        elif isinstance(node, list):
+            for i, v in enumerate(node):
+                walk(v, f"{prefix}[{i}]")
+        else:
+            label = normalise_key(re.sub(r"\[\d+\]", "", prefix).replace(".", " ")) or prefix
+            cells.append(Cell(label, "" if node is None else str(node), 0))
+
+    walk(value, "")
+    if not cells:
+        return None
+    return Records("json", (Row(tuple(cells), text[start:start + 2000]),))
 
 
 def _table(text: str) -> Records | None:
@@ -128,9 +215,25 @@ def _table(text: str) -> Records | None:
                     parts = parts[1:]
                 if parts and not parts[-1].strip():
                     parts = parts[:-1]
-        rows.append(Row(tuple(Cell(str(i), p.strip(), n) for i, p in enumerate(parts))))
+        rows.append(Row(tuple(Cell(str(i), p.strip(), n) for i, p in enumerate(parts)), line.strip()))
     width = mode + 1 if sep != "|" else Counter(len(r.cells) for r in rows).most_common(1)[0][0]
-    return Records("table", tuple(rows), width=width, separator=sep, truncated=truncated)
+    return Records("table", tuple(rows), width=width, separator=sep, truncated=truncated,
+                   header=_header(rows))
+
+
+def _header(rows: list[Row]) -> tuple[str, ...]:
+    """Normalised column names when the first row is a header: every cell is a short
+    name (no digits-only value, no identifier) and the row does not repeat later."""
+    if len(rows) < 2 or not rows[0].cells:
+        return ()
+    first = [c.value for c in rows[0].cells]
+    if any(not v or len(v) > 40 or is_identifier(v) or re.fullmatch(r"[\d.,\s%$€£-]+", v)
+           for v in first):
+        return ()
+    names = tuple(normalise_key(v) or v.lower() for v in first)
+    if len(set(names)) != len(names) or any(r.text == rows[0].text for r in rows[1:]):
+        return ()
+    return names
 
 
 def _looks_like_prose(numbered: list[tuple[int, str]]) -> bool:
@@ -154,8 +257,11 @@ def _kv(text: str) -> Records | None:
     def close() -> None:
         nonlocal current, seen
         if current:
-            rows.append(Row(tuple(current)))
+            rows.append(Row(tuple(current), "\n".join(
+                lines[c] for c in dict.fromkeys(cell.line for cell in current))))
         current, seen = [], {}
+
+    lines = text.splitlines()
 
     pairs_found = 0
     in_code = False
@@ -165,6 +271,17 @@ def _kv(text: str) -> Records | None:
             continue
         if in_code:
             continue
+        claim = next((m for m in (rx.match(line) for rx in _CLAIMS) if m), None)
+        if claim is not None:                     # "**@eqy** commented (OWNER):" is a record header
+            close()
+            cells = [Cell("author", claim.group("author").strip(), n)]
+            role = claim.groupdict().get("role")
+            if role:
+                cells.append(Cell("role", role.strip(), n))
+            rows.append(Row(tuple(cells), line.strip()))
+            pairs_found += len(cells)
+            continue
+        line = _EMPHASIS.sub("", line)            # "**Author:** x" reads as "Author: x"
         inline = [m for m in (_KV.match(p) for p in re.split(r",\s+(?=[A-Za-z][\w ]{0,40}:)", line)) if m]
         if len(inline) >= 2:                      # one whole record on this line
             close()
@@ -176,7 +293,7 @@ def _kv(text: str) -> Records | None:
                         conflicts.append((len(rows), key))
                     keys.setdefault(key, value)
                     cells.append(Cell(key, value, n))
-            rows.append(Row(tuple(cells)))
+            rows.append(Row(tuple(cells), line.strip()))
             pairs_found += len(cells)
             continue
         m = _KV.match(line)
@@ -198,7 +315,7 @@ def _kv(text: str) -> Records | None:
         if len(rows) >= MAX_ROWS:
             break
     close()
-    if pairs_found < 2:
+    if pairs_found < 2 and not any(c.label in ("author", "role") for r in rows for c in r.cells):
         return None
     return Records("kv", tuple(rows), conflicts=tuple(conflicts))
 
@@ -212,19 +329,58 @@ def cell_path(leaf_path: str, i: int, j: int) -> str:
     return f"{row_path(leaf_path, i)}.@col[{j}]"
 
 
+def token_path(leaf_path: str, k: int) -> str:
+    return f"{leaf_path}.@tok[{k}]"
+
+
+def cell_key(records: Records, i: int, cell: Cell) -> str | None:
+    """A cell's key: its key-value / JSON key, or its table column name (header rows
+    themselves have none)."""
+    if records.kind in ("kv", "json"):
+        return cell.label
+    if records.header and i > 0:
+        col = int(cell.label)
+        return records.header[col] if col < len(records.header) else None
+    return None
+
+
 def inner_fields(records: Records, leaf_path: str, depth: int) -> tuple[ParsedField, ...]:
-    """Row (object) and cell (string) fields under one string leaf."""
+    """Row and cell fields under one string leaf. A row carries its own text as value,
+    so an argument that copies a whole row links to that row."""
     out: list[ParsedField] = []
     for i, row in enumerate(records.rows):
         rp = row_path(leaf_path, i)
         out.append(ParsedField(path=rp, key=None, parent_path=leaf_path, depth=depth + 1,
-                               value_type="object"))
+                               value_type="string", value=row.text or None))
         for j, cell in enumerate(row.cells):
-            out.append(ParsedField(path=cell_path(leaf_path, i, j),
-                                   key=cell.label if records.kind == "kv" else None,
+            out.append(ParsedField(path=cell_path(leaf_path, i, j), key=cell_key(records, i, cell),
                                    parent_path=rp, depth=depth + 2,
                                    value_type="string", value=cell.value))
     return tuple(out)
+
+
+def token_fields(tokens: tuple[Token, ...], leaf_path: str, depth: int) -> tuple[ParsedField, ...]:
+    """One field per token; amounts are numbers, so number arguments can link to them."""
+    out: list[ParsedField] = []
+    for k, tok in enumerate(tokens):
+        value: str | float = tok.value
+        value_type = "string"
+        if tok.kind == "amount":
+            digits = re.sub(r"[^\d.]", "", tok.value)
+            try:
+                value, value_type = float(digits), "number"
+            except ValueError:
+                pass
+        out.append(ParsedField(path=token_path(leaf_path, k), key=tok.kind, parent_path=leaf_path,
+                               depth=depth + 1, value_type=value_type, value=value))
+    return tuple(out)
+
+
+def leaf_inner_fields(text: str, leaf_path: str, depth: int) -> tuple[ParsedField, ...]:
+    """Everything inferred inside one string leaf: records (rows, cells) then tokens."""
+    records = split_records(text)
+    out = inner_fields(records, leaf_path, depth) if records is not None else ()
+    return out + token_fields(split_tokens(text), leaf_path, depth)
 
 
 # ----------------------------------------------------------------- checks ----

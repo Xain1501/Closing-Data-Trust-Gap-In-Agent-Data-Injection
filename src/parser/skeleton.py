@@ -24,11 +24,11 @@ from dataclasses import dataclass, field
 from typing import Any, Literal
 
 try:
-    from .inner import inner_fields as _inner_fields, split_records
+    from .inner import leaf_inner_fields
     from .models import ParsedField
     from .parser import _Ctx, _Pairs, _TooDeep, _TooManyFields, _walk
 except ImportError:  # flat-folder layout
-    from inner import inner_fields as _inner_fields, split_records
+    from inner import leaf_inner_fields
     from models import ParsedField
     from parser import _Ctx, _Pairs, _TooDeep, _TooManyFields, _walk
 
@@ -122,6 +122,7 @@ class Skeleton:
     source: str = "raw_result"                    # where the boundaries came from (never the text)
     tool_name: str | None = None
     interception_id: str | None = None            # joins this skeleton to the ledger / tags / audit trail
+    text: str | None = field(default=None, repr=False, compare=False)   # str results: the text itself
     _by_path: dict[str, ParsedField] = field(default_factory=dict, repr=False, compare=False)
 
     def __post_init__(self) -> None:
@@ -148,17 +149,21 @@ class Skeleton:
 
     @property
     def inner_fields(self) -> tuple[ParsedField, ...]:
-        """Rows and cells written inside string leaves (``parser.inner``), e.g.
-        ``$[0].content.@row[12].@col[1]``. Kept apart from ``fields``, which stay the
-        object's own boundaries. Empty unless the skeleton is structured."""
+        """Rows, cells and tokens written inside string leaves (``parser.inner``), e.g.
+        ``$[0].content.@row[12].@col[1]`` or ``$.body.@tok[0]``. Kept apart from
+        ``fields``, which stay the object's own boundaries. For a text result they sit
+        under ``$``."""
         cached = self.__dict__.get("_inner")
         if cached is None:
             out: list[ParsedField] = []
             if self.structured:
                 for leaf in self.string_leaves:
-                    records = split_records(leaf.value) if isinstance(leaf.value, str) else None
-                    if records is not None:
-                        out.extend(_inner_fields(records, leaf.path, leaf.depth))
+                    if isinstance(leaf.value, str):
+                        out.extend(leaf_inner_fields(leaf.value, leaf.path, leaf.depth))
+            elif self.result_kind == "str" and isinstance(self.text, str):
+                # A text result (read_file) is one EXTERNAL leaf "$"; its rows, cells and
+                # tokens are inferred from the content. No authorship is claimed.
+                out.extend(leaf_inner_fields(self.text, "$", 0))
             cached = tuple(out)
             object.__setattr__(self, "_inner", cached)
         return cached
@@ -197,7 +202,9 @@ def build_skeleton(
     common = {"result_kind": kind, "tool_name": tool_name, "interception_id": interception_id}
     if kind == "none":
         return Skeleton(status="absent", **common)
-    if kind in ("str", "scalar", "other"):
+    if kind == "str":
+        return Skeleton(status="unstructured", text=raw_result, **common)
+    if kind in ("scalar", "other"):
         return Skeleton(status="unstructured", **common)
     ctx = _Ctx()
     try:
