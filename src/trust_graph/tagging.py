@@ -19,7 +19,7 @@ import re
 import time
 import uuid
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, replace, field
 from enum import Enum
 from types import MappingProxyType
 from typing import Any, Literal
@@ -56,11 +56,14 @@ class LineageStatus(str, Enum):
 @dataclass(frozen=True)
 class Evidence:
     """One real link from a DERIVED tag to the tag of its source value."""
-    source_tag_id: str | None
+    source_tag_id: str | None                  # None for the user's prompt
     match_type: Literal["equal", "substring"]
     matched_length: int
     source_provenance: Provenance = Provenance.EXTERNAL
     source_has_forgery: bool = False
+    source_has_mimicry: bool = False
+    match_strength: Literal["whole_field", "token", "fragment"] = "whole_field"
+    match_form: Literal["equal", "stripped", "number"] = "equal"
 
 
 @dataclass(frozen=True)
@@ -81,6 +84,10 @@ class FieldTag:
     lineage_status: LineageStatus
     derived_from: tuple[Evidence, ...] = ()
     has_forgery: bool = False
+    has_mimicry: bool = False          # this field copies a trusted field (parser mimicry finding)
+    # The status names the strongest trusted source; this flag says an untrusted,
+    # forged or mimicking source ALSO holds the value (the decision stage weighs it).
+    untrusted_also: bool = False
 
 
 _RESULT_PROVENANCE = (Provenance.SYSTEM, Provenance.EXTERNAL)
@@ -174,6 +181,10 @@ def tag_fields(
     if direction == "post":
         forged_paths = _forged_field_paths(fields, findings)
         tags = _tag_result(fields, profile_entry, make, result_format, forged_paths)
+        mimic_paths = _forged_field_paths(
+            fields, [f for f in findings if getattr(f, "kind", None) == "mimicry"])
+        if mimic_paths:
+            tags = [replace(t, has_mimicry=True) if t.path in mimic_paths else t for t in tags]
         if run_state is not None:
             from provenance.lineage import index_values
 

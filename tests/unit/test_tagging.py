@@ -161,7 +161,8 @@ def test_short_values_do_not_create_links_and_run_state_caps_are_visible():
         run_state=state, interception_id="pre-2",
     )
     value = next(tag for tag in tags if tag.path == "$.value")
-    assert value.lineage_status is LineageStatus.BELOW_MIN
+    # Short values are no longer skipped: they link only to a whole field; none here.
+    assert value.lineage_status is LineageStatus.UNLINKED
     assert value.trust is Trust.UT
 
 

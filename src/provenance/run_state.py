@@ -16,6 +16,8 @@ class StoredValue:
     batch_id: int | None = None
     provenance: str = "EXTERNAL"
     has_forgery: bool = False
+    has_mimicry: bool = False
+    stripped_value: str = ""            # no spaces, dashes or punctuation: IBAN groups, phones
 
 
 def number_key(value: float | int) -> str:
@@ -41,6 +43,9 @@ class RunState:
     dropped_chars: int = 0
     values: list[StoredValue] = field(default_factory=list)
     prompts: list[str] = field(default_factory=list)   # every user prompt of a multi-turn run
+    # (untrusted leaf tag id, mentioned field tag id): a field's value written inside
+    # another untrusted field of the same result. Graph edges, never forgery flags.
+    mentions: list[tuple[str, str]] = field(default_factory=list)
     tags_by_interception: dict[str, tuple[Any, ...]] = field(default_factory=dict)
     _char_count: int = 0
     _lock: RLock = field(default_factory=RLock, repr=False, compare=False)
@@ -56,7 +61,7 @@ class RunState:
 
     def add_result_tags(self, tags: list[Any], fields: list[Any], batch_id: int | None = None) -> None:
         """Index normalized SYSTEM/EXTERNAL string leaves; never export raw values."""
-        from provenance.lineage import normalise
+        from provenance.lineage import normalise, stripped
         from trust_graph.tagging import Provenance
 
         by_path = {field.path: field for field in fields}
@@ -75,7 +80,9 @@ class RunState:
                     value = number_key(source.value)    # numbers: canonical text, no length rule
                 elif source.value_type == "string" and isinstance(source.value, str):
                     value = normalise(source.value)
-                    if len(value) < self.min_length:
+                    # Short values are indexed too: lineage matches them only against
+                    # a whole field, cell or token, never inside text.
+                    if not value:
                         continue
                 else:
                     continue
@@ -90,10 +97,38 @@ class RunState:
                     continue
                 self.values.append(
                     StoredValue(value, tag.tag_id, tag.interception_id, tag.path,
-                                batch_id, tag.provenance.value, tag.has_forgery)
+                                batch_id, tag.provenance.value, tag.has_forgery,
+                                getattr(tag, "has_mimicry", False), stripped(value))
                 )
                 self._char_count += len(value)
                 self._seen.add(seen_key)
+
+    def add_mentions(self, tags: list[Any], fields: list[Any]) -> None:
+        """Record where one result field's value is written inside another untrusted field
+        of the same result ("CC @eqy" mentions the real login field)."""
+        from provenance.lineage import normalise
+        from trust_graph.tagging import Provenance
+
+        by_path = {f.path: f for f in fields}
+        own = [(t, by_path.get(t.path)) for t in tags if ".@" not in t.path]
+        values = [(t, normalise(f.value)) for t, f in own
+                  if f is not None and f.key is not None and isinstance(f.value, str)
+                  and len(f.value.strip()) >= 4]
+        found: list[tuple[str, str]] = []
+        for leaf_tag, leaf in own:
+            if (leaf is None or not isinstance(leaf.value, str) or leaf_tag.provenance is not Provenance.EXTERNAL
+                    or len(found) >= 200):
+                continue
+            text = normalise(leaf.value)
+            for other_tag, value in values:
+                if other_tag.path == leaf_tag.path or value == text:
+                    continue
+                if other_tag.path.startswith(leaf_tag.path) or leaf_tag.path.startswith(other_tag.path):
+                    continue
+                if value in text:
+                    found.append((leaf_tag.tag_id, other_tag.tag_id))
+        with self._lock:
+            self.mentions.extend(found)
 
     def snapshot_values(self) -> tuple[StoredValue, ...]:
         """The indexed values, read under the lock (another thread may be appending)."""
@@ -112,6 +147,7 @@ class RunState:
         with self._lock:
             self.user_prompt = None
             self.prompts.clear()
+            self.mentions.clear()
             self._seen.clear()
             self.values.clear()
             self.tags_by_interception.clear()
