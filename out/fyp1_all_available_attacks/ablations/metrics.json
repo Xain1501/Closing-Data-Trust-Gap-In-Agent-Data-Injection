@@ -1,23 +1,23 @@
 {
   "full": {
-    "accuracy": 0.7142857142857143,
-    "attack_brier_score": 0.17058112431596079,
-    "attack_ece": 0.17140078470360226,
-    "attack_f1": 0.6818181818181818,
-    "attack_pr_auc": 0.882641131815552,
-    "attack_precision": 0.8333333333333334,
-    "attack_recall": 0.5769230769230769,
-    "attack_roc_auc": 0.8428093645484951,
-    "balanced_accuracy": 0.7232441471571907,
+    "accuracy": 0.8367346938775511,
+    "attack_brier_score": 0.14126962613226826,
+    "attack_ece": 0.17848873877249757,
+    "attack_f1": 0.8181818181818182,
+    "attack_pr_auc": 0.9458637102394288,
+    "attack_precision": 1.0,
+    "attack_recall": 0.6923076923076923,
+    "attack_roc_auc": 0.9289297658862876,
+    "balanced_accuracy": 0.8461538461538461,
     "confusion_matrix": {
       "counts": [
         [
-          15,
-          11
+          18,
+          8
         ],
         [
-          3,
-          20
+          0,
+          23
         ]
       ],
       "labels": [
@@ -33,58 +33,72 @@
     },
     "reliability_bins": [
       {
-        "examples": 4,
+        "examples": 1,
+        "lower": 0.0,
+        "mean_predicted_attack_probability": 0.08862556978181908,
+        "observed_attack_rate": 0.0,
+        "upper": 0.1
+      },
+      {
+        "examples": 5,
         "lower": 0.1,
-        "mean_predicted_attack_probability": 0.14896413484347956,
+        "mean_predicted_attack_probability": 0.15421395488626763,
         "observed_attack_rate": 0.0,
         "upper": 0.2
       },
       {
-        "examples": 12,
+        "examples": 13,
         "lower": 0.2,
-        "mean_predicted_attack_probability": 0.2528848784641554,
-        "observed_attack_rate": 0.3333333333333333,
+        "mean_predicted_attack_probability": 0.24797606443053496,
+        "observed_attack_rate": 0.15384615384615385,
         "upper": 0.3
       },
       {
-        "examples": 8,
+        "examples": 5,
         "lower": 0.3,
-        "mean_predicted_attack_probability": 0.33001379583175433,
-        "observed_attack_rate": 0.125,
+        "mean_predicted_attack_probability": 0.3323398192659741,
+        "observed_attack_rate": 0.6,
         "upper": 0.4
       },
       {
         "examples": 7,
         "lower": 0.4,
-        "mean_predicted_attack_probability": 0.4587867785648075,
-        "observed_attack_rate": 0.8571428571428571,
+        "mean_predicted_attack_probability": 0.4522249965538664,
+        "observed_attack_rate": 0.42857142857142855,
         "upper": 0.5
       },
       {
-        "examples": 7,
+        "examples": 5,
         "lower": 0.5,
-        "mean_predicted_attack_probability": 0.5643321193500517,
-        "observed_attack_rate": 0.5714285714285714,
+        "mean_predicted_attack_probability": 0.5784631857295939,
+        "observed_attack_rate": 1.0,
         "upper": 0.6
       },
       {
-        "examples": 2,
+        "examples": 5,
         "lower": 0.6,
-        "mean_predicted_attack_probability": 0.6672363587950622,
+        "mean_predicted_attack_probability": 0.6641716138268344,
         "observed_attack_rate": 1.0,
         "upper": 0.7
       },
       {
-        "examples": 6,
+        "examples": 5,
         "lower": 0.7,
-        "mean_predicted_attack_probability": 0.7584754328224851,
+        "mean_predicted_attack_probability": 0.7688982654440731,
         "observed_attack_rate": 1.0,
         "upper": 0.8
       },
       {
-        "examples": 3,
+        "examples": 1,
+        "lower": 0.8,
+        "mean_predicted_attack_probability": 0.8935495801832379,
+        "observed_attack_rate": 1.0,
+        "upper": 0.9
+      },
+      {
+        "examples": 2,
         "lower": 0.9,
-        "mean_predicted_attack_probability": 0.9185174380175091,
+        "mean_predicted_attack_probability": 0.9450484781595898,
         "observed_attack_rate": 1.0,
         "upper": 1.0
       }
@@ -94,24 +108,24 @@
     "variant": "full"
   },
   "without_findings": {
-    "accuracy": 0.673469387755102,
-    "attack_brier_score": 0.18585988975860157,
-    "attack_ece": 0.17314764431473983,
-    "attack_f1": 0.6190476190476191,
-    "attack_pr_auc": 0.8538746619978228,
-    "attack_precision": 0.8125,
-    "attack_recall": 0.5,
-    "attack_roc_auc": 0.8177257525083612,
-    "balanced_accuracy": 0.6847826086956521,
+    "accuracy": 0.8367346938775511,
+    "attack_brier_score": 0.14644079896421566,
+    "attack_ece": 0.17534969152260324,
+    "attack_f1": 0.8181818181818182,
+    "attack_pr_auc": 0.950207624997153,
+    "attack_precision": 1.0,
+    "attack_recall": 0.6923076923076923,
+    "attack_roc_auc": 0.93561872909699,
+    "balanced_accuracy": 0.8461538461538461,
     "confusion_matrix": {
       "counts": [
         [
-          13,
-          13
+          18,
+          8
         ],
         [
-          3,
-          20
+          0,
+          23
         ]
       ],
       "labels": [
@@ -127,60 +141,67 @@
     },
     "reliability_bins": [
       {
-        "examples": 4,
+        "examples": 5,
         "lower": 0.1,
-        "mean_predicted_attack_probability": 0.16474837187816668,
+        "mean_predicted_attack_probability": 0.15727126684058387,
         "observed_attack_rate": 0.0,
         "upper": 0.2
       },
       {
-        "examples": 9,
+        "examples": 10,
         "lower": 0.2,
-        "mean_predicted_attack_probability": 0.25321354736422025,
-        "observed_attack_rate": 0.3333333333333333,
+        "mean_predicted_attack_probability": 0.24862399316336498,
+        "observed_attack_rate": 0.1,
         "upper": 0.3
       },
       {
-        "examples": 12,
+        "examples": 8,
         "lower": 0.3,
-        "mean_predicted_attack_probability": 0.3484509223051478,
-        "observed_attack_rate": 0.25,
+        "mean_predicted_attack_probability": 0.3228511133136962,
+        "observed_attack_rate": 0.375,
         "upper": 0.4
       },
       {
         "examples": 8,
         "lower": 0.4,
-        "mean_predicted_attack_probability": 0.4503114665415834,
-        "observed_attack_rate": 0.875,
+        "mean_predicted_attack_probability": 0.45526847995017417,
+        "observed_attack_rate": 0.5,
         "upper": 0.5
       },
       {
-        "examples": 5,
+        "examples": 6,
         "lower": 0.5,
-        "mean_predicted_attack_probability": 0.5319385218645217,
-        "observed_attack_rate": 0.6,
+        "mean_predicted_attack_probability": 0.5489706769137325,
+        "observed_attack_rate": 1.0,
         "upper": 0.6
       },
       {
-        "examples": 2,
+        "examples": 5,
         "lower": 0.6,
-        "mean_predicted_attack_probability": 0.6471697795567273,
-        "observed_attack_rate": 0.5,
+        "mean_predicted_attack_probability": 0.6540598213883814,
+        "observed_attack_rate": 1.0,
         "upper": 0.7
       },
       {
-        "examples": 6,
+        "examples": 2,
         "lower": 0.7,
-        "mean_predicted_attack_probability": 0.7641027311359206,
+        "mean_predicted_attack_probability": 0.7634443370429077,
         "observed_attack_rate": 1.0,
         "upper": 0.8
       },
       {
-        "examples": 3,
+        "examples": 4,
         "lower": 0.8,
-        "mean_predicted_attack_probability": 0.8415956293722866,
+        "mean_predicted_attack_probability": 0.8418746394681444,
         "observed_attack_rate": 1.0,
         "upper": 0.9
+      },
+      {
+        "examples": 1,
+        "lower": 0.9,
+        "mean_predicted_attack_probability": 0.9969942347353509,
+        "observed_attack_rate": 1.0,
+        "upper": 1.0
       }
     ],
     "removed_findings": true,
@@ -188,24 +209,24 @@
     "variant": "without_findings"
   },
   "without_findings_and_forgery": {
-    "accuracy": 0.5918367346938775,
-    "attack_brier_score": 0.226694499179376,
-    "attack_ece": 0.14665545275483055,
+    "accuracy": 0.6326530612244898,
+    "attack_brier_score": 0.2205676723443188,
+    "attack_ece": 0.1321109819894345,
     "attack_f1": 0.5,
-    "attack_pr_auc": 0.7846773353808336,
-    "attack_precision": 0.7142857142857143,
-    "attack_recall": 0.38461538461538464,
-    "attack_roc_auc": 0.7424749163879599,
-    "balanced_accuracy": 0.6053511705685619,
+    "attack_pr_auc": 0.841192064754335,
+    "attack_precision": 0.9,
+    "attack_recall": 0.34615384615384615,
+    "attack_roc_auc": 0.8043478260869565,
+    "balanced_accuracy": 0.6513377926421404,
     "confusion_matrix": {
       "counts": [
         [
-          10,
-          16
+          9,
+          17
         ],
         [
-          4,
-          19
+          1,
+          22
         ]
       ],
       "labels": [
@@ -222,50 +243,43 @@
     "reliability_bins": [
       {
         "examples": 3,
-        "lower": 0.1,
-        "mean_predicted_attack_probability": 0.15798578841625902,
-        "observed_attack_rate": 0.3333333333333333,
-        "upper": 0.2
-      },
-      {
-        "examples": 3,
         "lower": 0.2,
-        "mean_predicted_attack_probability": 0.25047075386188483,
+        "mean_predicted_attack_probability": 0.2694571853016711,
         "observed_attack_rate": 0.3333333333333333,
         "upper": 0.3
       },
       {
-        "examples": 17,
+        "examples": 19,
         "lower": 0.3,
-        "mean_predicted_attack_probability": 0.34802834012068035,
-        "observed_attack_rate": 0.29411764705882354,
+        "mean_predicted_attack_probability": 0.36095301736626384,
+        "observed_attack_rate": 0.3157894736842105,
         "upper": 0.4
       },
       {
-        "examples": 12,
+        "examples": 17,
         "lower": 0.4,
-        "mean_predicted_attack_probability": 0.4396267848253736,
-        "observed_attack_rate": 0.75,
+        "mean_predicted_attack_probability": 0.4570665528265638,
+        "observed_attack_rate": 0.5882352941176471,
         "upper": 0.5
       },
       {
-        "examples": 11,
+        "examples": 8,
         "lower": 0.5,
-        "mean_predicted_attack_probability": 0.547823491448026,
-        "observed_attack_rate": 0.6363636363636364,
+        "mean_predicted_attack_probability": 0.5297885517462507,
+        "observed_attack_rate": 0.875,
         "upper": 0.6
       },
       {
-        "examples": 2,
+        "examples": 1,
         "lower": 0.6,
-        "mean_predicted_attack_probability": 0.6073089500911282,
+        "mean_predicted_attack_probability": 0.6111347619531037,
         "observed_attack_rate": 1.0,
         "upper": 0.7
       },
       {
         "examples": 1,
         "lower": 0.9,
-        "mean_predicted_attack_probability": 0.9887972462154103,
+        "mean_predicted_attack_probability": 0.9567230825970154,
         "observed_attack_rate": 1.0,
         "upper": 1.0
       }
@@ -275,24 +289,24 @@
     "variant": "without_findings_and_forgery"
   },
   "without_forgery": {
-    "accuracy": 0.6938775510204082,
-    "attack_brier_score": 0.17100726709416564,
-    "attack_ece": 0.17174071454328507,
-    "attack_f1": 0.6511627906976745,
-    "attack_pr_auc": 0.886321198578387,
-    "attack_precision": 0.8235294117647058,
-    "attack_recall": 0.5384615384615384,
-    "attack_roc_auc": 0.8461538461538461,
-    "balanced_accuracy": 0.7040133779264214,
+    "accuracy": 0.8367346938775511,
+    "attack_brier_score": 0.14362405624510421,
+    "attack_ece": 0.18120880289221603,
+    "attack_f1": 0.8181818181818182,
+    "attack_pr_auc": 0.9437627712349903,
+    "attack_precision": 1.0,
+    "attack_recall": 0.6923076923076923,
+    "attack_roc_auc": 0.9255852842809364,
+    "balanced_accuracy": 0.8461538461538461,
     "confusion_matrix": {
       "counts": [
         [
-          14,
-          12
+          18,
+          8
         ],
         [
-          3,
-          20
+          0,
+          23
         ]
       ],
       "labels": [
@@ -308,65 +322,65 @@
     },
     "reliability_bins": [
       {
-        "examples": 4,
+        "examples": 6,
         "lower": 0.1,
-        "mean_predicted_attack_probability": 0.15160582899227487,
+        "mean_predicted_attack_probability": 0.15233967094163745,
         "observed_attack_rate": 0.0,
         "upper": 0.2
       },
       {
-        "examples": 11,
+        "examples": 13,
         "lower": 0.2,
-        "mean_predicted_attack_probability": 0.2598492041217075,
-        "observed_attack_rate": 0.2727272727272727,
+        "mean_predicted_attack_probability": 0.252661467728872,
+        "observed_attack_rate": 0.15384615384615385,
         "upper": 0.3
       },
       {
-        "examples": 9,
+        "examples": 5,
         "lower": 0.3,
-        "mean_predicted_attack_probability": 0.3360489327806826,
-        "observed_attack_rate": 0.3333333333333333,
+        "mean_predicted_attack_probability": 0.3297505544610085,
+        "observed_attack_rate": 0.6,
         "upper": 0.4
       },
       {
-        "examples": 8,
+        "examples": 7,
         "lower": 0.4,
-        "mean_predicted_attack_probability": 0.4446604695767449,
-        "observed_attack_rate": 0.75,
+        "mean_predicted_attack_probability": 0.44576541235210476,
+        "observed_attack_rate": 0.42857142857142855,
         "upper": 0.5
       },
       {
-        "examples": 3,
+        "examples": 4,
         "lower": 0.5,
-        "mean_predicted_attack_probability": 0.5548316186015089,
-        "observed_attack_rate": 0.0,
+        "mean_predicted_attack_probability": 0.5587212809815816,
+        "observed_attack_rate": 1.0,
         "upper": 0.6
       },
       {
-        "examples": 5,
+        "examples": 4,
         "lower": 0.6,
-        "mean_predicted_attack_probability": 0.6660890086129936,
+        "mean_predicted_attack_probability": 0.658193773170002,
         "observed_attack_rate": 1.0,
         "upper": 0.7
       },
       {
-        "examples": 6,
+        "examples": 7,
         "lower": 0.7,
-        "mean_predicted_attack_probability": 0.743420713689449,
+        "mean_predicted_attack_probability": 0.7424342485210477,
         "observed_attack_rate": 1.0,
         "upper": 0.8
       },
       {
-        "examples": 1,
+        "examples": 2,
         "lower": 0.8,
-        "mean_predicted_attack_probability": 0.8296506573434049,
+        "mean_predicted_attack_probability": 0.882239556905291,
         "observed_attack_rate": 1.0,
         "upper": 0.9
       },
       {
-        "examples": 2,
+        "examples": 1,
         "lower": 0.9,
-        "mean_predicted_attack_probability": 0.9219092848404966,
+        "mean_predicted_attack_probability": 0.9618318085020153,
         "observed_attack_rate": 1.0,
         "upper": 1.0
       }

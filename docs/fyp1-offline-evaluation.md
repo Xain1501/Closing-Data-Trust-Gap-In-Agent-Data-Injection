@@ -108,29 +108,29 @@ Do not claim that the detector is proven against live traffic, all providers, or
 - Include two end-to-end examples showing tags, forgery attribution, lineage evidence, graph nodes, and final decision.
 - Keep live provider testing as future work unless it becomes available and reproducible.
 
-## Latest all-available-trace run (22 November 2026)
+## Latest all-available-trace run (23 November 2026)
 
 I rebuilt the dataset from every locally available benign trace and every collected
-syntactic or semantic attack trace in the four suites. This produced **176 usable
-graphs** (127 train, 49 test); 10 traces were skipped because they contained no tool
+syntactic or semantic attack trace in the four suites. This produced **178 usable
+graphs** (129 train, 49 test); 10 traces were skipped because they contained no tool
 calls. The split remains grouped by task, so a task cannot appear in both partitions.
 
 The current holdout result is:
 
 | accuracy | balanced accuracy | attack precision | attack recall | attack F1 | ROC-AUC | PR-AUC |
 |---:|---:|---:|---:|---:|---:|---:|
-| 71.4% | 72.3% | 83.3% | 57.7% | 68.2% | 84.3% | 88.3% |
+| 83.7% | 84.6% | 100.0% | 69.2% | 81.8% | 92.9% | 94.6% |
 
 The lower score compared with the earlier syntactic-only run is expected: this run
 includes the small set of semantic traces collected so far and is therefore a more
 difficult, mixed-distribution check. The label-shuffle check stayed near chance
-(48.6% accuracy, 8.8% attack recall). Leave-one-suite-out accuracy was 69.0% for
-Banking, 52.5% for Slack, 40.8% for Travel, and 41.4% for Workspace; Travel remains
+(50.0% accuracy, 9.2% attack recall). Leave-one-suite-out accuracy was 66.7% for
+Banking, 75.6% for Slack, 42.9% for Travel, and 55.2% for Workspace; Travel remains
 the main unseen-suite weakness.
 
 The ablation run is saved under `out/fyp1_all_available_attacks/ablations/metrics.json`.
-The full model reached 68.2% attack F1; removing findings reduced it to 61.9%,
-removing forgery reduced it to 65.1%, and removing both reduced it to 50.0%.
+The full model reached 81.8% attack F1; removing findings kept attack F1 at 81.8%,
+removing forgery also kept it at 81.8%, and removing both reduced it to 50.0%.
 This supports retaining both signals, while the absolute score should be treated as
 preliminary because semantic coverage is incomplete.
 
