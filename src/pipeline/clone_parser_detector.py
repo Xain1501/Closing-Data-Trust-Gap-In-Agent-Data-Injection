@@ -23,10 +23,17 @@ def parser_detector(
     # would have blocked is released, marked suspicious, and keeps its structural score;
     # the label ("suspicious:<rule>") and the ledger's ``suspicious`` field say why.
     # Blocking belongs to the risk tier and human review stage.
-    suspicious = not verdict.allowed
+    anomalous = bool(analysis.anomalies)
+    suspicious = not verdict.allowed or anomalous
+    if not verdict.allowed:
+        label = f"suspicious:{verdict.label}"
+    elif anomalous:
+        label = "suspicious:anomaly"      # unknown structure: marked, not counted
+    else:
+        label = verdict.label
     return DetectorDecision(
         allowed=True,
-        label=f"suspicious:{verdict.label}" if suspicious else verdict.label,
+        label=label,
         score=analysis.structural.structural_score,
         reason=verdict.reason,
         contains_adi=verdict.contains_adi,

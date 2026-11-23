@@ -12,6 +12,7 @@ from parser.models import Direction, ParsedField, ParseResult, ParseStatus, Stru
 from parser.parser import parse, payload_text
 from parser.schema_registry import ToolSchemaRegistry
 from parser.skeleton import Skeleton, build_skeleton
+from parser.anomaly import anomaly_findings
 from parser.structural import structural_flags
 
 ParseHealth = Literal["clean", "salvaged_repr", "salvaged_repaired", "uninspectable"]
@@ -68,6 +69,11 @@ class ParserAnalysis:
             # tokens inferred inside it (they sit under "$").
             return tuple(self.parsed.fields) + self.skeleton.inner_fields
         return tuple(self.parsed.fields)
+
+    @property
+    def anomalies(self) -> list:
+        """Uncounted ``anomaly`` findings: unknown structure in a field."""
+        return [f for f in self.structural.uncounted_findings if f.kind == "anomaly"]
 
     @property
     def schema_ok(self) -> bool | None:
@@ -134,6 +140,14 @@ def analyze_clone_payload(payload: DetectorPayload, context: DetectorContext) ->
         parsed, schema_findings=schema_findings, source_fields=source_fields,
         inner_fields=skeleton.inner_fields if source_fields is not None else (),
     )
+    if direction is Direction.POST_HOP:
+        # Unknown-format structure: a string field whose shape leaves its benign range.
+        # Uncounted (no hit, never a block); the detector marks the payload suspicious.
+        scanned = source_fields if source_fields is not None else parsed.fields
+        anomalies = anomaly_findings(scanned, context.tool_name)
+        if anomalies:
+            structural = structural.model_copy(
+                update={"uncounted_findings": [*structural.uncounted_findings, *anomalies]})
     schema_invalid = any(
         finding.kind in ("unexpected_key", "schema_violation")
         for finding in (*structural.findings, *structural.uncounted_findings)

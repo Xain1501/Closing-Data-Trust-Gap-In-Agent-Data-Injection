@@ -148,7 +148,9 @@ def test_text_that_shows_forged_fields_does_not_match_the_skeleton():
     assert a.parsed.status.value == "ok"                     # the forgery parses as real structure
     assert a.skeleton_matches is False
     assert "$[1].subject" in a.skeleton_diff["only_in_text"] or a.skeleton_diff["only_in_text"]
-    assert [f.path for f in a.true_fields] == ["$", "$.id", "$.subject"]    # stages still get the truth
+    paths = [f.path for f in a.true_fields]
+    assert paths[:3] == ["$", "$.id", "$.subject"]                      # stages still get the truth
+    assert all(p.startswith("$.subject.@") for p in paths[3:])          # forged text: inner cells only
 
 
 def test_python_repr_formatting_still_matches_through_salvage():

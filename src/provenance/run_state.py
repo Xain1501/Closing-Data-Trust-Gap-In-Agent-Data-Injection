@@ -18,7 +18,8 @@ class StoredValue:
     has_forgery: bool = False
     has_mimicry: bool = False
     stripped_value: str = ""
-    leaf_forged: bool = False            # no spaces, dashes or punctuation: IBAN groups, phones
+    leaf_forged: bool = False
+    has_anomaly: bool = False            # no spaces, dashes or punctuation: IBAN groups, phones
 
 
 def number_key(value: float | int) -> str:
@@ -108,7 +109,8 @@ class RunState:
                     StoredValue(value, tag.tag_id, tag.interception_id, tag.path,
                                 batch_id, tag.provenance.value, tag.has_forgery,
                                 getattr(tag, "has_mimicry", False), stripped(value),
-                                getattr(tag, "leaf_forged", False))
+                                getattr(tag, "leaf_forged", False),
+                                getattr(tag, "has_anomaly", False))
                 )
                 self._char_count += len(value)
                 if ".@" not in tag.path:

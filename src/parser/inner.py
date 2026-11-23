@@ -118,6 +118,7 @@ def normalise_key(key: str) -> str:
     log prefix with a timestamp ("W0109 09:12:...")."""
     if re.search(r"\d{3,}", key):
         return ""
+    key = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", " ", key)          # camelCase: authorAssociation
     return " ".join(w for w in re.findall(r"[a-z0-9]+", key.lower()) if w not in _FILLER)
 
 
@@ -153,6 +154,39 @@ def split_tokens(text: str) -> tuple[Token, ...]:
     return tuple(found[:MAX_TOKENS])
 
 
+_JSON_PAIR = re.compile(r'"([A-Za-z_][\w.-]{0,40})"\s*:\s*(?:"((?:[^"\\]|\\.){0,500})"?|(\{)|(-?\d+(?:\.\d+)?|true|false|null))')
+
+
+def _json_fragments(text: str) -> Records | None:
+    """Key-value pairs of a JSON fragment that does not parse, nested keys joined
+    ("author": {"login": "eqy"} -> cell "author login" = "eqy"). Two pairs at least."""
+    cells: list[Cell] = []
+    parents: list[str] = []
+    depth_at: list[int] = []
+    depth = 0
+    pos = 0
+    for m in _JSON_PAIR.finditer(text):
+        depth += text.count("{", pos, m.start()) - text.count("}", pos, m.start())
+        pos = m.start()
+        while depth_at and depth <= depth_at[-1]:
+            depth_at.pop()
+            parents.pop()
+        key, string_value, opens, scalar = m.groups()
+        if opens:
+            parents.append(key)
+            depth_at.append(depth)
+            continue
+        name = " ".join([*parents, key])
+        label = normalise_key(name.replace(".", " ").replace("_", " ")) or name
+        value = string_value if string_value is not None else scalar
+        cells.append(Cell(label, value.replace('\\"', '"'), 0))
+        if len(cells) >= MAX_ROWS:
+            break
+    if len(cells) < 2:
+        return None
+    return Records("json", (Row(tuple(cells), text[:2000]),))
+
+
 def _embedded_json(text: str) -> Records | None:
     """A JSON object or array written inside a string: its leaves as one record whose
     cell labels are dotted key paths (``role``, ``user.login``)."""
@@ -162,7 +196,9 @@ def _embedded_json(text: str) -> Records | None:
     try:
         value, _ = json.JSONDecoder().raw_decode(text[start:])
     except ValueError:
-        return None
+        # ADI forgeries are broken JSON on purpose (the last string is left open so the
+        # real closing quote completes it). Read their key-value pairs anyway.
+        return _json_fragments(text[start:])
     if not isinstance(value, (dict, list)) or not value:
         return None
     cells: list[Cell] = []

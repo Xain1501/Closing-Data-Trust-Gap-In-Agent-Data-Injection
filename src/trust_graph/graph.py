@@ -27,6 +27,7 @@ def _label(field: Tagged) -> str:
             f"direction={getattr(direction, 'value', direction)}",
             f"forgery={_forgery_value(field)}",
             f"mimicry={str(bool(getattr(field, 'has_mimicry', False))).lower()}",
+            f"anomaly={str(bool(getattr(field, 'has_anomaly', False))).lower()}",
         )
     )
 

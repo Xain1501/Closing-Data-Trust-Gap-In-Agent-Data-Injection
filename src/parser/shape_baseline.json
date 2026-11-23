@@ -1,0 +1,2162 @@
+{
+ "add_calendar_event_participants|$.description": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "add_calendar_event_participants|$.end_time": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "add_calendar_event_participants|$.id_": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "add_calendar_event_participants|$.location": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "add_calendar_event_participants|$.participants[*]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 5,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "add_calendar_event_participants|$.start_time": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "add_calendar_event_participants|$.status": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "add_calendar_event_participants|$.title": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "append_to_file|$.content": {
+  "blobs": 0,
+  "kv_lines": 4,
+  "lines": 29,
+  "sections": 0,
+  "seen": 4,
+  "tags": 0,
+  "yaml_items": 20
+ },
+ "append_to_file|$.filename": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 4,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "append_to_file|$.id_": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 4,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "append_to_file|$.last_modified": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 4,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "append_to_file|$.owner": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 4,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "append_to_file|$.shared_with[\"linda.jameson@bluesparrowtech.com\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 3,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "check_restaurant_opening_hours|$.Miznon": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "check_restaurant_opening_hours|$[\"Bistrot Paul Bert\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 3,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "check_restaurant_opening_hours|$[\"Breizh Caf\\u00c3\\u00a9\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 3,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "check_restaurant_opening_hours|$[\"Chez L'Ami Jean\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 3,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "check_restaurant_opening_hours|$[\"China Garden\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 2,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "check_restaurant_opening_hours|$[\"Le Baratin\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 3,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "check_restaurant_opening_hours|$[\"New Asiaway\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 2,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "check_restaurant_opening_hours|$[\"New Israeli Restaurant\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "check_restaurant_opening_hours|$[\"Royal Panda\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "check_restaurant_opening_hours|$[\"The yard\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 2,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "create_calendar_event|$.description": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 11,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "create_calendar_event|$.end_time": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 11,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "create_calendar_event|$.id_": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 11,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "create_calendar_event|$.location": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 5,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "create_calendar_event|$.participants[*]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 19,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "create_calendar_event|$.start_time": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 11,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "create_calendar_event|$.status": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 11,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "create_calendar_event|$.title": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 11,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "create_file|$.content": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 6,
+  "sections": 0,
+  "seen": 4,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "create_file|$.filename": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 4,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "create_file|$.id_": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 4,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "create_file|$.last_modified": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 4,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "create_file|$.owner": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 4,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "delete_file|$.content": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 65,
+  "sections": 0,
+  "seen": 2,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "delete_file|$.filename": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 2,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "delete_file|$.id_": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 2,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "delete_file|$.last_modified": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 2,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "delete_file|$.owner": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 2,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "delete_file|$.shared_with[\"emma.johnson@bluesparrowtech.com\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 2,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_all_car_rental_companies_in_city|$": {
+  "blobs": 0,
+  "kv_lines": 1,
+  "lines": 3,
+  "sections": 0,
+  "seen": 8,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_all_hotels_in_city|$": {
+  "blobs": 0,
+  "kv_lines": 1,
+  "lines": 5,
+  "sections": 0,
+  "seen": 10,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_all_restaurants_in_city|$": {
+  "blobs": 0,
+  "kv_lines": 1,
+  "lines": 10,
+  "sections": 0,
+  "seen": 11,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_car_fuel_options|$[\"LAX Car Rental\"][*]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 6,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_car_fuel_options|$[\"Speedy Rentals\"][*]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 6,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_car_fuel_options|$[\"SunSet Rent-A-Car\"][*]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 4,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_car_types_available|$[\"LAX Car Rental\"][*]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 6,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_car_types_available|$[\"Speedy Rentals\"][*]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 4,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_car_types_available|$[\"SunSet Rent-A-Car\"][*]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 6,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_channels|$[*]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 44,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_cuisine_type_for_restaurants|$.Miznon": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 7,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_cuisine_type_for_restaurants|$[\"Bistrot Paul Bert\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 7,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_cuisine_type_for_restaurants|$[\"Breizh Caf\\u00c3\\u00a9\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 7,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_cuisine_type_for_restaurants|$[\"Chez L'Ami Jean\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 7,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_cuisine_type_for_restaurants|$[\"China Garden\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 7,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_cuisine_type_for_restaurants|$[\"Le Baratin\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 7,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_cuisine_type_for_restaurants|$[\"New Asiaway\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 7,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_cuisine_type_for_restaurants|$[\"New Israeli Restaurant\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 7,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_cuisine_type_for_restaurants|$[\"Royal Panda\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 7,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_cuisine_type_for_restaurants|$[\"The yard\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 7,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_current_day|$": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 2,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_day_calendar_events|$[*].description": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 31,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_day_calendar_events|$[*].end_time": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 31,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_day_calendar_events|$[*].id_": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 31,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_day_calendar_events|$[*].location": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 31,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_day_calendar_events|$[*].participants[*]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 81,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_day_calendar_events|$[*].start_time": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 31,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_day_calendar_events|$[*].status": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 31,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_day_calendar_events|$[*].title": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 31,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_dietary_restrictions_for_all_restaurants|$.Miznon": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_dietary_restrictions_for_all_restaurants|$[\"Bistrot Paul Bert\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_dietary_restrictions_for_all_restaurants|$[\"Breizh Caf\\u00c3\\u00a9\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_dietary_restrictions_for_all_restaurants|$[\"Chez L'Ami Jean\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_dietary_restrictions_for_all_restaurants|$[\"China Garden\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_dietary_restrictions_for_all_restaurants|$[\"Le Baratin\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_dietary_restrictions_for_all_restaurants|$[\"New Asiaway\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_dietary_restrictions_for_all_restaurants|$[\"New Israeli Restaurant\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_dietary_restrictions_for_all_restaurants|$[\"Royal Panda\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_dietary_restrictions_for_all_restaurants|$[\"The yard\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_flight_information|$": {
+  "blobs": 0,
+  "kv_lines": 3,
+  "lines": 3,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_hotels_address|$[\"City Hub\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_hotels_address|$[\"Good Night\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_hotels_address|$[\"London Luxury\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_hotels_address|$[\"Luxury Palace\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_hotels_address|$[\"Montmartre Suites\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_hotels_prices|$[\"City Hub\"]": {
+  "blobs": 0,
+  "kv_lines": 1,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_hotels_prices|$[\"Covent Garden Retreat\"]": {
+  "blobs": 0,
+  "kv_lines": 1,
+  "lines": 1,
+  "sections": 0,
+  "seen": 2,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_hotels_prices|$[\"Cozy Stay\"]": {
+  "blobs": 0,
+  "kv_lines": 1,
+  "lines": 1,
+  "sections": 0,
+  "seen": 2,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_hotels_prices|$[\"Good Night\"]": {
+  "blobs": 0,
+  "kv_lines": 1,
+  "lines": 1,
+  "sections": 0,
+  "seen": 7,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_hotels_prices|$[\"Le Marais Boutique\"]": {
+  "blobs": 0,
+  "kv_lines": 1,
+  "lines": 1,
+  "sections": 0,
+  "seen": 5,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_hotels_prices|$[\"London Luxury\"]": {
+  "blobs": 0,
+  "kv_lines": 1,
+  "lines": 1,
+  "sections": 0,
+  "seen": 3,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_hotels_prices|$[\"Luxury Palace\"]": {
+  "blobs": 0,
+  "kv_lines": 1,
+  "lines": 1,
+  "sections": 0,
+  "seen": 7,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_hotels_prices|$[\"Mom's Home\"]": {
+  "blobs": 0,
+  "kv_lines": 1,
+  "lines": 1,
+  "sections": 0,
+  "seen": 2,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_hotels_prices|$[\"Montmartre Suites\"]": {
+  "blobs": 0,
+  "kv_lines": 1,
+  "lines": 1,
+  "sections": 0,
+  "seen": 5,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_hotels_prices|$[\"Riverside View\"]": {
+  "blobs": 0,
+  "kv_lines": 1,
+  "lines": 1,
+  "sections": 0,
+  "seen": 2,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_most_recent_transactions|$[*].date": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 60,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_most_recent_transactions|$[*].recipient": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 60,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_most_recent_transactions|$[*].sender": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 60,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_most_recent_transactions|$[*].subject": {
+  "blobs": 0,
+  "kv_lines": 1,
+  "lines": 1,
+  "sections": 0,
+  "seen": 60,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_rating_reviews_for_car_rental|$[\"Eiffel Tower Car Rental\"]": {
+  "blobs": 0,
+  "kv_lines": 2,
+  "lines": 5,
+  "sections": 0,
+  "seen": 2,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_rating_reviews_for_car_rental|$[\"Green Motion\"]": {
+  "blobs": 0,
+  "kv_lines": 2,
+  "lines": 4,
+  "sections": 0,
+  "seen": 2,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_rating_reviews_for_car_rental|$[\"LAX Car Rental\"]": {
+  "blobs": 0,
+  "kv_lines": 2,
+  "lines": 5,
+  "sections": 0,
+  "seen": 4,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_rating_reviews_for_car_rental|$[\"New Car Rental\"]": {
+  "blobs": 0,
+  "kv_lines": 2,
+  "lines": 4,
+  "sections": 0,
+  "seen": 2,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_rating_reviews_for_car_rental|$[\"Paris Rent-a-Car\"]": {
+  "blobs": 0,
+  "kv_lines": 2,
+  "lines": 5,
+  "sections": 0,
+  "seen": 3,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_rating_reviews_for_car_rental|$[\"Speedy Rentals\"]": {
+  "blobs": 0,
+  "kv_lines": 2,
+  "lines": 4,
+  "sections": 0,
+  "seen": 2,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_rating_reviews_for_car_rental|$[\"SunSet Rent-A-Car\"]": {
+  "blobs": 0,
+  "kv_lines": 2,
+  "lines": 5,
+  "sections": 0,
+  "seen": 2,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_rating_reviews_for_hotels|$[\"City Hub\"]": {
+  "blobs": 0,
+  "kv_lines": 2,
+  "lines": 5,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_rating_reviews_for_hotels|$[\"Covent Garden Retreat\"]": {
+  "blobs": 0,
+  "kv_lines": 2,
+  "lines": 5,
+  "sections": 0,
+  "seen": 2,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_rating_reviews_for_hotels|$[\"Cozy Stay\"]": {
+  "blobs": 0,
+  "kv_lines": 2,
+  "lines": 5,
+  "sections": 0,
+  "seen": 2,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_rating_reviews_for_hotels|$[\"Good Night\"]": {
+  "blobs": 0,
+  "kv_lines": 2,
+  "lines": 6,
+  "sections": 0,
+  "seen": 5,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_rating_reviews_for_hotels|$[\"Le Marais Boutique\"]": {
+  "blobs": 0,
+  "kv_lines": 2,
+  "lines": 5,
+  "sections": 0,
+  "seen": 7,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_rating_reviews_for_hotels|$[\"London Luxury\"]": {
+  "blobs": 0,
+  "kv_lines": 2,
+  "lines": 6,
+  "sections": 0,
+  "seen": 3,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_rating_reviews_for_hotels|$[\"Luxury Palace\"]": {
+  "blobs": 0,
+  "kv_lines": 2,
+  "lines": 6,
+  "sections": 0,
+  "seen": 3,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_rating_reviews_for_hotels|$[\"Mom's Home\"]": {
+  "blobs": 0,
+  "kv_lines": 2,
+  "lines": 5,
+  "sections": 0,
+  "seen": 2,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_rating_reviews_for_hotels|$[\"Montmartre Suites\"]": {
+  "blobs": 0,
+  "kv_lines": 2,
+  "lines": 7,
+  "sections": 0,
+  "seen": 6,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_rating_reviews_for_hotels|$[\"Riverside View\"]": {
+  "blobs": 0,
+  "kv_lines": 2,
+  "lines": 5,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_rating_reviews_for_restaurants|$.Miznon": {
+  "blobs": 0,
+  "kv_lines": 2,
+  "lines": 5,
+  "sections": 0,
+  "seen": 3,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_rating_reviews_for_restaurants|$[\"Azabu Ramen\"]": {
+  "blobs": 0,
+  "kv_lines": 2,
+  "lines": 5,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_rating_reviews_for_restaurants|$[\"Bistrot Paul Bert\"]": {
+  "blobs": 0,
+  "kv_lines": 2,
+  "lines": 5,
+  "sections": 0,
+  "seen": 5,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_rating_reviews_for_restaurants|$[\"Breizh Caf\\u00c3\\u00a9\"]": {
+  "blobs": 0,
+  "kv_lines": 2,
+  "lines": 6,
+  "sections": 0,
+  "seen": 6,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_rating_reviews_for_restaurants|$[\"Chez L'Ami Jean\"]": {
+  "blobs": 0,
+  "kv_lines": 2,
+  "lines": 5,
+  "sections": 0,
+  "seen": 5,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_rating_reviews_for_restaurants|$[\"China Garden\"]": {
+  "blobs": 0,
+  "kv_lines": 2,
+  "lines": 5,
+  "sections": 0,
+  "seen": 4,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_rating_reviews_for_restaurants|$[\"Home Kitchen\"]": {
+  "blobs": 0,
+  "kv_lines": 2,
+  "lines": 5,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_rating_reviews_for_restaurants|$[\"House of Sushi\"]": {
+  "blobs": 0,
+  "kv_lines": 2,
+  "lines": 5,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_rating_reviews_for_restaurants|$[\"Le Baratin\"]": {
+  "blobs": 0,
+  "kv_lines": 2,
+  "lines": 6,
+  "sections": 0,
+  "seen": 4,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_rating_reviews_for_restaurants|$[\"New Asiaway\"]": {
+  "blobs": 0,
+  "kv_lines": 2,
+  "lines": 6,
+  "sections": 0,
+  "seen": 5,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_rating_reviews_for_restaurants|$[\"New Israeli Restaurant\"]": {
+  "blobs": 0,
+  "kv_lines": 2,
+  "lines": 6,
+  "sections": 0,
+  "seen": 4,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_rating_reviews_for_restaurants|$[\"Royal Panda\"]": {
+  "blobs": 0,
+  "kv_lines": 2,
+  "lines": 5,
+  "sections": 0,
+  "seen": 4,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_rating_reviews_for_restaurants|$[\"The yard\"]": {
+  "blobs": 0,
+  "kv_lines": 2,
+  "lines": 5,
+  "sections": 0,
+  "seen": 5,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_restaurants_address|$[\"Breizh Caf\\u00c3\\u00a9\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 2,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_restaurants_address|$[\"Le Baratin\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_restaurants_address|$[\"New Asiaway\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_restaurants_address|$[\"New Israeli Restaurant\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 2,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_scheduled_transactions|$[*].date": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 6,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_scheduled_transactions|$[*].recipient": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 6,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_scheduled_transactions|$[*].sender": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 6,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_scheduled_transactions|$[*].subject": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 6,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_unread_emails|$[*].body": {
+  "blobs": 0,
+  "kv_lines": 1,
+  "lines": 5,
+  "sections": 0,
+  "seen": 6,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_unread_emails|$[*].id_": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 6,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_unread_emails|$[*].recipients[*]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 6,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_unread_emails|$[*].sender": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 6,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_unread_emails|$[*].status": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 6,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_unread_emails|$[*].subject": {
+  "blobs": 0,
+  "kv_lines": 1,
+  "lines": 1,
+  "sections": 0,
+  "seen": 6,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_unread_emails|$[*].timestamp": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 6,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_users_in_channel|$[*]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 38,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "get_webpage|$": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 18,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "list_files|$[*].content": {
+  "blobs": 0,
+  "kv_lines": 6,
+  "lines": 65,
+  "sections": 0,
+  "seen": 130,
+  "tags": 0,
+  "yaml_items": 20
+ },
+ "list_files|$[*].filename": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 130,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "list_files|$[*].id_": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 130,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "list_files|$[*].last_modified": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 130,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "list_files|$[*].owner": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 130,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "list_files|$[*].shared_with[\"alex.martin@bluesparrowtech.com\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 10,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "list_files|$[*].shared_with[\"david.lee@bluesparrowtech.com\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 25,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "list_files|$[*].shared_with[\"emma.johnson@bluesparrowtech.com\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 60,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "list_files|$[*].shared_with[\"jane.smith@gmail.com\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 5,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "list_files|$[*].shared_with[\"john.mitchell@gmail.com\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 5,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "list_files|$[*].shared_with[\"linda.green@bluesparrowtech.com\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 5,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "list_files|$[*].shared_with[\"linda.jameson@bluesparrowtech.com\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 20,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "list_files|$[*].shared_with[\"mark.roberts@bluesparrowtech.com\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 5,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "list_files|$[*].shared_with[\"michael.brown@bluesparrowtech.com\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 5,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "list_files|$[*].shared_with[\"robert.anderson@bluesparrowtech.com\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 5,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "list_files|$[*].shared_with[\"susan.lee@bluesparrowtech.com\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 5,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "read_channel_messages|$[*].body": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 27,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "read_channel_messages|$[*].recipient": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 27,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "read_channel_messages|$[*].sender": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 27,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "read_file|$": {
+  "blobs": 0,
+  "kv_lines": 1,
+  "lines": 11,
+  "sections": 0,
+  "seen": 4,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "read_inbox|$[*].body": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 4,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "read_inbox|$[*].recipient": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 4,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "read_inbox|$[*].sender": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 4,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "reschedule_calendar_event|$.description": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "reschedule_calendar_event|$.end_time": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "reschedule_calendar_event|$.id_": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "reschedule_calendar_event|$.location": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "reschedule_calendar_event|$.participants[*]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "reschedule_calendar_event|$.start_time": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "reschedule_calendar_event|$.status": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "reschedule_calendar_event|$.title": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "reserve_hotel|$": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "schedule_transaction|$.message": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "search_calendar_events|$[*].description": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 11,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "search_calendar_events|$[*].end_time": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 11,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "search_calendar_events|$[*].id_": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 11,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "search_calendar_events|$[*].location": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 11,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "search_calendar_events|$[*].participants[*]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 24,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "search_calendar_events|$[*].start_time": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 11,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "search_calendar_events|$[*].status": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 11,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "search_calendar_events|$[*].title": {
+  "blobs": 0,
+  "kv_lines": 1,
+  "lines": 1,
+  "sections": 0,
+  "seen": 11,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "search_contacts_by_name|$[*].email": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "search_contacts_by_name|$[*].name": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "search_emails|$[*].body": {
+  "blobs": 0,
+  "kv_lines": 1,
+  "lines": 6,
+  "sections": 0,
+  "seen": 25,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "search_emails|$[*].id_": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 25,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "search_emails|$[*].recipients[*]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 25,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "search_emails|$[*].sender": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 25,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "search_emails|$[*].status": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 25,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "search_emails|$[*].subject": {
+  "blobs": 0,
+  "kv_lines": 1,
+  "lines": 1,
+  "sections": 0,
+  "seen": 25,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "search_emails|$[*].timestamp": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 25,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "search_files_by_filename|$[*].content": {
+  "blobs": 0,
+  "kv_lines": 4,
+  "lines": 65,
+  "sections": 0,
+  "seen": 12,
+  "tags": 0,
+  "yaml_items": 20
+ },
+ "search_files_by_filename|$[*].filename": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 12,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "search_files_by_filename|$[*].id_": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 12,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "search_files_by_filename|$[*].last_modified": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 12,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "search_files_by_filename|$[*].owner": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 12,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "search_files_by_filename|$[*].shared_with[\"alex.martin@bluesparrowtech.com\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 3,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "search_files_by_filename|$[*].shared_with[\"david.lee@bluesparrowtech.com\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "search_files_by_filename|$[*].shared_with[\"emma.johnson@bluesparrowtech.com\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 2,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "search_files_by_filename|$[*].shared_with[\"john.mitchell@gmail.com\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "search_files_by_filename|$[*].shared_with[\"linda.jameson@bluesparrowtech.com\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 10,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "search_files|$[*].content": {
+  "blobs": 0,
+  "kv_lines": 2,
+  "lines": 22,
+  "sections": 0,
+  "seen": 24,
+  "tags": 0,
+  "yaml_items": 10
+ },
+ "search_files|$[*].filename": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 24,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "search_files|$[*].id_": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 24,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "search_files|$[*].last_modified": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 24,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "search_files|$[*].owner": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 24,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "search_files|$[*].shared_with[\"david.lee@bluesparrowtech.com\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "search_files|$[*].shared_with[\"emma.johnson@bluesparrowtech.com\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 22,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "search_files|$[*].shared_with[\"linda.green@bluesparrowtech.com\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "search_files|$[*].shared_with[\"linda.jameson@bluesparrowtech.com\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 8,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "search_files|$[*].shared_with[\"mark.roberts@bluesparrowtech.com\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "send_email|$.attachments[*]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "send_email|$.body": {
+  "blobs": 0,
+  "kv_lines": 1,
+  "lines": 3,
+  "sections": 0,
+  "seen": 7,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "send_email|$.id_": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 7,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "send_email|$.recipients[*]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 7,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "send_email|$.sender": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 7,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "send_email|$.status": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 7,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "send_email|$.subject": {
+  "blobs": 0,
+  "kv_lines": 1,
+  "lines": 1,
+  "sections": 0,
+  "seen": 7,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "send_email|$.timestamp": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 7,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "send_money|$.message": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 6,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "share_file|$.content": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 6,
+  "sections": 0,
+  "seen": 2,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "share_file|$.filename": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 2,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "share_file|$.id_": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 2,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "share_file|$.last_modified": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 2,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "share_file|$.owner": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 2,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "share_file|$.shared_with[\"john.doe@gmail.com\"]": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 2,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "update_password|$.message": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 1,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "update_scheduled_transaction|$.message": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 4,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "update_user_info|$.city": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 2,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "update_user_info|$.first_name": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 2,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "update_user_info|$.last_name": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 2,
+  "tags": 0,
+  "yaml_items": 0
+ },
+ "update_user_info|$.street": {
+  "blobs": 0,
+  "kv_lines": 0,
+  "lines": 1,
+  "sections": 0,
+  "seen": 2,
+  "tags": 0,
+  "yaml_items": 0
+ }
+}

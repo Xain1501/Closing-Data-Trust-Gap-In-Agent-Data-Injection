@@ -383,7 +383,7 @@ def test_graph_has_mimicry_labels_and_mimics_edge():
                           interception_id="post-1", user_prompt="Read the thread", batch_id=1)
     tagged = analyze_and_tag(json.dumps(raw), ctx, RunStateStore())
     graph = build_trace_graph([tagged.tags], [tagged.analysis.structural.findings])
-    assert any(label.endswith("mimicry=true") for label in graph.node_labels.values())
+    assert any("mimicry=true" in label for label in graph.node_labels.values())
     rel = [n for n, label in graph.node_labels.items() if label == "rel:mimics"]
     assert rel
     assert any(edge == (rel[0], "event:0:$[0].author_association") for edge in graph.edges)

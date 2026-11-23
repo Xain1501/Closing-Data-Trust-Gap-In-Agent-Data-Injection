@@ -87,7 +87,7 @@ def analyze_and_tag(
         authority_arguments=authority_arguments,
         batch_id=context.batch_id,
         result_format=context.result_format,
-        findings=analysis.structural.findings,
+        findings=[*analysis.structural.findings, *analysis.anomalies],
     )
     if not late and context.interception_id:
         with state._lock:

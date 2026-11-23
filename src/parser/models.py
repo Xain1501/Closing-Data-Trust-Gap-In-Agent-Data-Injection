@@ -57,7 +57,7 @@ FindingKind = Literal[
     "duplicate_key",                                           # parse-level fact
     "illegal_delimiter", "embedded_json", "unexpected_key",    # counted toward S
     "record_conflict", "mimicry",                              # counted (parser.inner)
-    "weak_signal", "schema_violation",                         # NOT counted toward S
+    "weak_signal", "schema_violation", "anomaly",              # NOT counted toward S
 ]
 
 

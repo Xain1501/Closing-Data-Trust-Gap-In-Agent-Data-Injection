@@ -63,6 +63,7 @@ class Evidence:
     source_has_forgery: bool = False
     source_has_mimicry: bool = False
     source_leaf_forged: bool = False           # the source sits inside a forged leaf (weaker)
+    source_has_anomaly: bool = False           # the source field has unknown structure
     match_strength: Literal["whole_field", "token", "fragment"] = "whole_field"
     match_form: Literal["equal", "stripped", "number"] = "equal"
 
@@ -89,6 +90,8 @@ class FieldTag:
     # Inside a leaf with a forgery that could not be pinned to this node: weaker than
     # has_forgery (the leaf is forged; this value may or may not be).
     leaf_forged: bool = False
+    # Unknown structure in this field (or its leaf): shape outside the benign baseline.
+    has_anomaly: bool = False
     # The status names the strongest trusted source; this flag says an untrusted,
     # forged or mimicking source ALSO holds the value (the decision stage weighs it).
     untrusted_also: bool = False
@@ -185,7 +188,7 @@ def tag_fields(
     # Forgery and mimicry are kept apart: has_forgery comes from record conflicts and
     # delimiter forgery, has_mimicry from mimicry findings (the parser's suspicious mark
     # still counts both).
-    forgery_findings = [f for f in findings if getattr(f, "kind", None) != "mimicry"]
+    forgery_findings = [f for f in findings if getattr(f, "kind", None) not in ("mimicry", "anomaly")]
     if direction == "post":
         forged_paths = _forged_field_paths(fields, forgery_findings)
         tags = _tag_result(fields, profile_entry, make, result_format, forged_paths)
@@ -194,6 +197,12 @@ def tag_fields(
             fields, [f for f in findings if getattr(f, "kind", None) == "mimicry"])
         if mimic_paths:
             tags = [replace(t, has_mimicry=True) if t.path in mimic_paths else t for t in tags]
+        anomaly_paths = _forged_field_paths(
+            fields, [f for f in findings if getattr(f, "kind", None) == "anomaly"])
+        if anomaly_paths:
+            tags = [replace(t, has_anomaly=True)
+                    if t.path in anomaly_paths or t.path.split(".@", 1)[0] in anomaly_paths else t
+                    for t in tags]
         if run_state is not None:
             from provenance.lineage import index_values
 
