@@ -63,12 +63,37 @@ def leave_one_suite_out(train_path: str | Path, test_path: str | Path) -> dict[s
     return result
 
 
+def leave_one_attack_type_out(train_path: str | Path, test_path: str | Path) -> dict[str, dict[str, float | int | str]]:
+    """Hold out each known attack family as an unseen-family check."""
+    rows = _rows(train_path) + _rows(test_path)
+    attack_types = sorted({str(row.get("attack_type")) for row in rows if row.get("label") == "attack" and row.get("attack_type")})
+    result = {}
+    for attack_type in attack_types:
+        train = [row for row in rows if not (row.get("label") == "attack" and row.get("attack_type") == attack_type)]
+        test = [row for row in rows if row.get("label") == "attack" and row.get("attack_type") == attack_type]
+        benign = [row for row in rows if row.get("label") == "benign"]
+        test.extend(benign)
+        if len({row["label"] for row in train}) < 2 or len({row["label"] for row in test}) < 2:
+            result[attack_type] = {"status": "insufficient_both_class_examples", "train": len(train), "test": len(test)}
+            continue
+        model = WLGraphSVM().fit([_graph(row) for row in train], [row["label"] for row in train], group_ids=[row["group_id"] for row in train])
+        actual = [row["label"] for row in test]
+        predicted = [model.predict(_graph(row)).predicted_label for row in test]
+        result[attack_type] = {
+            "status": "ok", "train": len(train), "test": len(test),
+            "accuracy": float(accuracy_score(actual, predicted)),
+            "balanced_accuracy": float(balanced_accuracy_score(actual, predicted)),
+            "attack_recall": float(recall_score(actual, predicted, pos_label="attack", zero_division=0)),
+        }
+    return result
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--train", required=True)
     parser.add_argument("--test", required=True)
     args = parser.parse_args()
-    print(json.dumps({"label_shuffle": label_shuffle(args.train, args.test), "leave_one_suite_out": leave_one_suite_out(args.train, args.test)}, indent=2, sort_keys=True))
+    print(json.dumps({"label_shuffle": label_shuffle(args.train, args.test), "leave_one_suite_out": leave_one_suite_out(args.train, args.test), "leave_one_attack_type_out": leave_one_attack_type_out(args.train, args.test)}, indent=2, sort_keys=True))
 
 
 if __name__ == "__main__":

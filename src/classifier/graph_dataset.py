@@ -288,6 +288,7 @@ def _read_trace(
             "trace_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
             "label": label,
             "source": trace.get("pipeline_name") or trace.get("source"),
+            "benchmark_family": trace.get("benchmark_family"),
             "suite": suite,
             "task_id": task_id,
             "attack_type": trace.get("attack_type"),
@@ -401,6 +402,7 @@ def main() -> None:
             {
                 "case_id": row["case_id"],
                 "label": row["label"],
+                "benchmark_family": row.get("benchmark_family"),
                 "trace_sha256": row["trace_sha256"],
             }
             for row in sorted(rows, key=lambda item: item["case_id"])

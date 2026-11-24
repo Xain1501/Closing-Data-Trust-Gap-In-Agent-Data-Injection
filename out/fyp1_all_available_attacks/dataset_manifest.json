@@ -17,916 +17,1099 @@
   ],
   "traces": [
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/banking/user_task_1/data_only_semantic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "09bbefae48ecaa61950cbf3cf6602f38e221b597bf3918a18ec53ec01c294a33"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/banking/user_task_1/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "d3cf29b4a2f1b7eef768eed203c3f596679fe6a6bde6db817edd2bd64bd09c43"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/banking/user_task_11/data_only_semantic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "3b8af82bbb83f1b9ff1505f684cb6245ba09ca8d615935eb0dbed3a179ecaef6"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/banking/user_task_11/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "dcdd1d742223a2dfef463bbbca22018a537ea3beadf0cf4af93cc35cf05b49aa"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/banking/user_task_15/data_only_semantic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "1bec59a17b8a28a9ba95b948b3a77fe67a50208030b245f37f2dd98570bf879a"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/banking/user_task_3/data_only_semantic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "06718758a99b73ddc532aeb501853197e5e76ddb35f7c5599558372c5d653076"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/banking/user_task_3/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "04ab709d4eb5f76ba6a6cc27f5056c445aa13c4dc8c0fe89d862e2b0d8826440"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/banking/user_task_5/data_only_semantic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "7d18705bb683b9347ee73677c4d585fa6720cc37dffa1b38bc98b6b75bafd468"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/banking/user_task_5/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "9b5681408543d4354b1c79fafcc3f30129394d50b1dd75efb17cf12c31cce6b0"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/banking/user_task_6/data_only_semantic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "d515f03c2878b3495e7467002b6dd452ae5ece5d0428a4d99bf85fbc3aad5cf6"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/banking/user_task_7/data_only_semantic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "867478a5f534da6badd8508cfe79550478e02dd9949f528c12d5e7a4fe34ff61"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/banking/user_task_7/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "1896b494d6dbaed4ddff36cbb3db4b3a2c785fc2d4c07d6645e9e0ea587282c7"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/banking/user_task_8/data_only_semantic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "13b9ac33f3670064135a6efe278db08aa2c51ab3e239a54d33127dc8ae185ac7"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/banking/user_task_8/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "01ca84c67e8311282db63765a855a6e0beec85b887142db06587006b3d3bcb13"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/slack/user_task_1/data_only_semantic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "65c9a01e6cbf128dd8fe51a5835d0bf9106c6bde102bc970f1aa1c7a238e0c52"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/slack/user_task_1/data_only_semantic/injection_task_1.json",
       "label": "attack",
       "trace_sha256": "1917de82fc2410f979077ec572a8b428679b3966224bc0047c95fd82c8c12a56"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/slack/user_task_1/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "db5beaee60038069615f55be1ae64699298d41e0f1b8af7e3771bbd9dc08ee8a"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/slack/user_task_1/data_only_syntactic/injection_task_1.json",
       "label": "attack",
       "trace_sha256": "c86068b0d1010fd57067b0f8ea87292884cb3b90d85154fda3edcca48fd675ae"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/slack/user_task_10/data_only_semantic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "ca0bf79ef5a9f15071fdc83cd6a5efd1f02d0fab58fb92bba05b1913b03c9983"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/slack/user_task_10/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "29bd94bb2032285e6cea3e4658339ef13dadbbdef7076455dd62fe669113f2f7"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/slack/user_task_13/data_only_semantic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "319504ba1250ca8f99aaaefa21cb58ec76a675fd5673d7ca969f24a9ecfff4f9"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/slack/user_task_13/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "a634e41eb0ed17ea9a8eadc69935b0714123d4ece5aa7486439b4ef87e2e39d9"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/slack/user_task_14/data_only_semantic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "142882fbfcd8eb6bab4bc075f1f408e8639616962062ffef16bdf4f68463376f"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/slack/user_task_14/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "b988c3a06f62cb1ea393aff566fe9e039d215abdf95f82fa97a7ad4cb3080dd8"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/slack/user_task_18/data_only_semantic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "0db9956d0da69d8b5c22203f1165f678eecccf0b0079b33ecba0be20f0f23aea"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/slack/user_task_18/data_only_semantic/injection_task_1.json",
       "label": "attack",
       "trace_sha256": "6c6a9a82e67f1173e466cb1640366dabe07ecf5dd700a949cfb8dcc12612fc5f"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/slack/user_task_18/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "70b6741173e084188585f51f835647742fd308f44e4422b9db9c9e1a6ed2cc4b"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/slack/user_task_18/data_only_syntactic/injection_task_1.json",
       "label": "attack",
       "trace_sha256": "fdabfdc628f18a801a3506fb4abe6be9ae3d30c38dc94b83a36e7c852faf9b76"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/slack/user_task_18/data_only_syntactic/injection_task_2.json",
       "label": "attack",
       "trace_sha256": "19409fa64b398cb126fb184b5e06fb58bae912151fec174a16e836b687d1e161"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/slack/user_task_19/data_only_syntactic/injection_task_1.json",
       "label": "attack",
       "trace_sha256": "518ae32d2a0013605ab725d867add5f9daff9333f31bd9d778ca3e596332c150"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/slack/user_task_4/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "3136dc956eea142f1523cfefbd9099b0945d361651f43991086ae383d59421dc"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/slack/user_task_5/data_only_semantic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "6d8320453377f473f15f274e7117f51cd995d3b2d9cd2408eebab3df0f230c0a"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/slack/user_task_5/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "b5d3f96a73757be189793c7d4dde4177758dd2a160ace7a039b958b2b01bc26a"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/slack/user_task_5/data_only_syntactic/injection_task_1.json",
       "label": "attack",
       "trace_sha256": "87ef668edf3c9db7901a519dd85807cb670c3a414aebcbf4a33e4a50b3bcfbea"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/slack/user_task_8/data_only_semantic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "a32810c64245dbdb8993b77b5b2718eea13d1f3ccd8f5ed6013b2667b01f9c68"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/slack/user_task_8/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "35c099a5227e21d01c1ecd27ef68061a9b329b07cebfe069595fd172237e1537"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/slack/user_task_9/data_only_semantic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "9320947a5f3db1893d3c2fbb1b1ddbd5bdb56e44768e0e5160ffc97bc700476b"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/slack/user_task_9/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "14e2b124aed324abf91650746b1b994ec54add1d1567477e23d980c8873a4ce4"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/travel/user_task_0/data_only_semantic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "fc23f64d1a867f39970f9a9412a33a115908e8b94b1b8f24dbd1e1d2f4af0cad"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/travel/user_task_0/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "7b846d2be3be03f33279ada76f316b9a97512a1de7fa4cbd75f79ce4b050ecdd"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/travel/user_task_1/data_only_semantic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "aba208c8dfd88f5b3a627dc24664bae490adcef0d54a7b56d6872b623be3d8a5"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/travel/user_task_1/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "a0bc7c630bbc92e3d7ee601972c46d769186ea3e8347c44f0ce3d831db0d5839"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/travel/user_task_10/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "1ef4d029972535bdbece7c044eaef3f874f894be569a26c0ab328747340974fc"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/travel/user_task_11/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "725b0e90a29cbfaf901545b4c2ca33342bc5ebc7c1e23252a7f502e9c4ce47ba"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/travel/user_task_11/data_only_syntactic/injection_task_1.json",
       "label": "attack",
       "trace_sha256": "ab2b8e10fa93c180cf2df92a04342a70733911eb01fe6e02a0c1947f83910511"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/travel/user_task_12/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "7503caeea37c1102facaedbac6bf9affab3e2df294ad008c15c9faeb0d8efcf5"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/travel/user_task_12/data_only_syntactic/injection_task_1.json",
       "label": "attack",
       "trace_sha256": "65fe8a78bf320c86546e2c6a7ccb62719d8ad25d3580bf5654481a17ecfdb530"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/travel/user_task_13/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "890cff3d973b5f30308621791970fab4f6f211b4a6f963792d0a07df3edb1bca"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/travel/user_task_14/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "af52320e166d6e9ad87788fbf80195690c8f039713923a2930c9eb4e5ad1da55"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/travel/user_task_15/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "4432c048b32495ce55dc6edb646a1344247bf246264bfefa6b6141269b8b9702"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/travel/user_task_15/data_only_syntactic/injection_task_1.json",
       "label": "attack",
       "trace_sha256": "3c799f3cf8fb0741f81039af4a4d1daabbe4a0228302fd1503b55461fd20ed85"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/travel/user_task_16/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "d823658c4acc964bb9fb912397b571dd1ee0b33dbc7975ffb04a67a83c7399c5"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/travel/user_task_17/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "e63fc63d81fc53abac8255d353af38dd7f722d3e042381c92bb7f94a56bd44e2"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/travel/user_task_17/data_only_syntactic/injection_task_1.json",
       "label": "attack",
       "trace_sha256": "aec2bc7921bab80ffe88d8d92126b751c41a0f4eaa57499ec32ac2e6626c5cf4"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/travel/user_task_18/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "bf166b1c5b076cdd188dadb7d3b32a13f9d4a0b5c1c4eb76f91d0fa063d71299"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/travel/user_task_19/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "a2466e608b633f68fee0245bba61b756ce75c2ef41493288ff0b998245f04b5c"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/travel/user_task_19/data_only_syntactic/injection_task_1.json",
       "label": "attack",
       "trace_sha256": "14bec4f697cd45a6a545035071ea3ebb67e8907576e8d2383440393d708d509b"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/travel/user_task_2/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "08c1e9aa3800ef43ac861a8be89a1e5ce3e88b3cce1a13712b076a163cdef983"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/travel/user_task_2/data_only_syntactic/injection_task_1.json",
       "label": "attack",
       "trace_sha256": "36a2a6e38ad68a7071191a41abe3121ced569a7bea14f3b03465e6e41677b1a8"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/travel/user_task_3/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "a1f2ebaf4a4493b32c095234835c1e0d45b4199a88aa32df412cc5e4659d03f4"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/travel/user_task_4/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "a52e48c1b8b889d37cdc0d835baf12af00449b7242efe2a7be490361e8fbe1ab"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/travel/user_task_5/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "457ff8256b393ef7c13ca1f3cc2d79a7516473d522e145981349942e3ac75db6"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/travel/user_task_6/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "e42daa78f0e4325d9f7d32ecfdd9bbab25150293e464430cdfbe2a5ce0d576e7"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/travel/user_task_6/data_only_syntactic/injection_task_1.json",
       "label": "attack",
       "trace_sha256": "3a47917a066b97031154b6c04a1abca7cd4a76eac91d7901f26be1f11c2881bd"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/travel/user_task_7/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "eb647ef96d5efc3d31700704cf974390a67b1d4162a95ffeb6bec856f993f50e"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/travel/user_task_8/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "8d0160cbe1eff1ef92e017f5af0b31b7d061084e24b3ed38cac4f1e59cf14771"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/travel/user_task_9/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "33021757ef87ed28da775152e9628f27e8d9a232b4537717d10f9ab61ec33d44"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/workspace/user_task_0/data_only_semantic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "8d0f9113e906a57017066bb5aed7f61e41dea75b37ff7ea0cce9539d3b75809f"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/workspace/user_task_0/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "b5ba5af8fe9722002c718f0618e028d2fe6b80e68970c1b1b94a3f7f6c6a050f"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/workspace/user_task_1/data_only_semantic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "0c4bb5f3994230073048a8347029b08c58ba3204131df7fea8990078c7ab6b67"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/workspace/user_task_1/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "94b8c64565e3506848fd8a16a7d70acb1fe65f0e469dd471822b38f6095b1577"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/workspace/user_task_10/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "12cbe9d7e80f0ee4692f4a27e1cec1341577009bffc322aab62d9984a9d83694"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/workspace/user_task_11/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "32a5a8e15cf79ad019c8b64cc99fea62695862352e5241e8798c1a2add16084d"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/workspace/user_task_12/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "88bab6923f6dd694a250181139d274103e01749d28b206b4aa4738d62d84aec0"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/workspace/user_task_14/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "6c50982473e03c8688216f353eda7c50935dbb01359029d2df8c4ee8b75932d2"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/workspace/user_task_16/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "cf8f9bd6f17edaf03e7b354b04777da4375c3663b74d4b447b6bb16dade0622a"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/workspace/user_task_17/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "61cac4a1100369e9f7abf53d93186a10e811cc812af3b0ed9695d11d39e72a0c"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/workspace/user_task_2/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "0bc4260c229ece925f6e53706f11727e8c0e7f251cfec9dd593960c80fbdebed"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/workspace/user_task_21/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "6076929ee4320502a43153f16733af89ab561c50adf01651f1f914f5f07dd931"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/workspace/user_task_22/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "17cf72f7d9396bba8f63692802272a11d96b6d0138c67ff0e09f6d3938ea817b"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/workspace/user_task_24/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "7b725b0ff429967d64282f2ae4555c1c07ba84ad9c400369d5c6227f0b7bc4b5"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/workspace/user_task_3/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "98eed4386fb044a2fe6549ac03c18023bcf448d566d6fb35b7586b0fabb3aa15"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/workspace/user_task_5/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "dcd52583934f1c82fe404fdcd6240dc318e387c4fe140546b0530c4918c16cdc"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/workspace/user_task_6/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "7c6d31cd9c6ec543707d06f1bf16c2525c8b6241d40eda4d732ab8e551327eda"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/workspace/user_task_7/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "de10806d5f0708cb1d6354395a50a23c89f607fb74b97d4ee52bd09c325fe89d"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/workspace/user_task_8/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "6f26e9da978a1f6571155d6a5ea65823cfd6daaf33d067b9fdaa95fd9867374b"
     },
     {
+      "benchmark_family": null,
       "case_id": "runs/baseline_openai_gpt-oss-120b/workspace/user_task_9/data_only_syntactic/injection_task_0.json",
       "label": "attack",
       "trace_sha256": "5da24d078f72f1ca83bc40d320b37239c6c59213dd82fba4a37201b1a500f48a"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/banking/user_task_0.json",
       "label": "benign",
       "trace_sha256": "0feaa58508e251971d7ebcf214504e01e4e10e64603cd96d38570cee081595b8"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/banking/user_task_1.json",
       "label": "benign",
       "trace_sha256": "4bee756446d0cd03d34c286f3e57c926458c428b38b533620dde5b1c9443a915"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/banking/user_task_10.json",
       "label": "benign",
       "trace_sha256": "e5308ff88d4cfced8891520b4e19370fd71087ec88baecf01c0e87db79fbf644"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/banking/user_task_11.json",
       "label": "benign",
       "trace_sha256": "9bd248dd599c315d1ff5b0457f4c12f5388666e97d3bb2d9f51241a60d9c4b77"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/banking/user_task_12.json",
       "label": "benign",
       "trace_sha256": "7d8ab6c77fa925a7e6ff4f87e3f9f39b427d7d540387e06b96272a095378157e"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/banking/user_task_13.json",
       "label": "benign",
       "trace_sha256": "16b5b1718a7882780197895d0096d0afa7eecc7154895637281d41e8aeabca7e"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/banking/user_task_14.json",
       "label": "benign",
       "trace_sha256": "056bd5ec28a9d835111cf53722c9dfe99ec6dfafbb894f67fa082bafea03f13a"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/banking/user_task_15.json",
       "label": "benign",
       "trace_sha256": "4819da3870bcc396c88dc6f9ff8d034af5de464d9f743949863a929979d11b25"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/banking/user_task_2.json",
       "label": "benign",
       "trace_sha256": "4ab7608431d6fbbfcaefb2ce735bc9d7bd3c2af20fefe221829d66a615f6357f"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/banking/user_task_3.json",
       "label": "benign",
       "trace_sha256": "eb4b4be8820283d18ac2c307391f3871d7d64497c3d9c5a72c1114edac1e377b"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/banking/user_task_4.json",
       "label": "benign",
       "trace_sha256": "0cc881616bc5c99e8ecb32d705af24e89e40b70b031cefc6516d6a4904bbe7f1"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/banking/user_task_5.json",
       "label": "benign",
       "trace_sha256": "94a2bd7a878356fdce4ee1b6cf269ca191b832917a2d40a547234af84be4c27f"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/banking/user_task_6.json",
       "label": "benign",
       "trace_sha256": "9874546e7d60a62e898334c1ec3e3b6dee7960336737dafb2bcb106166412f85"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/banking/user_task_7.json",
       "label": "benign",
       "trace_sha256": "8a3cb12afe0ef451ba275021e14c37b3a39c974e43fa72cd6c2f8a39387cec85"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/banking/user_task_8.json",
       "label": "benign",
       "trace_sha256": "9b5cb82edf2751314191e8d7886178efcf854fb3dc2ae02ad38bd363bb11728f"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/banking/user_task_9.json",
       "label": "benign",
       "trace_sha256": "4cd1cb2882d093212eaf224ea420ad5afaee6380ec388b90f47b2c437e34030e"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/slack/user_task_0.json",
       "label": "benign",
       "trace_sha256": "bb5775a83f631a742ef6f792b92f894c762cc510b7f05a95e7820c3e7e8b71f0"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/slack/user_task_1.json",
       "label": "benign",
       "trace_sha256": "2e528ff2cd51d2e5629b62b90fe2935d867d5f56e13eaec4060fd5b761e353f7"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/slack/user_task_10.json",
       "label": "benign",
       "trace_sha256": "9f14aac45e509295bbd69240d7d9eaeb82a4547629ca905beaec35816ad48abf"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/slack/user_task_11.json",
       "label": "benign",
       "trace_sha256": "e259b4b1062923f97a83ae82221a701dbb95d6caa6d0fcb5bf0743033dde6b68"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/slack/user_task_12.json",
       "label": "benign",
       "trace_sha256": "c7686f57363f09f304387b2c0e20d4c8c9d44520c3582503361c667899d62af5"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/slack/user_task_13.json",
       "label": "benign",
       "trace_sha256": "cddcbd1fa9c8cdd8b6dee0b51d235e014439bb4c91893f82de952822c8871529"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/slack/user_task_14.json",
       "label": "benign",
       "trace_sha256": "8c315823c71f12e86a30b96195a403c192653237ad4291acd997193fec5ad845"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/slack/user_task_15.json",
       "label": "benign",
       "trace_sha256": "945b949cca9ea6de0b30a61c7305af837adfb0abe2b4f54382bea1e74551d485"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/slack/user_task_16.json",
       "label": "benign",
       "trace_sha256": "e85a6934a4a9a972aa57cd7f2d26ae5dcf2f15d307997c63414b54e32ae460b4"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/slack/user_task_17.json",
       "label": "benign",
       "trace_sha256": "6b0485ad05618f800950a7bfd3b660075fba64d71d41d063cc5d3daa402e1d4e"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/slack/user_task_18.json",
       "label": "benign",
       "trace_sha256": "534458c61a332df7836cf145627c29a84e405396a9d08273496c0eefc93f24ba"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/slack/user_task_19.json",
       "label": "benign",
       "trace_sha256": "ea8877784a073622f172cfc8693f540419c376f609c03b68c90fc8012643471c"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/slack/user_task_2.json",
       "label": "benign",
       "trace_sha256": "507b520d355ecd3df8dde28769660f67cecc2404546c700b62871b206eedb66a"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/slack/user_task_20.json",
       "label": "benign",
       "trace_sha256": "8e22d0e8d4bbea57dace048b49c390e8035fda0e4f03ef93c16d6a974c36dacf"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/slack/user_task_3.json",
       "label": "benign",
       "trace_sha256": "31cae290f6b7cff5e078e3d28b8ca863e9bca39bbffda1c4263dfb5bce792518"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/slack/user_task_4.json",
       "label": "benign",
       "trace_sha256": "0164e8fbafb170b378c077b6d58af94e4983e0ef174a464ee8a31ffb50d5dd04"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/slack/user_task_5.json",
       "label": "benign",
       "trace_sha256": "d1216808759d2db696122033b6d25e7e83ccfbdb1c445e6799bfb3959c49eece"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/slack/user_task_6.json",
       "label": "benign",
       "trace_sha256": "33347a18d73c05370dd672e4420fd9a13066e9bb0270b01f09b334c6802c887c"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/slack/user_task_7.json",
       "label": "benign",
       "trace_sha256": "8997d3b309b3204940235b3da573d05877a5e315427fb9f9db58c9093e36bd1f"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/slack/user_task_8.json",
       "label": "benign",
       "trace_sha256": "8aca36931c234a19defff09415eb4896ea54467a42506f7732c86042c4c95197"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/slack/user_task_9.json",
       "label": "benign",
       "trace_sha256": "a349e442f1fe4164117b830d16aa3588dace82d73984bc7fa2f840b0a39087db"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/travel/user_task_0.json",
       "label": "benign",
       "trace_sha256": "b6bbfa6cfde3ec4cb5a35f289fd8b35d59cc7c12eb7bbcc6d6fb9ed201ba7e07"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/travel/user_task_1.json",
       "label": "benign",
       "trace_sha256": "460a6ffb3037fae6d8a2be45f57d21b1d60eb6c930fd946b240ea321d4296110"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/travel/user_task_10.json",
       "label": "benign",
       "trace_sha256": "ddaa8b5840a1972adb3f4f4e00032e4737fb57eaec9bd9aac103e073241f52f7"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/travel/user_task_11.json",
       "label": "benign",
       "trace_sha256": "3c9c94c6f87f8c43700ce50597904b0b72468cd77539c98139912cca35443cf9"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/travel/user_task_12.json",
       "label": "benign",
       "trace_sha256": "3619de4a9f04debfddf4bf3445ed3c2793d28a5cf79ad0f28220d2860947bb99"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/travel/user_task_13.json",
       "label": "benign",
       "trace_sha256": "534111569575cf53a14ff6bcd7d9bca06986651caf18e65450d3783ca12d11dd"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/travel/user_task_14.json",
       "label": "benign",
       "trace_sha256": "ae84d9586757ae31e5206a20599e2731d9a46cf142e8e7b773967e4841fe84eb"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/travel/user_task_15.json",
       "label": "benign",
       "trace_sha256": "1090bd6775011e5d760944684c2278ba5e6ab62efd080eb3c51e9d0dcc4b244f"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/travel/user_task_16.json",
       "label": "benign",
       "trace_sha256": "2f0d62ac648d781de30dee07db86efab703a2bd474d0d1ff56af49f5a7862fff"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/travel/user_task_17.json",
       "label": "benign",
       "trace_sha256": "8fda45e8a9bf6e56d924783fecbd45d153ca2a2b347999efc4ccd62ab4734dfb"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/travel/user_task_18.json",
       "label": "benign",
       "trace_sha256": "d502321942d9e254582e083fbf3b981dd6dce0067daf2cd2d4c9ed75fd85976c"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/travel/user_task_19.json",
       "label": "benign",
       "trace_sha256": "0233c541865135e7bdb3b883d594f95e2da45636cda0bc52377f6e322ecb2d56"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/travel/user_task_2.json",
       "label": "benign",
       "trace_sha256": "6a512ef976f852c23c3e217944904f4651a2512195f9deccf4c5b0f07741cc47"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/travel/user_task_3.json",
       "label": "benign",
       "trace_sha256": "d414f1b53ef1617f9126a84ac8aa3fe554b69084019bc5d6ef37e63c26c74315"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/travel/user_task_4.json",
       "label": "benign",
       "trace_sha256": "f50eaf5650e831163022bd00bcdf641e7549d3d7b5d57d36d21d44bf4976a4d4"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/travel/user_task_5.json",
       "label": "benign",
       "trace_sha256": "cc9b64e5ea50c0efc6a26aaa61e2c8126b831f71adfd577f473d7564d71d6729"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/travel/user_task_6.json",
       "label": "benign",
       "trace_sha256": "418ac5869e15ed70cc272696aa5de74e7d695d419412e00ea833b16c257f9095"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/travel/user_task_7.json",
       "label": "benign",
       "trace_sha256": "5e03b8c576f9ef825375410da103b13b9ea0c66792355423a8cfa9d40d3932dc"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/travel/user_task_8.json",
       "label": "benign",
       "trace_sha256": "d0cd7b2e6bab954233680ff1dde0f9f46abf4fa6bd37008c7d7ee8f14c8903ad"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/travel/user_task_9.json",
       "label": "benign",
       "trace_sha256": "eca1cc066f43da83e12348ac503d24d1cce4c7b725c8140cb19df69308f55914"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/workspace/user_task_0.json",
       "label": "benign",
       "trace_sha256": "03de40ccacb1cd8213821424935f446d3b1df71d26c461daf9531b5e57d2c0b0"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/workspace/user_task_1.json",
       "label": "benign",
       "trace_sha256": "61b000f844da03b56dedeabe9b0765b1e381c51a7adaac60ed9a522767e4359c"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/workspace/user_task_10.json",
       "label": "benign",
       "trace_sha256": "219aca6c0fe9da3e044234c868ddf37e9a8decab01f85ad4f970233b14a28fc8"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/workspace/user_task_11.json",
       "label": "benign",
       "trace_sha256": "0ae0a71b5d25cfadc4bf611b6ca58c3717eac06ce2c47ee1b1f90222a850b40d"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/workspace/user_task_12.json",
       "label": "benign",
       "trace_sha256": "7942ba7dbca42c1917d633439600c80103f77861db2509be4b9bd454de22d6c5"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/workspace/user_task_13.json",
       "label": "benign",
       "trace_sha256": "17c29290a818b2e1c6a5072e345074f29e4b7b9a8d5687334809e888e14725af"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/workspace/user_task_14.json",
       "label": "benign",
       "trace_sha256": "0a90fd8451f7f0e6c60bb091148c6752292f5e7111f8f59a7d1400a2c600076e"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/workspace/user_task_16.json",
       "label": "benign",
       "trace_sha256": "b790ddece3cc050e90f170623c3ba69259ab38b13f08f9f17eb5a06038db313d"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/workspace/user_task_17.json",
       "label": "benign",
       "trace_sha256": "8c8bc07bc468457684514c5026b2149679f7fe7c91434cf6d5b2349da1467d0d"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/workspace/user_task_18.json",
       "label": "benign",
       "trace_sha256": "99e4022a873f57379159e9f23d74b860cee4797e0be2dc9fa10f038381084782"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/workspace/user_task_19.json",
       "label": "benign",
       "trace_sha256": "a88a87e57f4fcabc5d2fa48150fcc5d6b2304542f7470c53a6c3335ec1567bf5"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/workspace/user_task_2.json",
       "label": "benign",
       "trace_sha256": "fd68b1abbb2cd8499dd8f9aee489b2591e8de23d041cbb48d72423a33b203776"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/workspace/user_task_20.json",
       "label": "benign",
       "trace_sha256": "2802f20265726cc639906b1ca3066fbbaa6bad9bb905159055af018c8468d4c4"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/workspace/user_task_21.json",
       "label": "benign",
       "trace_sha256": "15f9594fdebab1332b1b23adf30acd76817965f6be8cbb7c23e1602a66182268"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/workspace/user_task_22.json",
       "label": "benign",
       "trace_sha256": "2d35ed6f8e4ee5aed95c47b312fc84396a3a0f3764b29ff2635446052bab98c4"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/workspace/user_task_23.json",
       "label": "benign",
       "trace_sha256": "6dbd2c4661db556cb81a66022e7aed16bdcd3741f81e9f8ded5d3ca957807be8"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/workspace/user_task_24.json",
       "label": "benign",
       "trace_sha256": "fc43cf232d2ce9d1c58ff84b4c3f32a3e30d3a01cf94f2699b90ecf345301954"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/workspace/user_task_25.json",
       "label": "benign",
       "trace_sha256": "cc80e2d6a1ba79ed9ec0489e75db23d379652ecf9234575a8385c7cd48264d90"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/workspace/user_task_26.json",
       "label": "benign",
       "trace_sha256": "26b499a221e1946d479fa643b3961ac8f67053e8fda165bd03839711093ac4e3"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/workspace/user_task_27.json",
       "label": "benign",
       "trace_sha256": "3c7e57cfc128d83a065daf551217cd9cba11be3a0b4c67a2352e506f431641a2"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/workspace/user_task_28.json",
       "label": "benign",
       "trace_sha256": "447628565d44eac51fc216b1415e0043d39566b7337ba0ef1483236b0bf75876"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/workspace/user_task_29.json",
       "label": "benign",
       "trace_sha256": "9fbf2a47a6bf4c7a57045339fc68948cf4ef5f358454430747cc39ac14a78686"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/workspace/user_task_3.json",
       "label": "benign",
       "trace_sha256": "fc66177b683a28c02c7926873a7bf41748434d23d98933380f6dbf7a1f8bcbf7"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/workspace/user_task_30.json",
       "label": "benign",
       "trace_sha256": "4d714d54d81ead9fb513dec8c29ef01db5d3c3c8d2bd24e8ef60730ee07d5d5d"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/workspace/user_task_31.json",
       "label": "benign",
       "trace_sha256": "e7208c670b68e67c789b9bfe5f2bec4773da4d9dc981d8034136744d2dc86f75"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/workspace/user_task_32.json",
       "label": "benign",
       "trace_sha256": "386c3c73d0f672e906d6bfca0ef9bfb8613a83726540d664a96ee87289765944"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/workspace/user_task_33.json",
       "label": "benign",
       "trace_sha256": "2caf47a8beb031aafc5c433ddc10ab1eb89f89ab928582bacd3eaba469b4bf8a"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/workspace/user_task_34.json",
       "label": "benign",
       "trace_sha256": "fe4c8a880d71a49e7d491baa76b26e54adb2aace56f360854b9b8160e2032801"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/workspace/user_task_35.json",
       "label": "benign",
       "trace_sha256": "592f7dcd912e86e367a45bbaa14f2d39b02713cd72092faf9014b147a62bd46b"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/workspace/user_task_36.json",
       "label": "benign",
       "trace_sha256": "95baa314d37b01b68c9f5a4f3f9c23815eec7c180d42c647209fdddd2de5bc84"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/workspace/user_task_37.json",
       "label": "benign",
       "trace_sha256": "7c06d47988bde1f94c674d384354531b3e1ad6f37ac85156b389871510624b0d"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/workspace/user_task_38.json",
       "label": "benign",
       "trace_sha256": "1f68c8ed07df50a66af6e47538f3380d02a9b4cd3ae87210d2410ba984ba040f"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/workspace/user_task_39.json",
       "label": "benign",
       "trace_sha256": "ce3ded03e14ce8242d28cb970669eee4971a4e22543c8fb7ac4fe43f83c2143f"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/workspace/user_task_4.json",
       "label": "benign",
       "trace_sha256": "e89d28d14f2617296ca82087a561bf298dd1bc75de8da483e1bb010d894e6b2e"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/workspace/user_task_5.json",
       "label": "benign",
       "trace_sha256": "3094934486f1950ebe936000af77d195cf01dff39a761252b0612462c32ef97f"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/workspace/user_task_6.json",
       "label": "benign",
       "trace_sha256": "26014e91192aef4e6e1c618c0946c1da611558d2617ea8917f52a116d3cb78be"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/workspace/user_task_7.json",
       "label": "benign",
       "trace_sha256": "1c09d088aa043831a25059ce55121bf52af37b72f8c76b92b8fe2a75bfe2db09"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/workspace/user_task_8.json",
       "label": "benign",
       "trace_sha256": "31822cf2b625f690f14b4346aa7847e338d0020efcb797b0abf1f76d78d94ad0"
     },
     {
+      "benchmark_family": null,
       "case_id": "tests/fixtures/traces/benign/workspace/user_task_9.json",
       "label": "benign",
       "trace_sha256": "168b3b0702f998143159d810a8aa5063c23255bef674fe33056efb6f481eaf6f"

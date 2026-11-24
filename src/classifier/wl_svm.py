@@ -33,6 +33,43 @@ class GraphSnapshot:
     node_labels: Mapping[str, str]
     edges: tuple[tuple[str, str], ...]
 
+    @classmethod
+    def from_payload(cls, payload: Mapping[str, object]) -> "GraphSnapshot":
+        """Normalize the supported graph JSON shapes into one classifier contract.
+
+        The graph builder may serialize labels as ``node_labels`` or as a node
+        list, and edges as pairs or ``source``/``target`` objects. Normalizing at
+        this boundary keeps training and testing compatible with either form.
+        """
+        raw_labels = payload.get("node_labels")
+        labels: dict[str, str] = {}
+        if isinstance(raw_labels, Mapping):
+            labels = {str(node): str(label) for node, label in raw_labels.items()}
+        else:
+            raw_nodes = payload.get("nodes", [])
+            if isinstance(raw_nodes, Mapping):
+                raw_nodes = [dict(value, id=node) if isinstance(value, Mapping) else {"id": node, "label": value}
+                             for node, value in raw_nodes.items()]
+            if isinstance(raw_nodes, Sequence) and not isinstance(raw_nodes, (str, bytes)):
+                for node in raw_nodes:
+                    if isinstance(node, Mapping) and node.get("id") is not None:
+                        label = node.get("label", node.get("name"))
+                        if label is not None:
+                            labels[str(node["id"])] = str(label)
+        raw_edges = payload.get("edges", payload.get("links", []))
+        edges: list[tuple[str, str]] = []
+        if isinstance(raw_edges, Sequence) and not isinstance(raw_edges, (str, bytes)):
+            for edge in raw_edges:
+                if isinstance(edge, Mapping):
+                    left, right = edge.get("source"), edge.get("target")
+                elif isinstance(edge, Sequence) and len(edge) == 2:
+                    left, right = edge[0], edge[1]
+                else:
+                    continue
+                if left is not None and right is not None:
+                    edges.append((str(left), str(right)))
+        return cls(node_labels=labels, edges=tuple(edges))
+
     def __post_init__(self) -> None:
         if not self.node_labels:
             raise ValueError("graph must contain at least one node")

@@ -176,3 +176,16 @@ trace. Full raw-object attack recording through the clone executor is still need
 to remove the exploratory text-derived override; this cannot be reconstructed from
 the existing formatted AgentDojo logs.
 
+The loader now normalizes both graph serializations used by the team (`node_labels`
+plus edge pairs, or node/link records), so the same contract is applied to training
+and testing. An additional leave-one-attack-family check was added: holding out all
+semantic attacks gave 0% attack recall, and holding out all syntactic attacks gave
+7.7% attack recall. This is evidence that the current two families are not a safe
+proxy for genuinely unseen attacks.
+
+There is currently no separately labelled ADI benchmark corpus in the workspace;
+the available attack files are AgentDojo runs and the benign files are ground-truth
+replays. I have not relabelled or duplicated them to manufacture a balance. A valid
+AgentDojo/ADI balance requires adding real ADI traces with a `benchmark_family`
+field, then rebuilding the manifest and splits.
+

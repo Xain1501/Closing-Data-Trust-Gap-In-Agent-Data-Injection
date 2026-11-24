@@ -50,10 +50,7 @@ def _load_graph_jsonl(
                 graph_data = row["graph"]
                 if not isinstance(graph_data, dict):
                     raise ValueError("graph must be an object")
-                graph = GraphSnapshot(
-                    node_labels=graph_data["node_labels"],
-                    edges=tuple(tuple(edge) for edge in graph_data["edges"]),
-                )
+                graph = GraphSnapshot.from_payload(graph_data)
             except Exception as exc:
                 raise ValueError(f"invalid training row at line {line_no}: {exc}") from exc
             case_ids.add(case_id)
