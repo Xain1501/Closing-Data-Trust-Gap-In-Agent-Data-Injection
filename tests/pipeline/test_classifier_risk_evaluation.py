@@ -79,7 +79,8 @@ def test_structural_density_is_evidence_not_classifier_probability():
     sparse = assess_risk(0.01, 0.0, 1)
 
     assert dense.risk_score == sparse.risk_score == 0.0
-    assert dense.route == sparse.route == "human_review"
+    # Density is evidence only; without a counted hit it cannot force review.
+    assert dense.route == sparse.route == "auto_allow"
 
 
 def test_structural_hit_forces_review_even_when_density_is_diluted():

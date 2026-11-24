@@ -54,7 +54,9 @@ def assess_risk(
     review_reasons = []
     if classifier_score is None:
         review_reasons.append("classifier_unavailable")
-    if structural_hits or structural > 0.0:
+    # Density is evidence only.  Located parser findings are counted by
+    # ``structural_hits``; anomaly density alone must never force review.
+    if structural_hits:
         review_reasons.append("structural_findings")
     if risk < 1.0:
         tier: RiskTier = "low"

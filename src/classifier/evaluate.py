@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import random
 from pathlib import Path
 from sklearn.metrics import (
     accuracy_score,
@@ -87,10 +88,50 @@ def evaluate(model_path: str | Path, test_path: str | Path) -> dict[str, object]
         "attack_ece": ece,
         "reliability_bins": calibration_bins,
     }
+    rows = [json.loads(line) for line in Path(test_path).read_text(encoding="utf-8").splitlines() if line.strip()]
+    success_values = [row.get("attack_success") for row in rows if row.get("label") == "attack"]
+    metrics["attack_success_counts"] = {
+        "success": sum(value is True for value in success_values),
+        "not_success": sum(value is False for value in success_values),
+        "unknown": sum(value is None for value in success_values),
+    }
+    metrics["group_bootstrap_95ci"] = _group_bootstrap_ci(
+        labels, predicted_labels, probabilities, group_ids
+    )
     if len(set(actual)) == 2:
         metrics["attack_roc_auc"] = float(roc_auc_score(actual, probabilities))
         metrics["attack_pr_auc"] = float(average_precision_score(actual, probabilities))
     return metrics
+
+
+def _group_bootstrap_ci(
+    labels: list[str], predicted: list[str], probabilities: list[float],
+    groups: list[str | None], *, repeats: int = 1000, seed: int = 0,
+) -> dict[str, list[float]]:
+    """Bootstrap whole task groups so examples from one task stay together."""
+    grouped: dict[str, list[int]] = {}
+    for index, group in enumerate(groups):
+        grouped.setdefault(group or f"row:{index}", []).append(index)
+    keys = list(grouped)
+    rng = random.Random(seed)
+    samples: dict[str, list[float]] = {"accuracy": [], "attack_recall": [], "attack_f1": []}
+    for _ in range(repeats):
+        indices = [index for key in (rng.choice(keys) for _ in keys) for index in grouped[key]]
+        truth = [labels[index] for index in indices]
+        guess = [predicted[index] for index in indices]
+        accuracy = accuracy_score(truth, guess)
+        _, recall, f1, _ = precision_recall_fscore_support(
+            truth, guess, labels=["attack", "benign"], average="binary",
+            pos_label="attack", zero_division=0,
+        )
+        samples["accuracy"].append(float(accuracy))
+        samples["attack_recall"].append(float(recall))
+        samples["attack_f1"].append(float(f1))
+    return {
+        name: [float(sorted(values)[int(0.025 * (len(values) - 1))]),
+               float(sorted(values)[int(0.975 * (len(values) - 1))])]
+        for name, values in samples.items()
+    }
 
 
 def main() -> None:

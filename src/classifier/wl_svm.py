@@ -10,13 +10,14 @@ from collections import Counter
 from dataclasses import dataclass
 from hashlib import sha256
 import json
+import math
 from pathlib import Path
 from typing import Mapping, Sequence
 
 import joblib
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.feature_extraction import DictVectorizer
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import StratifiedGroupKFold, StratifiedKFold
 from sklearn.svm import SVC
 
 
@@ -65,13 +66,32 @@ def wl_features(graph: GraphSnapshot, iterations: int = 2) -> dict[str, float]:
     # robust when a new suite has different graph topology.  These are counts
     # of semantics already present in node labels, never raw tool names or
     # task IDs.
-    features["summary:node_count"] = len(labels)
-    features["summary:finding_count"] = sum(label.startswith("finding:") for label in labels.values())
-    features["summary:forgery_true"] = sum(":forgery=true" in label for label in labels.values())
-    features["summary:external_links"] = sum("EXTERNAL_LINK" in label for label in labels.values())
-    features["summary:system_links"] = sum("SYSTEM_LINK" in label for label in labels.values())
-    features["summary:user_matches"] = sum("USER_MATCH" in label for label in labels.values())
-    features["summary:authority_nodes"] = sum("AUTHORITY_ARG" in label for label in labels.values())
+    node_count = len(labels)
+    finding_count = sum(label.startswith("finding:") for label in labels.values())
+    forgery_true = sum(":forgery=true" in label for label in labels.values())
+    forgery_leaf = sum(":forgery=leaf" in label for label in labels.values())
+    mimicry_true = sum(":mimicry=true" in label for label in labels.values())
+    anomaly_true = sum(":anomaly=true" in label for label in labels.values())
+    external_links = sum("EXTERNAL_LINK" in label for label in labels.values())
+    system_links = sum("SYSTEM_LINK" in label for label in labels.values())
+    user_matches = sum("USER_MATCH" in label for label in labels.values())
+    authority_nodes = sum("AUTHORITY_ARG" in label for label in labels.values())
+    rel_mimics = sum(label == "rel:mimics" for label in labels.values())
+    rel_mentions = sum(label == "rel:mentions" for label in labels.values())
+    # Log counts and normalized rates stop graph size from becoming a proxy for
+    # the source (for example scripted benign traces versus LLM traces).
+    features["summary:node_count_log1p"] = float(math.log1p(node_count))
+    features["summary:finding_rate"] = finding_count / node_count
+    features["summary:forgery_true_rate"] = forgery_true / node_count
+    features["summary:forgery_leaf_rate"] = forgery_leaf / node_count
+    features["summary:mimicry_true_rate"] = mimicry_true / node_count
+    features["summary:anomaly_true_rate"] = anomaly_true / node_count
+    features["summary:external_link_rate"] = external_links / node_count
+    features["summary:system_link_rate"] = system_links / node_count
+    features["summary:user_match_rate"] = user_matches / node_count
+    features["summary:authority_rate"] = authority_nodes / node_count
+    features["summary:rel_mimics_rate"] = rel_mimics / node_count
+    features["summary:rel_mentions_rate"] = rel_mentions / node_count
     for depth in range(iterations + 1):
         features.update(f"wl:{depth}:{label}" for label in labels.values())
         if depth == iterations:
@@ -134,10 +154,21 @@ class WLGraphSVM:
         matrix.indices = matrix.indices.astype("int32", copy=False)
         matrix.indptr = matrix.indptr.astype("int32", copy=False)
         base = SVC(kernel="linear", C=self.c, class_weight="balanced")
+        if group_ids is not None:
+            if len(set(group_ids)) < folds:
+                raise ValueError("group_ids must contain at least as many groups as calibration folds")
+            splitter = StratifiedGroupKFold(
+                n_splits=folds, shuffle=True, random_state=self.random_state
+            )
+            calibration_cv = list(splitter.split(matrix, list(labels), groups=list(group_ids)))
+        else:
+            calibration_cv = StratifiedKFold(
+                n_splits=folds, shuffle=True, random_state=self.random_state
+            )
         model = CalibratedClassifierCV(
             estimator=base,
             method="sigmoid",
-            cv=StratifiedKFold(n_splits=folds, shuffle=True, random_state=self.random_state),
+            cv=calibration_cv,
         )
         model.fit(matrix, list(labels))
         self._vectorizer = vectorizer

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -19,8 +20,9 @@ from classifier.wl_svm import GraphSnapshot, WLGraphSVM
 
 def _transform(graph: GraphSnapshot, *, remove_findings: bool, remove_forgery: bool) -> GraphSnapshot:
     labels = dict(graph.node_labels)
+    flag_pattern = re.compile(r":(?:forgery|mimicry|anomaly)=(?:true|leaf|false)")
     kept = {
-        node: (label.replace(":forgery=true", "").replace(":forgery=false", "")
+        node: (flag_pattern.sub("", label)
                if remove_forgery else label)
         for node, label in labels.items()
         if not (remove_findings and label.startswith("finding:"))

@@ -94,3 +94,22 @@ Every graph file, model and figure built before this is stale.
 - Evaluate per decision point (each pre-hop call), not only per run: blocking happens at calls.
 - Report baselines next to WL-SVM: parser flags only (a rule), and logistic regression on summary features. This shows whether the graph adds value.
 - Keep one graph contract: any new node label or relation node is agreed and listed in `src/trust_graph/graph.py`'s docstring.
+
+## Implementation status (24 November 2026)
+
+The classifier-side fixes in this note are implemented without changing the parser,
+tagging, lineage, run-state, graph builder, or benchmark source files:
+
+- `graph_dataset.py` now records text-derived traces and trace hashes, uses exact TVM
+  lookup, supports all four default suites, and rejects mixed raw-object/text-derived
+  datasets unless `--allow-text-derived-mix` is explicit.
+- `wl_svm.py` now includes leaf-forgery, mimicry, anomaly, relation, and normalized
+  provenance features and calibrates with grouped folds when group IDs are present.
+- `ablation.py` removes all structural flag fields, including leaf, mimicry, and
+  anomaly markers.
+- `risk_gate.py` uses counted structural hits for review; structural density by
+  itself cannot force review.
+- `evaluate.py` reports attack-success metadata and task-group bootstrap intervals.
+
+The current mixed dataset was rebuilt only with the explicit exploratory override;
+the default builder will stop if real-object and text-derived traces are mixed.

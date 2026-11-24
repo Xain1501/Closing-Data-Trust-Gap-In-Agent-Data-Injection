@@ -21,7 +21,7 @@ DEFAULT_ATTACKS = (
     ROOT / "runs/baseline_openai_gpt-oss-120b",
     ROOT / "runs/baseline_llama-3.3-70b-versatile",
 )
-DEFAULT_SUITES = ("travel", "workspace")
+DEFAULT_SUITES = ("travel", "workspace", "slack", "banking")
 
 
 @dataclass(frozen=True)
@@ -35,6 +35,7 @@ class _TraceEvent:
     raw_result: Any = None
     result_text: str | None = None
     result_format: str = "json"
+    text_derived: bool = False
 
 
 def _json_paths(paths: tuple[Path, ...]) -> list[Path]:
@@ -116,6 +117,7 @@ def _recorded_events(trace: dict[str, Any]) -> list[_TraceEvent]:
                 raw_result=event["raw_result"],
                 result_text=event["result_text"],
                 result_format=str(event.get("result_format", "json")),
+                text_derived=bool(event.get("text_derived", False)),
             ))
     return output
 
@@ -167,6 +169,7 @@ def _benchmark_events(trace: dict[str, Any]) -> list[_TraceEvent]:
             output.append(_TraceEvent(
                 "post", tool, call_id, f"result-{sequence}", source_batch,
                 raw_result=raw_result, result_text=text, result_format=result_format,
+                text_derived=True,
             ))
     return output
 
@@ -180,14 +183,10 @@ def _events(trace: dict[str, Any]) -> list[_TraceEvent]:
 
 
 def _matrix_entry(matrix: TrustMatrix, tool: str, argument_keys: set[str]):
-    exact = matrix.lookup(tool, argument_keys)
-    if not exact.is_fallback:
-        return exact
-    candidates = [
-        entry for entry in matrix.entries
-        if entry.tool_name == tool and argument_keys <= set(entry.expected_keys)
-    ]
-    return candidates[0] if len(candidates) == 1 else exact
+    # Trust profiles are keyed by the complete argument-key set.  Do not
+    # reimplement lookup with a subset fallback: two profiles may share names
+    # while having different authority and impact semantics.
+    return matrix.lookup(tool, argument_keys)
 
 
 def _trace_graph(
@@ -275,6 +274,7 @@ def _read_trace(
         graph, call_count = _trace_graph(trace, events, matrix, run_id)
         return {
             "case_id": case_id,
+            "trace_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
             "label": label,
             "source": trace.get("pipeline_name") or trace.get("source"),
             "suite": suite,
@@ -284,6 +284,7 @@ def _read_trace(
             "group_id": group_id,
             "graph": graph,
             "tool_calls": call_count,
+            "text_derived": any(event.text_derived for event in events if event.direction == "post"),
         }
     except Exception as exc:
         raise ValueError(f"invalid trace at {path}: {exc}") from exc
@@ -307,6 +308,8 @@ def build_dataset(
     benign_paths: tuple[Path, ...] = DEFAULT_BENIGN,
     attack_paths: tuple[Path, ...] = DEFAULT_ATTACKS,
     suites: tuple[str, ...] = DEFAULT_SUITES,
+    *,
+    allow_text_derived_mix: bool = False,
 ) -> tuple[list[dict[str, Any]], dict[str, int]]:
     matrix = load_tool_matrix()
     benign_files = _json_paths(benign_paths)
@@ -323,6 +326,13 @@ def build_dataset(
     rows = [row for row in rows if row["suite"] in suites]
     if not rows or not any(row["label"] == "attack" for row in rows):
         raise ValueError(f"no labeled traces found for requested suites: {suites}")
+    origins = {bool(row["text_derived"]) for row in rows}
+    if len(origins) > 1 and not allow_text_derived_mix:
+        raise ValueError(
+            "dataset mixes real-object and text-derived traces; record attack runs "
+            "through the clone executor or pass allow_text_derived_mix=True for an "
+            "explicit exploratory run"
+        )
 
     assignments = _split_groups(rows)
     for row in rows:
@@ -340,6 +350,8 @@ def build_dataset(
         raise ValueError("a trace group appears in more than one split")
     if skipped_no_tool_calls:
         counts["skipped:no_tool_calls"] = skipped_no_tool_calls
+    counts["text_derived"] = sum(bool(row["text_derived"]) for row in rows)
+    counts["real_object"] = len(rows) - counts["text_derived"]
     return rows, dict(counts)
 
 
@@ -349,9 +361,16 @@ def main() -> None:
     parser.add_argument("--attack-runs", nargs="+", type=Path, default=list(DEFAULT_ATTACKS))
     parser.add_argument("--suites", nargs="+", default=list(DEFAULT_SUITES))
     parser.add_argument("--output-dir", type=Path, default=ROOT / "runs/wl_svm")
+    parser.add_argument(
+        "--allow-text-derived-mix", action="store_true",
+        help="allow exploratory datasets that mix real raw objects and text-derived results",
+    )
     args = parser.parse_args()
     rows, counts = build_dataset(
-        tuple(args.benign_traces), tuple(args.attack_runs), tuple(args.suites)
+        tuple(args.benign_traces),
+        tuple(args.attack_runs),
+        tuple(args.suites),
+        allow_text_derived_mix=args.allow_text_derived_mix,
     )
     args.output_dir.mkdir(parents=True, exist_ok=True)
     for split in ("train", "test"):
