@@ -157,3 +157,22 @@ traces by default. The current metrics explicitly use the exploratory override
 because the available AgentDojo attack files are text-derived; no synthetic
 examples were added.
 
+### Baselines and decision-point check
+
+On the same held-out set, the parser/findings rule achieved 84.6% accuracy and
+72.4% attack recall. A logistic regression using only normalized summary features
+achieved 82.7% accuracy and 69.0% attack recall. The WL-SVM therefore has a small
+advantage over these baselines, but the gap is not large enough to claim that the
+graph representation is the only source of value.
+
+The per-decision analysis evaluates each recorded pre/post interception rather than
+one label per run. It covered 544 decisions (272 pre and 272 post), with 62.9%
+accuracy and 45.3% attack recall. This is the metric relevant to a gate that acts
+before each tool call; it is lower than the run-level score and should be reported
+separately.
+
+`dataset_manifest.json` records the suite, label, and SHA-256 for every source
+trace. Full raw-object attack recording through the clone executor is still needed
+to remove the exploratory text-derived override; this cannot be reconstructed from
+the existing formatted AgentDojo logs.
+

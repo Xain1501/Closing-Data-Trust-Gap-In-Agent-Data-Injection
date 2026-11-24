@@ -191,7 +191,7 @@ def _matrix_entry(matrix: TrustMatrix, tool: str, argument_keys: set[str]):
 
 def _trace_graph(
     trace: dict[str, Any], events: list[_TraceEvent], matrix: TrustMatrix, run_id: str
-) -> tuple[dict[str, Any], int]:
+) -> tuple[dict[str, Any], int, list[dict[str, Any]]]:
     prompt = trace.get("user_prompt")
     if not isinstance(prompt, str):
         prompt = next((
@@ -204,6 +204,7 @@ def _trace_graph(
     states = RunStateStore()
     groups = []
     finding_groups = []
+    decision_graphs: list[dict[str, Any]] = []
     entries_by_call: dict[str, Any] = {}
     try:
         for event in events:
@@ -237,6 +238,16 @@ def _trace_graph(
             tagged = analyze_and_tag(payload, context, states)
             groups.append(tagged.tags)
             finding_groups.append(tagged.analysis.structural.findings)
+            point = build_trace_graph(
+                groups, finding_groups,
+                mentions=tuple(states.get(run_id).mentions) if states.get(run_id) is not None else (),
+            )
+            decision_graphs.append({
+                "interception_id": event.interception_id,
+                "direction": event.direction,
+                "node_labels": point.node_labels,
+                "edges": [list(edge) for edge in point.edges],
+            })
         state = states.get(run_id)
         graph = build_trace_graph(groups, finding_groups,
                                   mentions=tuple(state.mentions) if state is not None else ())
@@ -247,7 +258,7 @@ def _trace_graph(
     return {
         "node_labels": graph.node_labels,
         "edges": [list(edge) for edge in graph.edges],
-    }, pre_calls
+    }, pre_calls, decision_graphs
 
 
 def _read_trace(
@@ -271,7 +282,7 @@ def _read_trace(
         case_id = path.resolve().relative_to(ROOT).as_posix()
         group_id = f"agentdojo:{suite}:{task_id}"
         run_id = str(trace.get("run_id") or case_id)
-        graph, call_count = _trace_graph(trace, events, matrix, run_id)
+        graph, call_count, decision_graphs = _trace_graph(trace, events, matrix, run_id)
         return {
             "case_id": case_id,
             "trace_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
@@ -284,6 +295,7 @@ def _read_trace(
             "group_id": group_id,
             "graph": graph,
             "tool_calls": call_count,
+            "decision_graphs": decision_graphs,
             "text_derived": any(event.text_derived for event in events if event.direction == "post"),
         }
     except Exception as exc:
@@ -381,6 +393,22 @@ def main() -> None:
             encoding="utf-8",
         )
         print(f"{split}: {len(selected)} traces -> {path}")
+    manifest = {
+        "schema_version": 1,
+        "suites": list(args.suites),
+        "counts": counts,
+        "traces": [
+            {
+                "case_id": row["case_id"],
+                "label": row["label"],
+                "trace_sha256": row["trace_sha256"],
+            }
+            for row in sorted(rows, key=lambda item: item["case_id"])
+        ],
+    }
+    (args.output_dir / "dataset_manifest.json").write_text(
+        json.dumps(manifest, indent=2, sort_keys=True), encoding="utf-8"
+    )
     print(json.dumps({"counts": counts, "total": len(rows)}, indent=2))
 
 

@@ -42,9 +42,10 @@ def test_benchmark_trace_builds_one_graph_with_cross_call_lineage():
     }
 
     events = _benchmark_events(trace)
-    graph, calls = _trace_graph(trace, events, load_tool_matrix(), "run-1")
+    graph, calls, decision_graphs = _trace_graph(trace, events, load_tool_matrix(), "run-1")
 
     assert calls == 2
+    assert len(decision_graphs) == len(events)
     assert ["event:1:$.body", "event:2:$.account"] in graph["edges"]
     assert "EXTERNAL_LINK" in graph["node_labels"]["event:2:$.account"]
     assert all("forgery=false" in label for label in graph["node_labels"].values())

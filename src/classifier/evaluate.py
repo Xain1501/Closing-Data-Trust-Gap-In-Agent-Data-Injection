@@ -11,6 +11,7 @@ from sklearn.metrics import (
     balanced_accuracy_score,
     confusion_matrix,
     precision_recall_fscore_support,
+    recall_score,
     roc_auc_score,
 )
 
@@ -95,6 +96,17 @@ def evaluate(model_path: str | Path, test_path: str | Path) -> dict[str, object]
         "not_success": sum(value is False for value in success_values),
         "unknown": sum(value is None for value in success_values),
     }
+    success_breakdown: dict[str, dict[str, float | int]] = {}
+    for success, name in ((True, "successful_attack"), (False, "unsuccessful_attack")):
+        indices = [i for i, row in enumerate(rows) if row.get("label") == "attack" and row.get("attack_success") is success]
+        if indices:
+            truth = [labels[i] for i in indices]
+            guess = [predicted_labels[i] for i in indices]
+            success_breakdown[name] = {
+                "examples": len(indices),
+                "recall": float(recall_score(truth, guess, pos_label="attack", zero_division=0)),
+            }
+    metrics["attack_success_breakdown"] = success_breakdown
     metrics["group_bootstrap_95ci"] = _group_bootstrap_ci(
         labels, predicted_labels, probabilities, group_ids
     )
