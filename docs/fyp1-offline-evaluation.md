@@ -108,13 +108,13 @@ Do not claim that the detector is proven against live traffic, all providers, or
 - Include two end-to-end examples showing tags, forgery attribution, lineage evidence, graph nodes, and final decision.
 - Keep live provider testing as future work unless it becomes available and reproducible.
 
-## Latest all-available-trace run (24 November 2026)
+## Latest all-available-trace run (24 November 2026, after additional semantic runs)
 
 I rebuilt the dataset from every locally available benign trace and every collected
 syntactic or semantic attack trace in the four suites. This produced **178 usable
-graphs** (129 train, 49 test); 10 traces were skipped because they contained no tool
+graphs** (131 train, 52 test); 10 traces were skipped because they contained no tool
 calls. The split remains grouped by task, so a task cannot appear in both partitions.
-The dataset contains 96 real-object traces and 82 text-derived benchmark traces;
+The dataset contains 96 real-object traces and 87 text-derived benchmark traces;
 the latter are explicitly marked and were included only with the exploratory
 `--allow-text-derived-mix` option.
 
@@ -122,14 +122,14 @@ The current holdout result is:
 
 | accuracy | balanced accuracy | attack precision | attack recall | attack F1 | ROC-AUC | PR-AUC |
 |---:|---:|---:|---:|---:|---:|---:|
-| 85.7% | 86.5% | 100.0% | 73.1% | 84.4% | 94.1% | 96.0% |
+| 84.6% | 86.2% | 100.0% | 72.4% | 84.0% | 93.9% | 96.2% |
 
 The lower score compared with the earlier syntactic-only run is expected: this run
 includes the small set of semantic traces collected so far and is therefore a more
 difficult, mixed-distribution check. The label-shuffle check stayed near chance
-(50.4% accuracy, 10.4% attack recall). Leave-one-suite-out accuracy was 73.3% for
-Banking, 78.0% for Slack, 59.2% for Travel, and 44.8% for Workspace; cross-suite
-generalization remains variable.
+(48.1% accuracy, 13.4% attack recall). Leave-one-suite-out accuracy was 73.3% for
+Banking, 64.4% for Slack, 57.1% for Travel, and 44.1% for Workspace; cross-suite
+generalization remains variable and is not solved by adding a few semantic traces.
 the main unseen-suite weakness.
 
 The ablation run is saved under `out/fyp1_all_available_attacks/ablations/metrics.json`.
