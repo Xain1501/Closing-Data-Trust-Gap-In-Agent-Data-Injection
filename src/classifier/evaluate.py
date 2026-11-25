@@ -50,7 +50,7 @@ def _calibration_bins(
 
 def evaluate(model_path: str | Path, test_path: str | Path) -> dict[str, object]:
     graphs, labels, group_ids = _load_graph_jsonl(
-        test_path, expected_split="test", require_groups=True
+        test_path, expected_split="test", require_groups=True, expected_unit="run"
     )
     model = WLGraphSVM.load(model_path)
     training_groups = model.training_group_ids
@@ -64,11 +64,13 @@ def evaluate(model_path: str | Path, test_path: str | Path) -> dict[str, object]
     predicted_labels = [item.predicted_label for item in predictions]
     probabilities = [item.attack_probability for item in predictions]
     actual = [int(label == "attack") for label in labels]
+    ood_flags = [item.out_of_distribution for item in predictions]
     ece, calibration_bins = _calibration_bins(actual, probabilities)
     precision, recall, f1, _ = precision_recall_fscore_support(
         labels, predicted_labels, labels=["attack", "benign"], average="binary", pos_label="attack", zero_division=0,
     )
     metrics: dict[str, object] = {
+        "classification_unit": model.training_unit,
         "examples": len(labels),
         "groups": len(test_groups),
         "label_counts": {label: labels.count(label) for label in ("attack", "benign")},
@@ -88,8 +90,61 @@ def evaluate(model_path: str | Path, test_path: str | Path) -> dict[str, object]
         ) / len(actual),
         "attack_ece": ece,
         "reliability_bins": calibration_bins,
+        "out_of_distribution": {
+            "threshold": model.ood_threshold,
+            "flagged_examples": sum(ood_flags),
+            "flagged_rate": sum(ood_flags) / len(ood_flags),
+            "attack_capture_rate": (
+                sum(flag for flag, label in zip(ood_flags, labels) if label == "attack")
+                / labels.count("attack")
+                if "attack" in labels else 0.0
+            ),
+            "benign_review_rate": (
+                sum(flag for flag, label in zip(ood_flags, labels) if label == "benign")
+                / labels.count("benign")
+                if "benign" in labels else 0.0
+            ),
+        },
     }
     rows = [json.loads(line) for line in Path(test_path).read_text(encoding="utf-8").splitlines() if line.strip()]
+    subgroup_metrics: dict[str, dict[str, dict[str, object]]] = {}
+    for dimension in (
+        "benchmark_family", "attack_family", "source", "collection_mode",
+        "label_basis", "suite",
+    ):
+        grouped_indices: dict[str, list[int]] = {}
+        for index, row in enumerate(rows):
+            value = row.get(dimension)
+            if value is not None:
+                grouped_indices.setdefault(str(value), []).append(index)
+        if not grouped_indices:
+            continue
+        subgroup_metrics[dimension] = {}
+        for value, indices in sorted(grouped_indices.items()):
+            subgroup_labels = [labels[index] for index in indices]
+            subgroup_predictions = [predicted_labels[index] for index in indices]
+            subgroup_precision, subgroup_recall, subgroup_f1, _ = (
+                precision_recall_fscore_support(
+                    subgroup_labels,
+                    subgroup_predictions,
+                    labels=["attack", "benign"],
+                    average="binary",
+                    pos_label="attack",
+                    zero_division=0,
+                )
+            )
+            subgroup_metrics[dimension][value] = {
+                "examples": len(indices),
+                "label_counts": {
+                    label: subgroup_labels.count(label)
+                    for label in ("attack", "benign")
+                },
+                "accuracy": float(accuracy_score(subgroup_labels, subgroup_predictions)),
+                "attack_precision": float(subgroup_precision),
+                "attack_recall": float(subgroup_recall),
+                "attack_f1": float(subgroup_f1),
+            }
+    metrics["subgroup_metrics"] = subgroup_metrics
     success_values = [row.get("attack_success") for row in rows if row.get("label") == "attack"]
     metrics["attack_success_counts"] = {
         "success": sum(value is True for value in success_values),

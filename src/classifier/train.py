@@ -21,6 +21,7 @@ def _load_graph_jsonl(
     *,
     expected_split: str | None = None,
     require_groups: bool = False,
+    expected_unit: str | None = None,
 ) -> tuple[list[GraphSnapshot], list[str], list[str | None]]:
     graphs: list[GraphSnapshot] = []
     labels: list[str] = []
@@ -42,6 +43,8 @@ def _load_graph_jsonl(
                     raise ValueError("label must be 'benign' or 'attack'")
                 if expected_split is not None and row.get("split") != expected_split:
                     raise ValueError(f"expected split {expected_split!r}")
+                if expected_unit is not None and row.get("classification_unit") != expected_unit:
+                    raise ValueError(f"expected classification unit {expected_unit!r}")
                 group_id = row.get("group_id")
                 if require_groups and (not isinstance(group_id, str) or not group_id):
                     raise ValueError("group_id must be a non-empty string")
@@ -75,7 +78,8 @@ def main() -> None:
     parser.add_argument("--c", type=float, default=1.0)
     args = parser.parse_args()
     graphs, labels, group_ids = _load_graph_jsonl(
-        args.training_jsonl, expected_split="train", require_groups=True
+        args.training_jsonl, expected_split="train", require_groups=True,
+        expected_unit="run",
     )
     model = WLGraphSVM(iterations=args.iterations, c=args.c).fit(
         graphs, labels, group_ids=[group_id for group_id in group_ids if group_id is not None]

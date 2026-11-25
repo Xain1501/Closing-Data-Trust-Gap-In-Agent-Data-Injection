@@ -521,35 +521,3 @@ def test_mimicry_finding_carries_the_real_path():
     sk = build_skeleton(raw)
     counted, _ = mimicry_findings(sk.fields, sk.inner_fields)
     assert {f.ref_path for f in counted} == {"$[0].author_association"}
-
-
-def test_live_risk_detector_uses_the_run_graph():
-    from pipeline.risk_detector import make_risk_detector
-
-    seen = []
-
-    from classifier.wl_svm import ClassifierResult
-
-    class Recorder:
-        def predict(self, graph):
-            seen.append(graph)
-            return ClassifierResult(attack_probability=0.1, predicted_label="benign")
-
-    detector = make_risk_detector(Recorder(), run_states=RunStateStore(),
-                                  reviewer=lambda assessment, panel: "allow")
-    raw = {"login": "eqy-maintainer", "body": "CC @eqy-maintainer please review"}
-    ctx = DetectorContext(direction="post", tool_name="read", tool_call_id="c1",
-                          matrix_entry=_entry("read", 1, ()), run_id="r", raw_result=raw,
-                          interception_id="post-1", user_prompt="Pay", batch_id=1)
-    detector(json.dumps(raw), ctx)
-    ctx2 = DetectorContext(direction="pre", tool_name="pay", tool_call_id="c2", matrix_entry=_entry(),
-                           run_id="r", interception_id="pre-2", user_prompt="Pay", batch_id=2)
-    detector({"tool": "pay", "args": {"recipient": "eqy-maintainer", "amount": 5}}, ctx2)
-    detector.end_run("r")
-    assert seen
-    if seen:
-        last = seen[-1]
-        assert any(node.startswith("event:0:") for node in last.node_labels)       # earlier result
-        assert any(node.startswith("event:1:") for node in last.node_labels)       # this call
-        assert "rel:mentions" in last.node_labels.values()
-

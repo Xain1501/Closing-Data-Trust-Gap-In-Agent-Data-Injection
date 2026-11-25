@@ -3,24 +3,24 @@
 For: Madiha (and any agent working on `src/classifier`, `src/pipeline/classifier_gate.py`, `src/pipeline/risk_gate.py`).
 Base: `zain/experimental` with the anomaly check (commit "Parser: anomaly check for unknown-format structure") or later.
 
-## Read first: what is yours, what is done
+## Handoff status (25 November 2026)
 
 | Area | Owner | State |
 |---|---|---|
 | Parser, skeleton, inner nodes, mimicry, anomaly (`src/parser/*`) | Tasbiha | done, final |
 | Tagging, lineage, run state (`src/trust_graph/tagging.py`, `src/provenance/*`) | Tasbiha | done, final |
 | **Graph builder** (`src/trust_graph/graph.py`): nodes, labels, edges, relation nodes | Tasbiha | **done, final** (contract below) |
-| **Dataset builder** `src/classifier/graph_dataset.py` | **Madiha** | needs fixes A1, A2, A7 and section B |
-| **WL-SVM** `src/classifier/wl_svm.py` (features, calibration) | **Madiha** | needs fixes A3, A4, A5 |
-| **Evaluation** `train.py`, `evaluate.py`, `ablation.py`, `robustness.py` | **Madiha** | needs fix A6, baselines, intervals |
-| **Risk gate** `src/pipeline/risk_gate.py`, `classifier_gate.py` | **Madiha** | needs fix A10 |
-| Data and reports (`out/`, `docs/wl-svm-teammate-report.md`, `docs/fyp1-offline-evaluation.md`) | **Madiha** | rebuild and re-run all figures |
+| **Dataset builder** `src/classifier/graph_dataset.py` | **Madiha** | current offline run-level dataset pipeline implemented; additional independent benchmark data remains |
+| **WL-SVM** `src/classifier/wl_svm.py` (features, calibration) | **Madiha** | current offline features and grouped calibration implemented |
+| **Evaluation** `train.py`, `evaluate.py`, `ablation.py`, `robustness.py` | **Madiha** | run-level validation, ablations, baselines, and grouped intervals implemented |
+| **Risk gate** `src/pipeline/risk_gate.py`, `classifier_gate.py` | **Madiha** | counted-hit policy plus calibrated WL-feature novelty signal that forces review |
+| Data and reports (`out/`, `docs/wl-svm-teammate-report.md`, `docs/fyp1-offline-evaluation.md`) | **Madiha** | v4 primary results and supplemental controls documented; local v5 handoff bundle prepared for private sharing |
 
-So the graph is already built: the work left is the dataset builder, the WL-SVM, evaluation, the risk gate, and the data. **Do not change** `graph.py`, `tagging.py`, `lineage.py`, `run_state.py` or `src/parser/*` without agreeing it with Tasbiha; add features in `wl_svm.py`.
+The classifier/data implementation for the current offline run-level experiment includes a conservative, group-calibrated novelty-to-review path. This is not a reliable unseen-attack classifier: the semantic-family holdout flags only 17/56 attacks and also routes 17/63 benign runs to review. Novelty means "not represented by the training feature distribution," not "malicious." The detector is only wired into the offline run-level graph gate; live interception remains parser-only. Remaining research work includes more natural benign traces and independent data-injection attack families. The `out/new_attack_runs` task-ID ambiguity is resolved below: those traces are direct user-goal controls, not valid new data-injection positives. Share the local v5 handoff archive only through an approved private channel. The primary v4 findings and supplemental-control limitations are in `docs/fyp1-offline-evaluation.md`. **Do not change** `graph.py`, `tagging.py`, `lineage.py`, `run_state.py` or `src/parser/*` without agreeing it with Tasbiha.
 
 ## Timing
 
-- **Tags are now final** (the anomaly check has landed). Fix sections A and B, then **rebuild the dataset and retrain once** with the current code. Every graph, model and figure made before this is stale.
+- **Tags are now final** (the anomaly check has landed). The matched and natural-benign v4 datasets and reports were rebuilt on 25 November 2026. Older figures are historical; use the v4 section of `docs/fyp1-offline-evaluation.md` for current results. Rebuild again only if source traces, graph/tagging behavior, or classifier code changes.
 - Rebuild the shape baseline only through `scripts/build_shape_baseline.py`, and only from benign traces.
 
 ## Final graph contract (what `graph.py` produces)
@@ -56,7 +56,9 @@ Since `6b1f578` the tags and graphs changed:
 - Flags: `has_forgery` (pinned to the line), `leaf_forged` (weaker, rest of a forged field), `has_mimicry` (separate from forgery).
 - Graph labels: `forgery=true|leaf|false`, `mimicry=true|false`; relation nodes `rel:mimics`, `rel:mentions`.
 - Lineage evidence: every source, with `match_strength`, `match_form`, `untrusted_also`.
-- The live risk detector now builds the **run graph** (`build_trace_graph` over all interceptions, with findings and mentions), the same builder as `graph_dataset`.
+- The prior live risk-detector integration built a partial run graph. It is now
+  disabled because the trained classifier's input is one complete run graph;
+  `graph_dataset` remains the offline complete-run graph producer.
 - The parser never blocks; it marks payloads `suspicious`.
 - Anomaly check: string fields with structure outside their benign shape get `has_anomaly` and the `anomaly=true` label; lineage evidence carries `source_has_anomaly`. Payload label `suspicious:anomaly`; not a counted hit.
 - Broken-JSON forgeries (an open string left to be closed by the real quote) now give keyed cells, so forged author or role claims are compared (mimicry).
@@ -91,7 +93,7 @@ Every graph file, model and figure built before this is stale.
 ## C. Suggestions
 
 - Graph features to add in `wl_svm.py`: authority argument from an EXTERNAL source with no user match; `untrusted_also`; `match_strength`; `leaf_forged`; `has_mimicry`; `has_anomaly`.
-- Evaluate per decision point (each pre-hop call), not only per run: blocking happens at calls.
+- The project selected **run-level-only** training/evaluation. Do not copy the attack label from a complete trace onto each pre/post interception; there is no per-decision ground truth in these traces.
 - Report baselines next to WL-SVM: parser flags only (a rule), and logistic regression on summary features. This shows whether the graph adds value.
 - Keep one graph contract: any new node label or relation node is agreed and listed in `src/trust_graph/graph.py`'s docstring.
 
@@ -111,5 +113,111 @@ tagging, lineage, run-state, graph builder, or benchmark source files:
   itself cannot force review.
 - `evaluate.py` reports attack-success metadata and task-group bootstrap intervals.
 
-The current mixed dataset was rebuilt only with the explicit exploratory override;
-the default builder will stop if real-object and text-derived traces are mixed.
+The earlier mixed dataset was rebuilt only with the explicit exploratory
+override. Its figures are historical; see `fyp1-offline-evaluation.md` for the
+corrected raw-object, run-level-only rebuild.
+
+## Run-level-only implementation decision
+
+The model is deliberately offline-only because it is trained on each completed
+run graph. The live risk-detector factory now rejects the model, and the live
+smoke script rejects `--risk-model`; live interception continues to use the
+existing parser detector. `per_decision.py` explicitly rejects evaluation with
+repeated run labels. Dataset rows are marked `classification_unit: "run"`, and
+training/evaluation validate that unit.
+
+The attack recorder now uses each source trace's AgentDojo suite version,
+preserves assistant tool-call batches, and keeps benchmark family separate from
+attack family. `data_only_semantic` and `data_only_syntactic` are attack-family
+labels inside the AgentDojo benchmark; they are not an independent ADI
+benchmark. The dataset builder accepts explicit benchmark/task-group metadata
+for additional benchmark formats, supports all-suite inputs, validates declared
+labels, and can force entire benchmark, attack-family, or source groups into a
+held-out test split.
+
+The recorder can also create matched clean counterfactuals: it replays the
+recorded tool-call sequence against the same task's default (non-injected)
+environment. These pairs support a controlled **injection-present vs
+injection-absent** experiment and remain in the same task group/split. They are
+not natural benign-agent runs and must not be reported as task-utility or
+attack-success evaluation. No external API or synthetic attack text is used.
+
+WL subtree histograms are normalized per graph; new artifacts record feature
+schema version 2 and run-level training metadata. Existing format 1/2 models
+retain their raw-count feature interpretation when loaded. Final reports include
+the model hash and warn when the benign and attack collection sources differ.
+
+XGBoost is not added as a second classifier yet. It is not in the pinned
+dependencies, and the available independent attack families/task groups are
+too few to justify a stacked model without severe overfitting/leakage risk.
+Reconsider it only after collecting more independent, matched data and
+generating group-wise out-of-fold WL-SVM scores for the stacker.
+
+These changes do not touch the parser, tagging, lineage, run-state, graph
+builder, clone core, or adapter. The previously identified timeout race in
+tagging and `evidence_only` delivery behavior remain outside this change scope;
+they are not fixed by selecting offline-only evaluation.
+
+## Follow-up verification (25 November 2026)
+
+- Rebuilt the matched v3 corpus with the shared tool-call sequence hash required:
+  97 pairs replayed, 87 usable pairs after excluding 10 with no usable tool call.
+- The matched held-out set has 58 runs (29 per label). WL-SVM achieved 70.7%
+  accuracy and 72.4% attack recall; semantic-family holdout attack recall was
+  13.6% (3/22). These are injection-presence results, not attack-success or
+  natural-benign evaluation.
+- Added parser-rule and summary-feature logistic baselines on the same final
+  train/test split. Their accuracy was 84.5% and 82.8%, respectively, both above
+  the full WL-SVM's 70.7%. Current evidence therefore does not demonstrate an
+  overall graph-classifier advantage. Baseline reports now include 1,000-repeat
+  task-group bootstrap intervals. The ablation results and reproduction commands
+  are in `fyp1-offline-evaluation.md`.
+- Fixed `ablation.py` to preserve the required `classification_unit: "run"`
+  metadata in its generated JSONL. The parser-only baseline now counts leaf
+  forgery as suspicious.
+- Added an opt-in fail-closed risk-policy input for an independently supplied
+  out-of-distribution signal. This is not an OOD detector, is not wired into the
+  live parser-only path, and must not be presented as automatic unseen-attack
+  detection.
+- Added `scripts/record_clean_agentdojo.py` to capture natural no-injection
+  model runs through the clone executor, with raw results and stable call-sequence
+  hashes. Using the locally configured Groq GPT-OSS model, eight runs across all
+  four suites were collected (20 tool calls) for the existing attack task groups.
+  The v4 corpus now has 8 natural benign traces plus 87 counterfactual pairs;
+  only one natural benign trace is in the standard test split.
+- More natural benign runs and new independent benchmarks/attack families remain
+  necessary. The current benchmark still has only `data_only_semantic` and
+  `data_only_syntactic` families, and semantic-family holdout recall remains
+  13.6%. Provider-backed collection was limited to the authorized small sample;
+  no new attack family was generated.
+- `out/new_attack_runs` was initially excluded because its `user_task_id`
+  values were `injection_task_*`, not valid workspace user-task IDs. The later
+  audit below confirmed these are direct-goal controls, not missing user-task
+  mappings; they remain separate from the primary injection dataset.
+- XGBoost remains untouched and out of scope. The previously noted tagging
+  timeout race and `evidence_only` delivery integration are not changed here.
+
+## Supplemental direct-goal controls (25 November 2026)
+
+- Audited all nine files in `out/new_attack_runs` against the installed
+  AgentDojo v1.2.2 workspace injection-task registry. Their prompts exactly
+  match registered `InjectionTask.GOAL` strings; `injection_task_*` was stored
+  in `user_task_id`, so these are not user tasks and must not be remapped to
+  `user_task_*`.
+- Eight GPT-OSS traces have tool calls (16 total) and contain no injected tool
+  data. Seven have successful AgentDojo security outcomes; one outcome is
+  unknown. The security/utility outcome is kept separate from the no-injection
+  label. One duplicate Llama trace has no tool calls and was excluded. The
+  retained traces are text-derived and are kept in a separate held-out
+  no-injection control set, not mixed into the primary injection-present
+  training set.
+- `graph_dataset.py` now reads both AgentDojo content-block encodings (`text`
+  and `content`) and string-valued tool function names. It preserves the
+  recorded tool results and user prompt for graph construction; these records
+  remain marked `text_derived`.
+- On the eight controls, the existing v4 WL-SVM flagged two as attack: a 25%
+  false-positive rate (six of eight classified as no-injection). This is a tiny,
+  text-derived control check, not an attack-recall or general benign-FPR claim.
+- Reproduce with `scripts/build_direct_goal_challenge.py` and
+  `scripts/evaluate_direct_goal_controls.py`. No tagging, lineage, graph-builder,
+  XGBoost, or provider code was changed, and no new provider calls were made.

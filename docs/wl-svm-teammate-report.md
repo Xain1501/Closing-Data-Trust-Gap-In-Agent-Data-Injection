@@ -1,8 +1,13 @@
 # Clone → parser → tagging → lineage → graph → WL-SVM
 
+> Historical run report. Its fixture metrics describe an earlier dataset and
+> are not the current model result. The maintained classifier is run-level and
+> offline-only; the previous per-interception integration is intentionally
+> disabled because training used complete-run graphs.
+
 ## Purpose
 
-This document explains the implemented path and the validation run for teammates. The system keeps the original tool result available long enough to recover its real structure, marks where values came from, builds a provenance graph, and optionally uses a trained classifier as evidence for the risk gate.
+This document explains the implemented path and an earlier validation run for teammates. The system keeps the original tool result available long enough to recover its real structure, marks where values came from, and builds a provenance graph. The WL-SVM is trained and evaluated offline on completed runs; it is not evidence for a live per-interception risk gate.
 
 ## What happens to one tool turn
 
@@ -13,13 +18,14 @@ AgentDojo/clone adapter
   → nested field tagging (SYSTEM structure, EXTERNAL leaves)
   → per-run value ledger
   → next-call argument lineage
-  → trust graph (parent/child, lineage, forgery/finding evidence)
-  → WL subtree features
-  → calibrated linear SVM probability
-  → impact/risk gate and review decision
+  → complete-run trust graph (parent/child, lineage, forgery/finding evidence)
+  → normalized WL subtree features
+  → calibrated linear SVM probability (offline)
+  → run-level evaluation
 ```
 
-The parser-only detector remains available. The graph and classifier path is opt-in through `make_risk_detector` or the live smoke script's `--risk-model` option.
+The parser-only detector remains the live interception path. `make_risk_detector`
+and the live smoke script's `--risk-model` option reject the run-level model.
 
 ## Implemented pieces
 
@@ -51,7 +57,7 @@ The parser-only detector remains available. The graph and classifier path is opt
 
 ### 5. WL-SVM
 
-`src/classifier/wl_svm.py` counts Weisfeiler-Lehman subtree labels at iterations 0–2. A linear SVM receives these sparse counts, and sigmoid calibration produces an attack probability. The artifact records the training group IDs so evaluation can reject train/test group overlap.
+`src/classifier/wl_svm.py` counts Weisfeiler-Lehman subtree labels at iterations 0–2 and normalizes each depth histogram by graph node count. A linear SVM receives these sparse frequencies, and sigmoid calibration produces an attack probability. The artifact records its run-level unit and training group IDs so evaluation can reject train/test group overlap.
 
 Training and evaluation are exposed by `classifier.train` and `classifier.evaluate`. Generated data and models are under `out/` and are intentionally ignored by Git.
 
@@ -87,7 +93,7 @@ The full test suite completed with **628 passed, 6 expected failures, and one py
 
 ## Held-out classifier result
 
-The full graph model produced:
+The historical full graph model produced:
 
 | metric | result |
 |---|---:|
@@ -119,25 +125,22 @@ Full JSON metrics and the four fitted artifacts are in `out/wl_svm_ablation/metr
 
 On this fixture, finding nodes and forgery markers are partly redundant with the other graph labels: removing either alone does not change the hard predictions, although probability calibration worsens. Removing both causes a large drop. This supports keeping both signals, but it is not proof that either feature independently generalizes. The dataset is small and the attack traces may contain other correlated cues.
 
-The score is therefore a useful regression result, not a production accuracy claim. Before publication, add more independent tasks/providers, report confidence intervals across repeated grouped splits, and use group-aware cross-validation for the SVM calibration folds. The current external train/test split is group-separated; the SVM's internal calibration uses ordinary stratified folds.
+These scores are historical regression results, not current or production accuracy claims. A corrected dataset/model run is required before using them as current results. The maintained implementation uses group-aware calibration.
 
 ## How to run the complete path
 
-Regenerate data and train the artifact with the commands above. Then use:
-
-```powershell
-$env:PYTHONPATH = "src;agentdojo/src"
-python scripts/live_clone_parser_smoke.py --risk-model .\out\wl_svm_data\wl_svm.joblib
-```
-
-The model artifact must be regenerated when graph labels, tagging rules, source traces, or feature schema change. Only load artifacts produced by this repository because `joblib` uses pickle serialization.
+Regenerate data and train the artifact with the commands above. The artifact is
+for offline evaluation only. The live smoke script remains parser-only and
+rejects `--risk-model`. Regenerate the model when graph labels, tagging rules,
+source traces, or feature schema change. Only load artifacts produced by this
+repository because `joblib` uses pickle serialization.
 
 ## Current boundaries and follow-up work
 
 - The default matrix has conservative unclassified fields; profile loading is not automatic.
 - Text-only tool results have no trustworthy inner skeleton and remain one external leaf.
 - Exact/bounded text matching misses paraphrased, encoded, split, or value-free attacks.
-- The model path is opt-in; parser-only mode does not use the SVM.
+- Run-level classification is offline-only; live parser-only mode does not use the SVM.
 - Post-hop review can stop a result reaching the agent but cannot undo a side effect already executed by a tool.
 - The current run used local recorded traces. A Groq-backed AgentDojo run is still required before claiming live-provider compatibility.
 

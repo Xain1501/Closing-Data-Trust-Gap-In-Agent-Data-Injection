@@ -17,10 +17,7 @@ from trust_graph import build_trace_graph
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_BENIGN = (ROOT / "tests/fixtures/traces/benign",)
-DEFAULT_ATTACKS = (
-    ROOT / "runs/baseline_openai_gpt-oss-120b",
-    ROOT / "runs/baseline_llama-3.3-70b-versatile",
-)
+DEFAULT_ATTACKS = (ROOT / "out/attack_traces_raw",)
 DEFAULT_SUITES = ("travel", "workspace", "slack", "banking")
 
 
@@ -55,16 +52,22 @@ def _json_paths(paths: tuple[Path, ...]) -> list[Path]:
     return found
 
 
-def _result_text(content: Any) -> str:
+def _content_text(content: Any) -> str:
     if isinstance(content, str):
         return content
     if isinstance(content, list):
-        parts = [
-            item.get("text", "")
-            for item in content
-            if isinstance(item, dict) and isinstance(item.get("text", ""), str)
-        ]
-        if parts:
+        parts: list[str] = []
+        found_text = False
+        for item in content:
+            if not isinstance(item, dict):
+                continue
+            text = item.get("text")
+            if not isinstance(text, str):
+                text = item.get("content")
+            if isinstance(text, str):
+                found_text = True
+                parts.append(text)
+        if found_text:
             return "".join(parts)
     return json.dumps(content, ensure_ascii=False, sort_keys=True)
 
@@ -83,7 +86,7 @@ def _recorded_events(trace: dict[str, Any]) -> list[_TraceEvent]:
     events = trace.get("events")
     if not isinstance(events, list):
         raise ValueError("recorded trace must contain an events list")
-    batches: dict[str, int] = {}
+    batches: dict[str, tuple[str, int]] = {}
     output: list[_TraceEvent] = []
     next_batch = 0
     for event in events:
@@ -101,15 +104,33 @@ def _recorded_events(trace: dict[str, Any]) -> list[_TraceEvent]:
             args = event.get("args")
             if not isinstance(args, dict):
                 raise ValueError(f"{interception_id}: pre event args must be an object")
-            next_batch += 1
-            batches[call_id] = next_batch
+            batch_id = event.get("batch_id")
+            if batch_id is None:
+                next_batch += 1
+                batch_id = next_batch
+            elif isinstance(batch_id, bool) or not isinstance(batch_id, int) or batch_id < 1:
+                raise ValueError(f"{interception_id}: batch_id must be a positive integer")
+            else:
+                next_batch = max(next_batch, batch_id)
+            if call_id in batches:
+                raise ValueError(f"{interception_id}: duplicate tool call id")
+            batches[call_id] = (tool, batch_id)
             output.append(_TraceEvent(
-                "pre", tool, call_id, interception_id, next_batch, args=args,
+                "pre", tool, call_id, interception_id, batch_id, args=args,
             ))
         else:
-            batch_id = batches.get(call_id)
-            if batch_id is None:
+            call_context = batches.get(call_id)
+            if call_context is None:
                 raise ValueError(f"{interception_id}: post event has no earlier call")
+            source_tool, batch_id = call_context
+            if tool != source_tool:
+                raise ValueError(f"{interception_id}: post event tool does not match its call")
+            event_batch = event.get("batch_id")
+            if event_batch is not None:
+                if isinstance(event_batch, bool) or not isinstance(event_batch, int):
+                    raise ValueError(f"{interception_id}: batch_id must be an integer")
+                if event_batch != batch_id:
+                    raise ValueError(f"{interception_id}: pre/post batch_id mismatch")
             if "raw_result" not in event or not isinstance(event.get("result_text"), str):
                 raise ValueError(f"{interception_id}: post event is missing its result")
             output.append(_TraceEvent(
@@ -138,9 +159,11 @@ def _benchmark_events(trace: dict[str, Any]) -> list[_TraceEvent]:
             for call in message["tool_calls"]:
                 if not isinstance(call, dict):
                     raise ValueError("assistant tool call must be an object")
-                function = call.get("function")
                 tool = call.get("name")
-                if not tool and isinstance(function, dict):
+                function = call.get("function")
+                if not tool and isinstance(function, str):
+                    tool = function
+                elif not tool and isinstance(function, dict):
                     tool = function.get("name")
                 call_id = call.get("id")
                 args = call.get("args")
@@ -163,7 +186,7 @@ def _benchmark_events(trace: dict[str, Any]) -> list[_TraceEvent]:
             if not isinstance(call_id, str) or call_id not in calls:
                 raise ValueError("tool result has no matching assistant call")
             tool, source_batch = calls[call_id]
-            text = _result_text(message.get("content", ""))
+            text = _content_text(message.get("content", ""))
             raw_result, result_format = _decode_result(text)
             sequence += 1
             output.append(_TraceEvent(
@@ -191,20 +214,18 @@ def _matrix_entry(matrix: TrustMatrix, tool: str, argument_keys: set[str]):
 
 def _trace_graph(
     trace: dict[str, Any], events: list[_TraceEvent], matrix: TrustMatrix, run_id: str
-) -> tuple[dict[str, Any], int, list[dict[str, Any]]]:
+) -> tuple[dict[str, Any], int]:
     prompt = trace.get("user_prompt")
     if not isinstance(prompt, str):
         prompt = next((
-            message.get("content")
+            _content_text(message.get("content", ""))
             for message in trace.get("messages", [])
             if isinstance(message, dict) and message.get("role") in ("human", "user")
-            and isinstance(message.get("content"), str)
         ), "")
 
     states = RunStateStore()
     groups = []
     finding_groups = []
-    decision_graphs: list[dict[str, Any]] = []
     entries_by_call: dict[str, Any] = {}
     try:
         for event in events:
@@ -238,16 +259,6 @@ def _trace_graph(
             tagged = analyze_and_tag(payload, context, states)
             groups.append(tagged.tags)
             finding_groups.append(tagged.analysis.structural.findings)
-            point = build_trace_graph(
-                groups, finding_groups,
-                mentions=tuple(states.get(run_id).mentions) if states.get(run_id) is not None else (),
-            )
-            decision_graphs.append({
-                "interception_id": event.interception_id,
-                "direction": event.direction,
-                "node_labels": point.node_labels,
-                "edges": [list(edge) for edge in point.edges],
-            })
         state = states.get(run_id)
         graph = build_trace_graph(groups, finding_groups,
                                   mentions=tuple(state.mentions) if state is not None else ())
@@ -255,10 +266,7 @@ def _trace_graph(
         states.end_run(run_id)
 
     pre_calls = sum(event.direction == "pre" for event in events)
-    return {
-        "node_labels": graph.node_labels,
-        "edges": [list(edge) for edge in graph.edges],
-    }, pre_calls, decision_graphs
+    return {"node_labels": graph.node_labels, "edges": [list(edge) for edge in graph.edges]}, pre_calls
 
 
 def _read_trace(
@@ -270,51 +278,166 @@ def _read_trace(
             raise ValueError("trace root must be an object")
         suite = trace.get("suite") or trace.get("suite_name")
         task_id = trace.get("task_id") or trace.get("user_task_id")
-        if not isinstance(suite, str) or not isinstance(task_id, str):
-            raise ValueError("trace must identify its suite and user task")
+        benchmark_family = trace.get("benchmark_family")
+        if benchmark_family is None and isinstance(suite, str):
+            benchmark_family = "agentdojo"
+        if not isinstance(benchmark_family, str) or not benchmark_family:
+            raise ValueError("trace must identify its benchmark_family")
+        task_group_id = trace.get("task_group_id") or trace.get("group_id")
+        if task_group_id is None:
+            if not isinstance(task_id, str) or not task_id:
+                raise ValueError("trace must identify task_id or task_group_id")
+            task_group_id = ":".join(
+                (benchmark_family, str(suite or "default"), task_id)
+            )
+        if not isinstance(task_group_id, str) or not task_group_id:
+            raise ValueError("task_group_id must be a non-empty string")
+        if not task_group_id.startswith(f"{benchmark_family}:"):
+            task_group_id = f"{benchmark_family}:{task_group_id}"
+        if suite is not None and (not isinstance(suite, str) or not suite):
+            raise ValueError("suite must be a non-empty string when present")
+        if task_id is not None and (not isinstance(task_id, str) or not task_id):
+            raise ValueError("task_id must be a non-empty string when present")
+        declared_label = trace.get("label")
+        if declared_label is not None and declared_label != label:
+            raise ValueError(
+                f"trace declares label {declared_label!r} but was supplied as {label!r}"
+            )
         if label == "attack" and not (
             trace.get("injection_task_id") or trace.get("attack_type")
+            or trace.get("attack_family")
         ):
             raise ValueError("attack trace has no injection-task or attack-type metadata")
         events = _events(trace)
         if not any(event.direction == "pre" for event in events):
             return None
-        case_id = path.resolve().relative_to(ROOT).as_posix()
-        group_id = f"agentdojo:{suite}:{task_id}"
+        resolved_path = path.resolve()
+        try:
+            case_id = resolved_path.relative_to(ROOT).as_posix()
+        except ValueError:
+            path_id = hashlib.sha256(str(resolved_path).encode("utf-8")).hexdigest()[:16]
+            case_id = f"external/{path_id}/{path.name}"
+        group_id = task_group_id
         run_id = str(trace.get("run_id") or case_id)
-        graph, call_count, decision_graphs = _trace_graph(trace, events, matrix, run_id)
+        graph, call_count = _trace_graph(trace, events, matrix, run_id)
+        attack_family = trace.get("attack_family")
+        if attack_family is None and label == "attack":
+            attack_family = trace.get("attack_type")
+        if attack_family is not None and (
+            not isinstance(attack_family, str) or not attack_family
+        ):
+            raise ValueError("attack_family must be a non-empty string when present")
+        benchmark_version = trace.get("benchmark_version")
+        if benchmark_version is not None and (
+            not isinstance(benchmark_version, str) or not benchmark_version
+        ):
+            raise ValueError("benchmark_version must be a non-empty string when present")
+        attack_success = (
+            trace.get("attack_success")
+            if isinstance(trace.get("attack_success"), bool)
+            else trace.get("security")
+            if isinstance(trace.get("security"), bool)
+            else None
+        )
         return {
             "case_id": case_id,
             "trace_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
             "label": label,
+            "classification_unit": "run",
             "source": trace.get("pipeline_name") or trace.get("source"),
-            "benchmark_family": trace.get("benchmark_family"),
+            "benchmark_family": benchmark_family,
+            "attack_family": attack_family,
+            "benchmark_version": benchmark_version,
+            "collection_mode": trace.get("collection_mode") or trace.get("source"),
+            "matched_pair_id": trace.get("matched_pair_id"),
+            "call_sequence_sha256": trace.get("call_sequence_sha256"),
+            "injection_condition": trace.get("injection_condition"),
+            "label_basis": trace.get("label_basis") or (
+                "injection_present"
+                if label == "attack" and (
+                    trace.get("injection_task_id") or trace.get("injections")
+                )
+                else "attack_trace_membership" if label == "attack"
+                else "clean_trace_membership"
+            ),
             "suite": suite,
             "task_id": task_id,
             "attack_type": trace.get("attack_type"),
-            "attack_success": trace.get("security") if isinstance(trace.get("security"), bool) else None,
+            "attack_success": attack_success,
+            "attack_success_source": (
+                trace.get("attack_success_source")
+                or ("source_agentdojo_trace" if isinstance(trace.get("security"), bool) else None)
+            ),
             "group_id": group_id,
             "graph": graph,
             "tool_calls": call_count,
-            "decision_graphs": decision_graphs,
             "text_derived": any(event.text_derived for event in events if event.direction == "post"),
         }
     except Exception as exc:
         raise ValueError(f"invalid trace at {path}: {exc}") from exc
 
 
-def _split_groups(rows: list[dict[str, Any]]) -> dict[str, str]:
-    group_labels: dict[str, set[str]] = defaultdict(set)
+def _split_groups(
+    rows: list[dict[str, Any]],
+    *,
+    holdout_benchmark_families: tuple[str, ...] = (),
+    holdout_attack_families: tuple[str, ...] = (),
+    holdout_sources: tuple[str, ...] = (),
+) -> dict[str, str]:
+    group_rows: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for row in rows:
-        group_labels[row["group_id"]].add(row["label"])
-    return {
-        group: (
+        group_rows[row["group_id"]].append(row)
+    assignments = {}
+    for group, members in group_rows.items():
+        is_held_out_benchmark = any(
+            row["benchmark_family"] in holdout_benchmark_families
+            for row in members
+        )
+        is_held_out_attack = any(
+            row["label"] == "attack" and row.get("attack_family") in holdout_attack_families
+            for row in members
+        )
+        is_held_out_source = any(
+            row.get("source") in holdout_sources for row in members
+        )
+        assignments[group] = (
             "test"
-            if int.from_bytes(hashlib.sha256(group.encode()).digest()[:4], "big") % 5 == 0
+            if is_held_out_benchmark or is_held_out_attack or is_held_out_source
+            or int.from_bytes(hashlib.sha256(group.encode()).digest()[:4], "big") % 5 == 0
             else "train"
         )
-        for group in group_labels
-    }
+    return assignments
+
+
+def _validate_matched_pairs(
+    rows: list[dict[str, Any]], *, require_matched_pairs: bool
+) -> None:
+    matched_pairs: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for row in rows:
+        pair_id = row.get("matched_pair_id")
+        if pair_id:
+            matched_pairs[pair_id].append(row)
+    for pair_id, pair_rows in matched_pairs.items():
+        if len({row["group_id"] for row in pair_rows}) != 1:
+            raise ValueError(f"matched pair {pair_id} crosses task groups")
+        call_sequence_hashes = {
+            row.get("call_sequence_sha256")
+            for row in pair_rows
+            if row.get("call_sequence_sha256")
+        }
+        if len(call_sequence_hashes) > 1:
+            raise ValueError(f"matched pair {pair_id} has different tool-call sequences")
+        if require_matched_pairs and (
+            len(pair_rows) != 2
+            or {row["label"] for row in pair_rows} != {"benign", "attack"}
+            or len(call_sequence_hashes) != 1
+        ):
+            raise ValueError(
+                f"matched pair {pair_id} must have one benign and one attack trace "
+                "with the same recorded tool-call sequence"
+            )
+    if require_matched_pairs and not matched_pairs:
+        raise ValueError("no matched benign/attack counterfactual pairs were found")
 
 
 def build_dataset(
@@ -323,6 +446,12 @@ def build_dataset(
     suites: tuple[str, ...] = DEFAULT_SUITES,
     *,
     allow_text_derived_mix: bool = False,
+    required_benchmark_families: tuple[str, ...] = (),
+    required_attack_families: tuple[str, ...] = (),
+    holdout_benchmark_families: tuple[str, ...] = (),
+    holdout_attack_families: tuple[str, ...] = (),
+    holdout_sources: tuple[str, ...] = (),
+    require_matched_pairs: bool = False,
 ) -> tuple[list[dict[str, Any]], dict[str, int]]:
     matrix = load_tool_matrix()
     benign_files = _json_paths(benign_paths)
@@ -336,7 +465,8 @@ def build_dataset(
                 skipped_no_tool_calls += 1
             else:
                 rows.append(row)
-    rows = [row for row in rows if row["suite"] in suites]
+    if suites:
+        rows = [row for row in rows if row["suite"] in suites]
     if not rows or not any(row["label"] == "attack" for row in rows):
         raise ValueError(f"no labeled traces found for requested suites: {suites}")
     origins = {bool(row["text_derived"]) for row in rows}
@@ -346,8 +476,29 @@ def build_dataset(
             "through the clone executor or pass allow_text_derived_mix=True for an "
             "explicit exploratory run"
         )
+    benchmark_families_in_data = {row["benchmark_family"] for row in rows}
+    attack_families_in_data = {
+        row["attack_family"] for row in rows if row.get("attack_family")
+    }
+    sources_in_data = {row.get("source") for row in rows if row.get("source")}
+    missing_holdouts = (
+        set(holdout_benchmark_families) - benchmark_families_in_data
+    ) | (set(holdout_attack_families) - attack_families_in_data) | (
+        set(holdout_sources) - sources_in_data
+    )
+    if missing_holdouts:
+        raise ValueError(
+            "requested holdout values are absent from filtered data: "
+            + ", ".join(sorted(missing_holdouts))
+        )
+    _validate_matched_pairs(rows, require_matched_pairs=require_matched_pairs)
 
-    assignments = _split_groups(rows)
+    assignments = _split_groups(
+        rows,
+        holdout_benchmark_families=holdout_benchmark_families,
+        holdout_attack_families=holdout_attack_families,
+        holdout_sources=holdout_sources,
+    )
     for row in rows:
         row["split"] = assignments[row["group_id"]]
 
@@ -365,6 +516,32 @@ def build_dataset(
         counts["skipped:no_tool_calls"] = skipped_no_tool_calls
     counts["text_derived"] = sum(bool(row["text_derived"]) for row in rows)
     counts["real_object"] = len(rows) - counts["text_derived"]
+    family_counts = Counter(str(row["benchmark_family"]) for row in rows)
+    attack_family_counts = Counter(
+        str(row["attack_family"]) for row in rows if row.get("attack_family")
+    )
+    missing_families = sorted(set(required_benchmark_families) - set(family_counts))
+    if missing_families:
+        raise ValueError(
+            "required benchmark families are missing: " + ", ".join(missing_families)
+        )
+    missing_attack_families = sorted(set(required_attack_families) - set(attack_family_counts))
+    if missing_attack_families:
+        raise ValueError(
+            "required attack families are missing: " + ", ".join(missing_attack_families)
+        )
+    for family, count in sorted(family_counts.items()):
+        counts[f"family:{family}"] = count
+    for family, count in sorted(attack_family_counts.items()):
+        counts[f"attack_family:{family}"] = count
+    for row in rows:
+        for dimension, value in (
+            ("benchmark_label", f"{row['benchmark_family']}:{row['split']}:{row['label']}"),
+            ("source_label", f"{row.get('source') or 'unknown'}:{row['split']}:{row['label']}"),
+            ("collection_label", f"{row.get('collection_mode') or 'unknown'}:{row['label']}"),
+            ("label_basis", f"{row['label_basis']}:{row['label']}"),
+        ):
+            counts[f"{dimension}:{value}"] += 1
     return rows, dict(counts)
 
 
@@ -373,17 +550,51 @@ def main() -> None:
     parser.add_argument("--benign-traces", nargs="+", type=Path, default=list(DEFAULT_BENIGN))
     parser.add_argument("--attack-runs", nargs="+", type=Path, default=list(DEFAULT_ATTACKS))
     parser.add_argument("--suites", nargs="+", default=list(DEFAULT_SUITES))
+    parser.add_argument(
+        "--all-suites", action="store_true",
+        help="include traces from any suite (requires benchmark/task metadata)",
+    )
     parser.add_argument("--output-dir", type=Path, default=ROOT / "runs/wl_svm")
     parser.add_argument(
         "--allow-text-derived-mix", action="store_true",
         help="allow exploratory datasets that mix real raw objects and text-derived results",
     )
+    parser.add_argument(
+        "--require-benchmark-family", action="append", default=[],
+        help="require a family such as agentdojo or adi to be present (repeatable)",
+    )
+    parser.add_argument(
+        "--require-attack-family", action="append", default=[],
+        help="require an attack family such as data_only_syntactic to be present",
+    )
+    parser.add_argument(
+        "--holdout-benchmark-family", action="append", default=[],
+        help="force all groups from this benchmark family into test (repeatable)",
+    )
+    parser.add_argument(
+        "--holdout-attack-family", action="append", default=[],
+        help="force all groups containing this attack family into test (repeatable)",
+    )
+    parser.add_argument(
+        "--holdout-source", action="append", default=[],
+        help="force all groups from this collection source into test (repeatable)",
+    )
+    parser.add_argument(
+        "--require-matched-pairs", action="store_true",
+        help="require exactly one clean and one injected trace per matched_pair_id",
+    )
     args = parser.parse_args()
     rows, counts = build_dataset(
         tuple(args.benign_traces),
         tuple(args.attack_runs),
-        tuple(args.suites),
+        () if args.all_suites else tuple(args.suites),
         allow_text_derived_mix=args.allow_text_derived_mix,
+        required_benchmark_families=tuple(args.require_benchmark_family),
+        required_attack_families=tuple(args.require_attack_family),
+        holdout_benchmark_families=tuple(args.holdout_benchmark_family),
+        holdout_attack_families=tuple(args.holdout_attack_family),
+        holdout_sources=tuple(args.holdout_source),
+        require_matched_pairs=args.require_matched_pairs,
     )
     args.output_dir.mkdir(parents=True, exist_ok=True)
     for split in ("train", "test"):
@@ -395,14 +606,25 @@ def main() -> None:
         )
         print(f"{split}: {len(selected)} traces -> {path}")
     manifest = {
-        "schema_version": 1,
+        "schema_version": 2,
+        "classification_unit": "run",
         "suites": list(args.suites),
+        "all_suites": args.all_suites,
+        "holdout_benchmark_families": args.holdout_benchmark_family,
+        "holdout_attack_families": args.holdout_attack_family,
+        "holdout_sources": args.holdout_source,
+        "requires_matched_pairs": args.require_matched_pairs,
+        "label_semantics": (
+            "attack indicates an injected/attack trace, not that the attack succeeded"
+        ),
         "counts": counts,
         "traces": [
             {
                 "case_id": row["case_id"],
                 "label": row["label"],
                 "benchmark_family": row.get("benchmark_family"),
+                "attack_family": row.get("attack_family"),
+                "benchmark_version": row.get("benchmark_version"),
                 "trace_sha256": row["trace_sha256"],
             }
             for row in sorted(rows, key=lambda item: item["case_id"])

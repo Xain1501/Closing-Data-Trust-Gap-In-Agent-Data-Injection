@@ -24,8 +24,16 @@ from pipeline.clone_parser_detector import parser_detector
 def main() -> None:
     arg_parser = argparse.ArgumentParser(description=__doc__)
     arg_parser.add_argument("--attack", action="store_true", help="Use the official workspace task 0 syntactic injection")
-    arg_parser.add_argument("--risk-model", type=Path, help="Use a trained WL-SVM risk detector instead of parser-only mode")
+    arg_parser.add_argument(
+        "--risk-model", type=Path,
+        help="Unsupported: the run-level WL-SVM is offline-only",
+    )
     args = arg_parser.parse_args()
+    if args.risk_model:
+        raise SystemExit(
+            "--risk-model is unsupported: WL-SVM is trained on complete runs and "
+            "must not score live interception prefixes"
+        )
     load_dotenv(".env", override=False)
     if not os.getenv("GROQ_API_KEY"):
         raise SystemExit("GROQ_API_KEY is missing from the environment/.env")
@@ -44,11 +52,6 @@ def main() -> None:
     formatter = partial(tool_result_to_str, dump_fn=json.dumps)
     llm = get_llm("groq", model, None, "tool")
     detector = parser_detector
-    if args.risk_model:
-        from classifier.wl_svm import WLGraphSVM
-        from pipeline.risk_detector import make_risk_detector
-
-        detector = make_risk_detector(WLGraphSVM.load(args.risk_model))
     executor = TrustVerificationToolsExecutor(
         detector,
         ledger=ledger,

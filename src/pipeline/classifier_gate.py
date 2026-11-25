@@ -20,13 +20,19 @@ def classify_and_assess(
     impact: int | None,
     *,
     structural_hits: int = 0,
+    classifier_out_of_distribution: bool = False,
 ) -> GraphRiskResult:
     """Classify a trust graph; keep parser hit evidence separate from probability."""
+    if not isinstance(classifier_out_of_distribution, bool):
+        raise ValueError("classifier_out_of_distribution must be a boolean")
     prediction = classifier.predict(graph)
     risk = assess_risk(
         structural_score,
         prediction.attack_probability,
         impact,
         structural_hits=structural_hits,
+        classifier_out_of_distribution=(
+            classifier_out_of_distribution or prediction.out_of_distribution
+        ),
     )
     return GraphRiskResult(prediction, risk)

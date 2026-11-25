@@ -87,8 +87,13 @@ def _digest(value: object) -> str:
     return sha256(serialized.encode("utf-8")).hexdigest()
 
 
-def wl_features(graph: GraphSnapshot, iterations: int = 2) -> dict[str, float]:
-    """Return deterministic WL subtree label counts for iterations 0..h."""
+def wl_features(
+    graph: GraphSnapshot,
+    iterations: int = 2,
+    *,
+    normalize_counts: bool = True,
+) -> dict[str, float]:
+    """Return deterministic WL subtree label frequencies for iterations 0..h."""
     if iterations < 0:
         raise ValueError("iterations must be non-negative")
     neighbors: dict[str, list[str]] = {node: [] for node in graph.node_labels}
@@ -130,7 +135,10 @@ def wl_features(graph: GraphSnapshot, iterations: int = 2) -> dict[str, float]:
     features["summary:rel_mimics_rate"] = rel_mimics / node_count
     features["summary:rel_mentions_rate"] = rel_mentions / node_count
     for depth in range(iterations + 1):
-        features.update(f"wl:{depth}:{label}" for label in labels.values())
+        depth_counts = Counter(labels.values())
+        scale = node_count if normalize_counts else 1
+        for label, count in depth_counts.items():
+            features[f"wl:{depth}:{label}"] += count / scale
         if depth == iterations:
             break
         labels = {
@@ -144,6 +152,8 @@ def wl_features(graph: GraphSnapshot, iterations: int = 2) -> dict[str, float]:
 class ClassifierResult:
     attack_probability: float
     predicted_label: str
+    novelty_score: float = 0.0
+    out_of_distribution: bool = False
 
 
 class WLGraphSVM:
@@ -158,10 +168,21 @@ class WLGraphSVM:
         self._vectorizer: DictVectorizer | None = None
         self._model: CalibratedClassifierCV | None = None
         self._training_group_ids: frozenset[str] | None = None
+        self._training_unit = "run"
+        self._normalize_wl_counts = True
+        self._ood_threshold = 0.0
 
     @property
     def training_group_ids(self) -> frozenset[str] | None:
         return self._training_group_ids
+
+    @property
+    def training_unit(self) -> str:
+        return self._training_unit
+
+    @property
+    def ood_threshold(self) -> float:
+        return self._ood_threshold
 
     def fit(
         self,
@@ -184,8 +205,11 @@ class WLGraphSVM:
         if folds < 2:
             raise ValueError("calibrated training needs at least two examples per class")
 
+        feature_rows = [
+            wl_features(graph, self.iterations, normalize_counts=True) for graph in graphs
+        ]
         vectorizer = DictVectorizer(sparse=True, sort=True)
-        matrix = vectorizer.fit_transform([wl_features(graph, self.iterations) for graph in graphs])
+        matrix = vectorizer.fit_transform(feature_rows)
         # Newer SciPy versions may build int64 CSR indices for small matrices;
         # SVC requires int32 indices for sparse input.
         matrix.indices = matrix.indices.astype("int32", copy=False)
@@ -211,25 +235,77 @@ class WLGraphSVM:
         self._vectorizer = vectorizer
         self._model = model
         self._training_group_ids = frozenset(group_ids) if group_ids is not None else None
+        self._training_unit = "run"
+        self._normalize_wl_counts = True
+        self._ood_threshold = self._calibrate_ood_threshold(feature_rows, group_ids)
         return self
+
+    @staticmethod
+    def _calibrate_ood_threshold(
+        feature_rows: Sequence[Mapping[str, float]],
+        group_ids: Sequence[str] | None,
+    ) -> float:
+        """Calibrate novelty from features absent in other training groups."""
+        feature_groups: dict[str, set[str]] = {}
+        row_groups = (
+            list(group_ids) if group_ids is not None
+            else [f"row:{index}" for index in range(len(feature_rows))]
+        )
+        for features, group in zip(feature_rows, row_groups):
+            for feature in features:
+                feature_groups.setdefault(feature, set()).add(group)
+
+        scores = []
+        for features, group in zip(feature_rows, row_groups):
+            total = sum(features.values())
+            unseen = sum(
+                value for feature, value in features.items()
+                if not (feature_groups[feature] - {group})
+            )
+            scores.append(unseen / total if total else 0.0)
+
+        # A nearest-rank 95th percentile uses only group-excluded training
+        # examples; novel examples above the observed benign/attack variation
+        # envelope abstain rather than receiving a potentially misleading label.
+        ordered = sorted(scores)
+        percentile_index = math.ceil(0.95 * len(ordered)) - 1
+        return float(ordered[percentile_index])
 
     def predict(self, graph: GraphSnapshot) -> ClassifierResult:
         if self._model is None or self._vectorizer is None:
             raise RuntimeError("classifier must be fit before prediction")
-        vector = self._vectorizer.transform([wl_features(graph, self.iterations)])
+        features = wl_features(
+            graph, self.iterations, normalize_counts=self._normalize_wl_counts,
+        )
+        vocabulary = self._vectorizer.vocabulary_
+        total_feature_mass = sum(features.values())
+        novelty_score = (
+            sum(value for name, value in features.items() if name not in vocabulary)
+            / total_feature_mass
+            if total_feature_mass else 0.0
+        )
+        vector = self._vectorizer.transform([features])
         vector.indices = vector.indices.astype("int32", copy=False)
         vector.indptr = vector.indptr.astype("int32", copy=False)
         probabilities = self._model.predict_proba(vector)[0]
         classes = list(self._model.classes_)
         attack_probability = float(probabilities[classes.index("attack")])
         predicted = str(self._model.predict(vector)[0])
-        return ClassifierResult(attack_probability, predicted)
+        return ClassifierResult(
+            attack_probability,
+            predicted,
+            novelty_score,
+            novelty_score > self._ood_threshold,
+        )
 
     def save(self, path: str | Path) -> None:
         if self._model is None or self._vectorizer is None:
             raise RuntimeError("cannot save an unfitted classifier")
         joblib.dump({
-            "format_version": 2,
+            "format_version": 4,
+            "feature_schema_version": 2,
+            "training_unit": self._training_unit,
+            "ood_threshold": self._ood_threshold,
             "iterations": self.iterations,
             "c": self.c,
             "random_state": self.random_state,
@@ -244,11 +320,36 @@ class WLGraphSVM:
     @classmethod
     def load(cls, path: str | Path) -> "WLGraphSVM":
         artifact = joblib.load(path)
-        if (
-            not isinstance(artifact, dict)
-            or artifact.get("format_version") not in (1, 2)
-        ):
+        if not isinstance(artifact, dict):
             raise ValueError("unsupported classifier artifact")
+        artifact_version = artifact.get("format_version")
+        if artifact_version in (1, 2):
+            normalize_wl_counts = False
+            training_unit = "run"
+        elif (
+            artifact_version == 3
+            and artifact.get("feature_schema_version") == 2
+            and artifact.get("training_unit") == "run"
+        ):
+            normalize_wl_counts = True
+            training_unit = "run"
+            ood_threshold = 0.0
+        elif (
+            artifact_version == 4
+            and artifact.get("feature_schema_version") == 2
+            and artifact.get("training_unit") == "run"
+            and not isinstance(artifact.get("ood_threshold"), bool)
+            and isinstance(artifact.get("ood_threshold"), (int, float))
+            and math.isfinite(artifact["ood_threshold"])
+            and 0.0 <= artifact["ood_threshold"] <= 1.0
+        ):
+            normalize_wl_counts = True
+            training_unit = "run"
+            ood_threshold = float(artifact["ood_threshold"])
+        else:
+            raise ValueError("unsupported or incompatible classifier artifact")
+        if artifact_version in (1, 2):
+            ood_threshold = 0.0
         instance = cls(
             iterations=artifact["iterations"],
             c=artifact["c"],
@@ -256,6 +357,9 @@ class WLGraphSVM:
         )
         instance._vectorizer = artifact["vectorizer"]
         instance._model = artifact["model"]
+        instance._training_unit = training_unit
+        instance._normalize_wl_counts = normalize_wl_counts
+        instance._ood_threshold = ood_threshold
         group_ids = artifact.get("training_group_ids")
         if group_ids is not None:
             if not isinstance(group_ids, list) or any(

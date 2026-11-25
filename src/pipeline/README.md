@@ -138,30 +138,33 @@ The following reusable components are now available:
 - `classifier.wl_svm`: `GraphSnapshot`, deterministic Weisfeiler-Lehman subtree features, and a linear SVM with sigmoid probability calibration. It expects the graph builder to supply categorical trust/provenance node labels and edges; it does not create graphs from raw parser output.
 - `trust_graph.tagging.tag_fields`: creates side-record field tags; the tagging stage attaches per-run lineage and parser forgery findings.
 - `trust_graph.graph.build_trust_graph`: builds parent-child field edges and attaches structural finding nodes.
-- `classifier.train`: trains an artifact from labeled graph JSONL. Each row contains a unique `case_id`, `label` (`benign` or `attack`), and `graph` with `node_labels` and `edges`. Each class needs at least two examples for calibration.
+- `classifier.train`: trains an offline, run-level artifact from labeled graph JSONL. Each row contains a unique `case_id`, `classification_unit: "run"`, `label` (`benign` or `attack`), and `graph` with `node_labels` and `edges`. Each class needs at least two examples for calibration.
 - `pipeline.classifier_gate.classify_and_assess`: applies classifier probability to trusted impact tier (1/5/10) and keeps parser structural density as separate evidence.
 - `pipeline.risk_gate`: `risk = classifier_probability * impact`. Risk below 1 auto-allows only when there are no structural hits and classifier evidence exists; `[1, 5)` requires review; `>=5` requires review with `allow` removed. Any structural hit or missing classifier forces review regardless of the numeric risk score.
 - `pipeline.evidence_panel`: deterministic JSON evidence packet for a reviewer; it does not call an LLM or expose raw untrusted content automatically.
 - `pipeline.evaluation`: computes attack success rate, benign utility, utility under attack, false positive/negative rates, and human approval accuracy from per-case JSONL results.
-- `pipeline.risk_detector.make_risk_detector`: creates an opt-in contextual detector that composes parser/schema checks, tagging, graph construction, SVM, risk assessment, and an optional reviewer callback. If a review-tier case has no callback, it is blocked. Parser/schema failures remain blocked without asking the reviewer.
+- `pipeline.risk_detector.make_risk_detector`: retained as a compatibility guard and raises an error. The WL-SVM is trained on complete runs, not partial interception prefixes, and is not an online decision classifier. Use `parser_detector` for live interception.
 
 Example commands (run from the repository root in PowerShell):
 
 ```powershell
 $env:PYTHONPATH = "src;agentdojo/src"
-python -m classifier.graph_dataset --output-dir .\out\wl_svm_data
+# For a controlled injection-present/absent experiment, also record matched clean replays:
+python scripts/record_attack_traces.py --input .\runs\baseline_openai_gpt-oss-120b .\runs\baseline_llama-3.3-70b-versatile --output .\out\paired_attack --paired-clean-output .\out\paired_clean
+python -m classifier.graph_dataset --benign-traces .\out\paired_clean --attack-runs .\out\paired_attack --require-matched-pairs --require-benchmark-family agentdojo --require-attack-family data_only_syntactic --output-dir .\out\wl_svm_data
 python -m classifier.train .\out\wl_svm_data\graphs_train.jsonl .\out\wl_svm_data\wl_svm.joblib
 python -m classifier.evaluate .\out\wl_svm_data\wl_svm.joblib .\out\wl_svm_data\graphs_test.jsonl
+
+# Test generalization to an attack family not used for training:
+python -m classifier.graph_dataset --benign-traces .\out\paired_clean --attack-runs .\out\paired_attack --require-matched-pairs --holdout-attack-family data_only_semantic --output-dir .\out\wl_svm_holdout_semantic
 
 $env:PYTHONPATH = "src"
 python -m pipeline.evaluation .\evaluation_cases.jsonl
 ```
 
-`classifier.graph_dataset` now creates graph JSONL from the checked-in benign traces and the completed attack runs. It preserves run-level lineage, nested parent-child edges, structural finding nodes, and forgery labels. Related suite/task groups are kept together in train or test to reduce variant leakage. The generated data is reproducible and belongs under `out/` or `runs/`, not source control. Evaluation rows require `case_id`, `label`, `task_success`, and `flagged`; attack rows also require `attack_success`. Optional `human_decision` is `allow`, `deny`, or `evidence_only`. Human approval accuracy counts `allow` as correct for benign cases and any non-allow action as correct for attack cases.
+`classifier.graph_dataset` creates one complete graph per labeled trace, preserves raw-result lineage and explicit assistant-call batches, and splits related suite/task groups together. It distinguishes `benchmark_family` from `attack_family`; the vendored AgentDojo `data_only_*` attacks are attack families within AgentDojo, not a separate benchmark corpus. Matched clean replays use the same recorded tool-call sequence in the default environment; they support injection-presence experiments only, not natural agent utility or attack-success claims. Use `--holdout-attack-family`, `--holdout-benchmark-family`, and `--holdout-source` to test grouped generalization; the requested holdout must exist, and all variants of a task remain together. Generated data belongs under `out/` or `runs/`, not source control. Per-decision metrics are invalid when the only label is the enclosing run label; `classifier.per_decision` rejects that evaluation.
 
-The classifier/gate path is available as an opt-in detector factory; the default `parser_detector` example still uses parser/schema policy only. Effective risk enforcement depends on a trained model and a reviewer callback for review-tier cases. Current TVM impact tiers are policy defaults and current field classes are all `unclassified`, so those fields conservatively tag as `UT`. Post-hop review can withhold a result from the agent but cannot undo a side effect the tool has already completed.
-
-To opt in after training a model, construct the executor with `make_risk_detector(WLGraphSVM.load("wl_svm.joblib"), reviewer=your_review_callback)`. The live smoke script accepts the same wiring with `--risk-model .\out\wl_svm_data\wl_svm.joblib`. The callback receives `(RiskAssessment, EvidencePanel)` and returns `allow`, `deny`, or `evidence_only`. Keep the matrix's current `unclassified` values as untrusted until the project has evidence to assign trusted provenance; the current checked-in matrix has no explicit trusted field annotations. If no reviewer callback is provided, moderate/high risk is denied. Post-hop review controls only whether the response reaches the agent; it cannot reverse an already executed side effect.
+The run-level model is used only for offline training and evaluation. `--risk-model` is rejected by the live smoke script because a partial graph at an interception is not the complete-run input used in training. The default live `parser_detector` path remains unchanged. Current TVM impact tiers are policy defaults and current field classes are `unclassified`, so those fields conservatively tag as `UT`.
 
 ## Testing and validation
 

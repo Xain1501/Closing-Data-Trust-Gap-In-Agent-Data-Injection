@@ -1,5 +1,8 @@
 # Tagging and lineage: implementation report
 
+> Historical integration report. The WL-SVM is now run-level/offline-only;
+> live interception continues to use `parser_detector`.
+
 ## Scope
 
 This report describes the implementation on `zain/experimental`. It follows data from the AgentDojo clone adapter through parsing, tagging, the per-run value store, and argument lineage on a later tool call.
@@ -21,7 +24,7 @@ The current default tagging rule is:
 | Tagging stage | `src/pipeline/tagging_stage.py`, `src/trust_graph/tagging.py` | Parsed arguments or true result fields, plus the detector context | Creates side-record `FieldTag`s. Tags do not contain raw values. For text results, even JSON-looking text is represented as one opaque external leaf for lineage. |
 | Per-run state | `src/provenance/run_state.py` | Prompt, tags, normalized SYSTEM/EXTERNAL string leaves | Keeps values and tags in bounded memory for the current run, indexed by interception ID. Overflow or missing parse visibility is recorded as incomplete state. |
 | Lineage | `src/provenance/lineage.py` | Current string arguments, prompt, earlier SYSTEM/EXTERNAL leaves | Marks an argument `USER_MATCH`, `SYSTEM_LINK`, `EXTERNAL_LINK`, `UNLINKED`, or `BELOW_MIN`. Links carry the source leaf's `tag_id` as evidence. Results from the same tool-call batch cannot be used as earlier sources. |
-| Consumer | `src/pipeline/clone_parser_detector.py` or `src/pipeline/risk_detector.py` | Parser analysis and tags | The default parser detector records tags/lineage but still decides from parser policy. The opt-in risk detector includes tags in its trust graph and risk assessment. |
+| Consumer | `src/pipeline/clone_parser_detector.py`; offline consumer `src/classifier/graph_dataset.py` | Parser analysis and tags | The live parser detector records tags/lineage but still decides from parser policy. Complete-run graphs use the same tags/lineage for offline training and evaluation. |
 
 ## Example: a result value reaches a later tool argument
 
@@ -155,7 +158,7 @@ The source tag ID resolves to the post-hop field tag stored under `post-102`. Th
 
 ### 4. Decision and cleanup
 
-With `parser_detector`, the parser decision is returned as before; lineage is recorded for inspection but does not change that detector's allow/block rule. With `make_risk_detector`, tags and lineage are features in the trust graph and risk assessment. The checked-in matrix now marks selected resource selectors and side-effect controls as `AUTHORITY_ARG` for 58 of its 70 entries; the 12 entries without arguments have empty lists. These assignments are an initial policy mapping and should be reviewed against the intended risk policy.
+With `parser_detector`, the parser decision is returned as before; lineage is recorded for inspection but does not change that detector's allow/block rule. Tags and lineage are used to build complete-run graphs for offline classifier training/evaluation. `make_risk_detector` is retained as a compatibility guard and rejects per-interception use of the run-level classifier. The checked-in matrix marks selected resource selectors and side-effect controls as `AUTHORITY_ARG` for 58 of its 70 entries; the 12 entries without arguments have empty lists. These assignments are an initial policy mapping and should be reviewed against the intended risk policy.
 
 At the end of a normal AgentDojo turn sequence, the adapter calls the detector's `end_run` hook when available. This clears the run's prompt, external strings, and tags. Wrapping detectors should expose/forward that hook or explicitly end the run; the trace recorder does so explicitly.
 
@@ -163,7 +166,7 @@ At the end of a normal AgentDojo turn sequence, the adapter calls the detector's
 
 - Structured results use their raw-object skeleton for true field paths; strings and scalar results are opaque leaves.
 - Counted structural findings attach to true result fields through `FieldTag.has_forgery` (using raw result fields for post-hop scans when available).
-- The `index_values` API keeps normalized SYSTEM and EXTERNAL string leaves in bounded per-run state. An incomplete parse, an oversized skeleton, or storage overflow is reflected in run state; the risk detector review-routes high-impact cases when lineage state is incomplete.
+- The `index_values` API keeps normalized SYSTEM and EXTERNAL string leaves in bounded per-run state. An incomplete parse, an oversized skeleton, or storage overflow is reflected in run state. The retired composed detector used to review-route high-impact incomplete runs; the run-level WL-SVM is no longer used for that live decision.
 - Lineage checks in order: short-value guard, bounded prompt match, exact SYSTEM-field match, then exact or bounded-substring EXTERNAL match. All matching applies the identifier boundary rule from the design.
 - Lineage uses normalized text matching, not model-internal provenance. It can miss paraphrased, encoded, split, or value-free attacks, and substring matching can produce imperfect attribution.
 - `ProfileEntry` supports approved path overrides in the tagger API, but profile loading and profile selection are not yet wired into `analyze_and_tag`. The current default SYSTEM-structure/EXTERNAL-leaf rule is active.
@@ -176,7 +179,7 @@ The focused clone-to-lineage suite passed **624 tests, with 6 expected failures*
 
 The current full suite passes **628 tests, with 6 expected failures**. The graph-data builder produced 104 trace graphs (80 train, 24 test; 47/33 benign/attack in train and 12/12 in test), keeping each suite/task group in one split. A locally trained WL-SVM loaded successfully and the held-out fixture report was: accuracy 0.958, attack recall 0.917, ROC-AUC 0.986, and PR-AUC 0.988. These are fixture results, not live-provider claims; the split is group-aware but the parser’s structural findings are also graph features, so an ablation is still needed before treating the score as evidence of provenance-only detection.
 
-The graph path is now: tagged nested fields → parent/child edges → lineage edges → forgery labels and finding nodes → WL features → calibrated SVM → risk gate. `classifier.graph_dataset` creates the graph JSONL, `classifier.train` creates the model artifact, and `classifier.evaluate` checks a held-out split. `scripts/live_clone_parser_smoke.py --risk-model <model>` selects the composed detector for a live run.
+The offline graph path is: tagged nested fields → parent/child edges → lineage edges → forgery labels and finding nodes → WL features → calibrated SVM → run-level evaluation. `classifier.graph_dataset` creates the graph JSONL, `classifier.train` creates the model artifact, and `classifier.evaluate` checks a held-out split. The live smoke script remains parser-only; a run-level model cannot be used to score partial interception graphs.
 
 The trained artifact is local under `out/wl_svm_data/wl_svm.joblib` and is intentionally ignored by Git; it must be regenerated when the source traces or feature schema change. Loading it with `joblib` must be restricted to code-owned artifacts because joblib uses pickle serialization. The current SVM uses ordinary stratified folds inside the training split; the external held-out split is group-separated, but calibration folds are not group-aware. For publication-quality results, add group-aware cross-validation and a provenance/finding ablation.
 
@@ -184,4 +187,4 @@ The forgery path now scans post-hop values from the raw result skeleton when ava
 
 An end-to-end regression test uses deliberately broken JSON formatting that exposes a fake `account` sibling from a real `body` string; it verifies the `body` tag is marked forged and the later `account` argument links back to that forged source. This strengthens field attribution for the tested patterns and supported structured results. Forgery detection still uses heuristics and is not guaranteed for every encoding, format, or value-free attack.
 
-Passing local tests does not establish correctness for every live provider or tool formatter. In particular, profile loading is not wired automatically, and the default `parser_detector` records lineage but does not use it to alter its decision. Use `make_risk_detector` if lineage is meant to feed the risk graph. Matrix authority-argument assignments are initial policy choices and need domain review. Text matching can still miss transformed or paraphrased values.
+Passing local tests does not establish correctness for every live provider or tool formatter. In particular, profile loading is not wired automatically, and the default `parser_detector` records lineage but does not use it to alter its decision. The classifier is offline-only under the selected run-level design. Matrix authority-argument assignments are initial policy choices and need domain review. Text matching can still miss transformed or paraphrased values.

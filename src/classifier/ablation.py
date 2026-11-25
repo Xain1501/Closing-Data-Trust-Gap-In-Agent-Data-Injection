@@ -38,6 +38,7 @@ def _write_jsonl(path: Path, graphs: list[GraphSnapshot], labels: list[str], gro
                 "case_id": f"{split}-{index}",
                 "label": label,
                 "split": split,
+                "classification_unit": "run",
                 "group_id": group,
                 "graph": {"node_labels": dict(graph.node_labels), "edges": [list(edge) for edge in graph.edges]},
             }
