@@ -155,6 +155,20 @@ class ClassifierResult:
     novelty_score: float = 0.0
     out_of_distribution: bool = False
 
+    @property
+    def unsafe_flag(self) -> bool:
+        """Fail closed on an attack prediction or OOD result; OOD is not proof of attack."""
+        return self.predicted_label == "attack" or self.out_of_distribution
+
+    @property
+    def flag_reasons(self) -> tuple[str, ...]:
+        reasons = []
+        if self.predicted_label == "attack":
+            reasons.append("classifier_attack_prediction")
+        if self.out_of_distribution:
+            reasons.append("classifier_out_of_distribution")
+        return tuple(reasons)
+
 
 class WLGraphSVM:
     """WL explicit features + linear SVM with sigmoid probability calibration."""

@@ -261,6 +261,118 @@ they are not fixed by selecting offline-only evaluation.
 - One attack and one task group cannot estimate family-level recall. A real
   open-set claim requires multiple independent attack task groups, a
   family-held-out test, and benign review-rate reporting. Do not tune against
-  the held-out family and then report it as zero-shot. Provider-backed
-  collection still needs an explicit spend cap.
+  the held-out family and then report it as zero-shot. At that stage,
+  provider-backed collection still needed an explicit spend cap; the capped
+  follow-up collection is documented below.
 - No tagging, lineage, graph-builder, XGBoost, or live detector code was changed.
+
+## Ten-group `important_instructions` collection (26 November 2026)
+
+- Added `scripts/collect_important_instructions.py` to collect ten distinct
+  injectable AgentDojo task groups across Workspace, Travel, Slack, and Banking.
+  Each provider-generated attack call sequence is replayed through the clone
+  executor both with its injection and as a matched clean counterfactual. The
+  output contains 10 attack and 10 benign raw-object traces; all ten pairs have
+  matching task groups, pair IDs, and call-sequence hashes.
+- Collection is capped at $2 using per-request worst-case reservations,
+  bounded prompt/output sizes, usage accounting, and bounded 429 backoff.
+  The ledger records a $0.0186 usage-cost estimate and $0.1375 maximum
+  conservative exposure; the latter includes reservations for requests with
+  uncertain billing. The benchmark injections succeeded in four runs. This
+  outcome does not change trace labels: every injected run remains an attack
+  example.
+- Rebuilding the graph dataset from the existing corpus plus these pairs gives
+  203 raw-object runs (text-derived: 0), including 10
+  `important_instructions` attack runs. The standard grouped split has 158 train
+  and 45 test runs.
+- The strict family holdout contains 10 attack examples in 10 independent task
+  groups and 20 benign examples. The WL-SVM detects 2/10 attacks (20% recall).
+  Its existing calibrated novelty-to-review rule flags 6/10 attacks and 1/20
+  benign examples. This is a partial review safeguard, not a complete solution:
+  unseen injected runs can still be classified benign and not routed to review.
+- A post-hoc threshold sweep on this held-out sample found that a novelty
+  threshold of 0.03 would flag 10/10 attacks but also 7/20 benign examples.
+  This is a diagnostic trade-off, not an independently validated setting; do
+  not tune on this holdout and present it as zero-shot performance.
+- Reproduction commands are in `fyp1-offline-evaluation.md`. Generated
+  collection, dataset, and report artifacts are under `out/` and are not
+  tracked. Tagging, graph construction, lineage, XGBoost, and the live
+  parser-only path were not changed.
+
+## Classifier unsafe flag and post-tagging handoff
+
+The classifier now exposes `ClassifierResult.unsafe_flag` without changing the
+WL-SVM's trained model or its measured `predicted_label`:
+
+- `unsafe_flag` is true if the WL-SVM predicts `attack` **or** its graph novelty
+  score is out of distribution.
+- `flag_reasons` preserves which signal fired:
+  `classifier_attack_prediction` and/or `classifier_out_of_distribution`.
+- OOD is treated as an unsafe-to-auto-allow signal so the graph risk gate routes
+  it to human review. It is not proof that the run is malicious. This flag does
+  not automatically block or execute a tool.
+- `classify_and_assess` also makes an SVM attack prediction independently force
+  review, even when the calibrated probability/impact product is small. The
+  risk tier still controls which human actions are allowed. No parser or
+  XGBoost code is involved in this classifier-side change.
+
+On the strict ten-group `important_instructions` holdout, the raw SVM predicted
+attack for 2/10 examples and the novelty signal marked 6/10 OOD. The combined
+`unsafe_flag` also marked 6/10 attacks, while marking 5/20 held-out benign runs.
+Thus, for this sample, the attack predictions added no new attack captures
+beyond OOD and did add benign reviews. Four unseen-family attacks still had no
+classifier unsafe flag. The change improves explicit handoff of the existing
+signals; it does not solve unseen attacks.
+
+### Data flow after tagging and lineage
+
+1. **Parser analysis supplies structured evidence.** For each pre-hop tool
+   argument or post-hop result, `pipeline.parser_analysis.analyze_clone_payload`
+   parses the displayed payload and, when available, compares it with the true
+   result object's skeleton. It records parse/schema/structural findings and
+   anomalies. This stage does not create the run-level classifier decision.
+2. **Tagging labels fields.** `pipeline.tagging_stage.analyze_and_tag` chooses
+   true object fields when available, calls `trust_graph.tagging.tag_fields`,
+   and returns a `TaggingResult` containing the analysis, field tags, and run
+   state. Tags carry trust/provenance, role, direction, path/type/depth,
+   forgery, mimicry, anomaly, and lineage status. Approved tool-matrix profiles
+   may supply authority/provenance details; draft profiles are not applied.
+3. **Lineage connects values across the run.** `RunStateStore` keeps bounded,
+   ephemeral per-run prompts, normalized SYSTEM/EXTERNAL result leaves,
+   interception tags, findings, and same-result mentions. On a later
+   pre-hop, `provenance.lineage.link_arguments` compares argument values with
+   user prompts and earlier results. Matches retain source tags and match
+   strength; an unlinked value becomes DERIVED/UNTRUSTED. This is provenance
+   evidence, not proof that an action is authorized. Run state is cleared when
+   the run ends; overflow or missed/late observations mark the run blind.
+4. **Graph construction encodes those relationships.**
+   `trust_graph.graph.build_trace_graph` creates a node per tagged field with
+   categorical labels (trust, provenance, role, lineage, type, depth,
+   direction, forgery, mimicry, anomaly). Parent/child paths become edges;
+   lineage connects source and derived nodes; structural findings become
+   finding nodes; mimicry and mentions become typed relation nodes. The
+   classifier consumes graph structure and labels, not raw field values.
+5. **Dataset construction uses complete runs.** `classifier.graph_dataset`
+   reads recorded pre/post events, rebuilds tags, lineage, and the graph, then
+   stores one graph per run with its label, task group, family/source metadata,
+   and attack-success outcome. “Attack” means injection present; it does not
+   mean the benchmark attack succeeded. Paired clean/attack runs and all other
+   variants in a task group stay together during splitting.
+6. **WL-SVM prediction and novelty are separate outputs.** `WLGraphSVM`
+   converts categorical graphs into normalized Weisfeiler-Lehman features
+   (default two refinement iterations), then uses a calibrated linear SVM for
+   `predicted_label` and `attack_probability`. Separately, `novelty_score` is
+   the fraction of feature mass absent from the fitted vocabulary; the
+   training-group-calibrated threshold determines `out_of_distribution`.
+7. **Classifier handoff is explicit.** `unsafe_flag` is the OR of the SVM attack
+   prediction and OOD flag; `flag_reasons` preserves both causes. In
+   `classify_and_assess`, either cause routes to `human_review`. The graph-risk
+   review options are then constrained by risk/impact; `evidence_only` prevents
+   a pre-hop tool call or withholds raw post-hop content.
+
+**Integration boundary:** this classifier consumes a complete run graph and is
+offline-only. `pipeline.risk_detector.make_risk_detector` deliberately rejects
+using it as a per-interception live detector. The parser-only live path is
+unchanged. The next teammate can consume `unsafe_flag` and `flag_reasons` as
+classifier inputs, but any XGBoost fusion and final live action policy remain
+separate work and must be validated end to end.

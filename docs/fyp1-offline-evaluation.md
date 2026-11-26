@@ -502,3 +502,93 @@ string-valued tool-function field, preserving the prompt and result text while
 marking the reconstructed observations as text-derived. No tagging code or
 primary v4 training input was changed.
 
+## Ten-group `important_instructions` zero-shot holdout (26 November 2026)
+
+This is the follow-up to the earlier one-example holdout above. The original
+one-example result remains historical; use the ten-group result here when
+discussing this attack family. It is still an offline benchmark experiment,
+not evidence that arbitrary unseen attacks are reliably detected.
+
+The capped collector generated ten distinct injected AgentDojo runs across
+Workspace, Travel, Slack, and Banking, plus a matched clean replay for each.
+Every pair has the same task-group ID, matched-pair ID, and tool-call sequence
+hash. The collected traces retain raw tool objects (`text_derived: 0`); four
+of the ten benchmark injections succeeded according to AgentDojo's security
+check. Injection presence, not attack success, defines the attack label.
+
+To reproduce the collection from a fresh output directory:
+
+```powershell
+$env:PYTHONPATH = ".;src;agentdojo/src;scripts"
+python scripts/collect_important_instructions.py
+```
+
+The default run enforces a $2 cost ceiling with per-request worst-case
+reservations, limited request sizes, output-token caps, usage tracking, disabled
+client retries, and bounded backoff for provider rate limits. If interrupted,
+continue from its ledger and completed pairs with:
+
+```powershell
+python scripts/collect_important_instructions.py --resume
+```
+
+Groq's current model pricing is recorded in the ledger at
+<https://console.groq.com/docs/models>. For this run, returned usage gives an
+estimated $0.0186 cost; the ledger's $0.1375 conservative maximum exposure also
+reserves for requests with uncertain billing. Both are below the authorized cap.
+
+Build the combined raw-object dataset and run the strict family holdout:
+
+```powershell
+$env:PYTHONPATH = ".;src;agentdojo/src"
+python -m classifier.graph_dataset `
+  --benign-traces tests\fixtures\traces\benign `
+    out\important_instructions_collection_20261126\clean_traces_raw `
+  --attack-runs out\attack_traces_raw `
+    out\important_instructions_collection_20261126\attack_traces_raw `
+  --suites travel workspace slack banking `
+  --require-attack-family important_instructions `
+  --output-dir out\important_instructions_10group_dataset
+
+python scripts/evaluate_unseen_attack_family.py `
+  --dataset-dir out\important_instructions_10group_dataset `
+  --attack-family important_instructions `
+  --output-dir out\unseen_family_important_instructions_10groups
+```
+
+The combined dataset contains 203 usable raw-object runs (158 train, 45
+standard test; 10 other traces had no tool calls and were skipped). The strict
+evaluation moves all 10 task groups containing this attack family, including
+their matched benign rows, out of training. The resulting family attack recall
+is **2/10 (20%)**. The pre-existing novelty-to-review rule captures **6/10
+attacks**, with **1/20 held-out benign runs** also sent to review. Training/test
+group leakage is false.
+
+A diagnostic threshold sweep on these same held-out runs found that threshold
+0.03 would route 10/10 attacks to review but also 7/20 benign runs. This
+post-hoc operating point is not independently validated and must not be used to
+claim zero-shot performance. The calibrated default remains unchanged. The
+evidence shows partial OOD-to-review protection, not a complete unseen-attack
+solution; four held-out attacks were not flagged by the default review rule.
+Keep this classifier offline-only, and do not describe an unflagged unfamiliar
+run as definitively benign. No tagging, graph construction, lineage, XGBoost,
+or live parser-only code was changed.
+
+### Explicit classifier unsafe flag
+
+The classifier now exposes `ClassifierResult.unsafe_flag`, true when either the
+WL-SVM predicts `attack` or the run is OOD; `flag_reasons` records which
+classifier signal fired. `classify_and_assess` routes either signal to human
+review, including an attack prediction with low calibrated probability. This
+does not convert OOD into proof of an attack, automatically block a call, or
+wire the complete-run classifier into live interception.
+
+On the same strict holdout, the combined classifier flag marked **6/10 attacks**
+and **5/20 benign runs**. The SVM's two attack predictions were already among
+the six OOD-flagged attacks, so they added no new attack captures in this small
+sample and did add four benign reviews beyond the OOD-only signal. Four unseen
+attacks still received no classifier flag. The result is a clearer conservative
+handoff for a downstream decision-maker, not a complete unseen-attack fix.
+The updated report is
+`out/unseen_family_important_instructions_classifier_flag/FINAL_REPORT.json`.
+
