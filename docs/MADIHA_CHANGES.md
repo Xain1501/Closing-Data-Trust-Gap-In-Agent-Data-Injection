@@ -3,7 +3,7 @@
 For: Madiha (and any agent working on `src/classifier`, `src/pipeline/classifier_gate.py`, `src/pipeline/risk_gate.py`).
 Base: `zain/experimental` with the anomaly check (commit "Parser: anomaly check for unknown-format structure") or later.
 
-## Handoff status (25 November 2026)
+## Handoff status (26 November 2026)
 
 | Area | Owner | State |
 |---|---|---|
@@ -13,10 +13,10 @@ Base: `zain/experimental` with the anomaly check (commit "Parser: anomaly check 
 | **Dataset builder** `src/classifier/graph_dataset.py` | **Madiha** | current offline run-level dataset pipeline implemented; additional independent benchmark data remains |
 | **WL-SVM** `src/classifier/wl_svm.py` (features, calibration) | **Madiha** | current offline features and grouped calibration implemented |
 | **Evaluation** `train.py`, `evaluate.py`, `ablation.py`, `robustness.py` | **Madiha** | run-level validation, ablations, baselines, and grouped intervals implemented |
-| **Risk gate** `src/pipeline/risk_gate.py`, `classifier_gate.py` | **Madiha** | counted-hit policy plus calibrated WL-feature novelty signal that forces review |
-| Data and reports (`out/`, `docs/wl-svm-teammate-report.md`, `docs/fyp1-offline-evaluation.md`) | **Madiha** | v4 primary results and supplemental controls documented; local v5 handoff bundle prepared for private sharing |
+| **Risk gate** `src/pipeline/risk_gate.py`, `classifier_gate.py` | **Madiha** | counted-hit policy plus calibrated WL-feature novelty signal; known-feature unseen attacks can still evade it |
+| Data and reports (`out/`, `docs/wl-svm-teammate-report.md`, `docs/fyp1-offline-evaluation.md`) | **Madiha** | v4 results plus one new `important_instructions` pair; strict family holdout remains an experimental check |
 
-The classifier/data implementation for the current offline run-level experiment includes a conservative, group-calibrated novelty-to-review path. This is not a reliable unseen-attack classifier: the semantic-family holdout flags only 17/56 attacks and also routes 17/63 benign runs to review. Novelty means "not represented by the training feature distribution," not "malicious." The detector is only wired into the offline run-level graph gate; live interception remains parser-only. Remaining research work includes more natural benign traces and independent data-injection attack families. The `out/new_attack_runs` task-ID ambiguity is resolved below: those traces are direct user-goal controls, not valid new data-injection positives. Share the local v5 handoff archive only through an approved private channel. The primary v4 findings and supplemental-control limitations are in `docs/fyp1-offline-evaluation.md`. **Do not change** `graph.py`, `tagging.py`, `lineage.py`, `run_state.py` or `src/parser/*` without agreeing it with Tasbiha.
+The offline run-level model has a conservative group-calibrated novelty-to-review path, but it does not solve unseen attacks whose graph features are already represented in training. The new `important_instructions` trace and its matched clean trace are one task group, currently present in the training split; the current `FINAL_REPORT.json` has no held-out attack families. That result cannot validate zero-shot performance for this family. The model is offline-only; live interception remains parser-only. More independent attack groups and natural benign runs remain necessary. The `out/new_attack_runs` task-ID ambiguity is resolved below: those traces are direct-goal controls, not valid new data-injection positives. Share the local v5 handoff archive only through an approved private channel. The primary v4 findings and supplemental-control limitations are in `docs/fyp1-offline-evaluation.md`. **Do not change** `graph.py`, `tagging.py`, `lineage.py`, `run_state.py` or `src/parser/*` without agreeing it with Tasbiha.
 
 ## Timing
 
@@ -175,10 +175,9 @@ they are not fixed by selecting offline-only evaluation.
 - Fixed `ablation.py` to preserve the required `classification_unit: "run"`
   metadata in its generated JSONL. The parser-only baseline now counts leaf
   forgery as suspicious.
-- Added an opt-in fail-closed risk-policy input for an independently supplied
-  out-of-distribution signal. This is not an OOD detector, is not wired into the
-  live parser-only path, and must not be presented as automatic unseen-attack
-  detection.
+- Added a group-calibrated WL-feature novelty signal that routes novel graphs to
+  review in the offline graph gate. It can miss unseen attacks composed of
+  familiar graph features and is not wired into the live parser-only path.
 - Added `scripts/record_clean_agentdojo.py` to capture natural no-injection
   model runs through the clone executor, with raw results and stable call-sequence
   hashes. Using the locally configured Groq GPT-OSS model, eight runs across all
@@ -221,3 +220,47 @@ they are not fixed by selecting offline-only evaluation.
 - Reproduce with `scripts/build_direct_goal_challenge.py` and
   `scripts/evaluate_direct_goal_controls.py`. No tagging, lineage, graph-builder,
   XGBoost, or provider code was changed, and no new provider calls were made.
+
+## New attack family and strict holdout (26 November 2026)
+
+- Added one raw-object `important_instructions` attack trace and its matched
+  clean counterfactual. The pair shares `agentdojo:workspace:user_task_0` and
+  must always stay in the same split.
+- `out/fyp1_final_with_unseen/FINAL_REPORT.json` reports 185 raw-object traces,
+  65.0% attack recall, 72.2% attack precision, and five false positives on a
+  43-run test split (20 attacks, 23 benign). The report manifest says
+  `holdout_attack_families: []`; the `important_instructions` attack and clean
+  pair are in training. Therefore those aggregate metrics are not a zero-shot
+  result for the new family.
+- When this pair is included in training, the fitted classifier predicts both
+  traces benign (attack probabilities about 0.292 and 0.240), and neither has
+  unseen WL-feature mass. The strict family-held-out run below tests a model
+  trained without the pair and does flag the attack for review. The categorical
+  graph encodes some differences (including external links and anomaly labels),
+  but one pair is not enough to establish that these signals generalize.
+- Added `scripts/evaluate_unseen_attack_family.py` to move every group
+  containing a selected attack family, including paired clean runs, out of
+  training and into test, retrain the model, and emit a group-disjoint report.
+  Reproduce with:
+
+  ```powershell
+  $env:PYTHONPATH = "src"
+  python scripts/evaluate_unseen_attack_family.py `
+    --dataset-dir .\out\fyp1_final_with_unseen `
+    --attack-family important_instructions `
+    --output-dir .\out\unseen_family_important_instructions
+  ```
+
+- Strict zero-shot evaluation on this data gives classifier family recall 0/1,
+  but the calibrated novelty signal flagged the held-out attack for review
+  (1/1). Neither the matched clean counterfactual nor the other benign run in
+  its held-out task group was flagged (0/2). The attack's novelty score was
+  0.1085 against a 0.0990 threshold; the matched clean score was 0.0076.
+  This demonstrates a review safeguard on one trace, not learned family
+  recognition or reliable generalization.
+- One attack and one task group cannot estimate family-level recall. A real
+  open-set claim requires multiple independent attack task groups, a
+  family-held-out test, and benign review-rate reporting. Do not tune against
+  the held-out family and then report it as zero-shot. Provider-backed
+  collection still needs an explicit spend cap.
+- No tagging, lineage, graph-builder, XGBoost, or live detector code was changed.
