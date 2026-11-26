@@ -67,4 +67,3 @@ def test_family_holdout_requires_family_and_both_labels():
 
     with pytest.raises(ValueError, match="is absent"):
         prepare_family_holdout(train, test, "new_family")
-
