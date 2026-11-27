@@ -34,6 +34,6 @@ def classify_and_assess(
         classifier_out_of_distribution=(
             classifier_out_of_distribution or prediction.out_of_distribution
         ),
-        classifier_predicted_attack=prediction.predicted_label == "attack",
+        classifier_score_affects_risk=False,
     )
     return GraphRiskResult(prediction, risk)

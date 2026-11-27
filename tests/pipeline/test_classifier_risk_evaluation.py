@@ -100,17 +100,20 @@ def test_wl_svm_fits_and_returns_calibrated_attack_probability():
     assert attack.attack_probability > benign.attack_probability
 
 
-def test_classifier_unsafe_flag_combines_attack_prediction_and_ood():
+def test_classifier_outputs_keep_svm_and_ood_signals_separate():
     attack = ClassifierResult(0.7, "attack")
     unfamiliar = ClassifierResult(0.2, "benign", 0.3, True)
     benign = ClassifierResult(0.1, "benign")
 
-    assert attack.unsafe_flag
-    assert attack.flag_reasons == ("classifier_attack_prediction",)
-    assert unfamiliar.unsafe_flag
-    assert unfamiliar.flag_reasons == ("classifier_out_of_distribution",)
-    assert not benign.unsafe_flag
-    assert benign.flag_reasons == ()
+    assert attack.svm_attack_flag
+    assert not attack.ood_flag
+    assert not attack.review_flag
+    assert not unfamiliar.svm_attack_flag
+    assert unfamiliar.ood_flag
+    assert unfamiliar.review_flag
+    assert not benign.svm_attack_flag
+    assert not benign.ood_flag
+    assert not benign.review_flag
 
 
 def test_wl_svm_artifact_retains_training_groups(tmp_path):
@@ -143,12 +146,13 @@ def test_unseen_graph_features_abstain_and_force_review():
 
     assert prediction.novelty_score > model.ood_threshold
     assert prediction.out_of_distribution
-    assert prediction.unsafe_flag
+    assert prediction.ood_flag
+    assert prediction.review_flag
     assert result.assessment.route == "human_review"
     assert "classifier_out_of_distribution" in result.assessment.review_reasons
 
 
-def test_classifier_attack_prediction_forces_review_even_at_low_probability(monkeypatch):
+def test_classifier_attack_prediction_is_evidence_only(monkeypatch):
     labels = ["benign"] * 6 + ["attack"] * 6
     graphs = [_graph(label == "attack", index) for index, label in enumerate(labels)]
     model = WLGraphSVM(iterations=1).fit(
@@ -157,14 +161,18 @@ def test_classifier_attack_prediction_forces_review_even_at_low_probability(monk
     monkeypatch.setattr(
         model,
         "predict",
-        lambda graph: ClassifierResult(0.01, "attack"),
+        lambda graph: ClassifierResult(0.99, "attack"),
     )
 
-    result = classify_and_assess(_graph(False, 100), model, 0.0, 1)
+    result = classify_and_assess(_graph(False, 100), model, 0.0, 10)
 
-    assert result.classifier.unsafe_flag
-    assert result.assessment.route == "human_review"
-    assert "classifier_attack_prediction" in result.assessment.review_reasons
+    assert result.classifier.svm_attack_flag
+    assert result.classifier.attack_probability == pytest.approx(0.99)
+    assert not result.classifier.ood_flag
+    assert result.assessment.classifier_score == pytest.approx(0.99)
+    assert result.assessment.risk_score == 0.0
+    assert result.assessment.route == "auto_allow"
+    assert "classifier_attack_prediction" not in result.assessment.review_reasons
 
 
 def test_known_graph_is_not_marked_ood_by_feature_vocabulary():
@@ -226,23 +234,11 @@ def test_explicit_out_of_distribution_signal_forces_review_even_at_low_score():
     assert result.review_reasons == ("classifier_out_of_distribution",)
 
 
-def test_classifier_attack_prediction_forces_review_even_at_low_risk():
-    result = assess_risk(
-        0.0,
-        0.01,
-        1,
-        classifier_predicted_attack=True,
-    )
-
-    assert result.route == "human_review"
-    assert result.review_reasons == ("classifier_attack_prediction",)
-
-
 def test_out_of_distribution_signal_requires_boolean():
     with pytest.raises(ValueError, match="must be a boolean"):
         assess_risk(0.0, 0.0, 1, classifier_out_of_distribution=1)
     with pytest.raises(ValueError, match="must be a boolean"):
-        assess_risk(0.0, 0.0, 1, classifier_predicted_attack=1)
+        assess_risk(0.0, 0.0, 1, classifier_score_affects_risk=1)
 
 
 def test_review_resolution_controls_pre_execution_and_post_release():
@@ -389,19 +385,20 @@ def test_evaluation_reports_metrics_by_attack_family_and_collection_mode(tmp_pat
 
     assert metrics["subgroup_metrics"]["attack_family"]["unseen-family"]["examples"] == 2
     assert "out_of_distribution" in metrics
-    expected_flags = [
-        model.predict(_graph(label == "attack", 100 + index)).unsafe_flag
+    expected_ood_flags = [
+        model.predict(_graph(label == "attack", 100 + index)).ood_flag
         for index, label in enumerate(["attack", "attack", "benign", "benign"])
     ]
-    unsafe_metrics = metrics["classifier_unsafe_flag"]
-    assert unsafe_metrics["flagged_examples"] == sum(expected_flags)
-    assert unsafe_metrics["flagged_rate"] == pytest.approx(sum(expected_flags) / 4)
-    assert unsafe_metrics["attack_capture_rate"] == pytest.approx(
-        sum(expected_flags[:2]) / 2
+    ood_metrics = metrics["review_route_ood_only"]
+    assert ood_metrics["flagged_examples"] == sum(expected_ood_flags)
+    assert ood_metrics["flagged_rate"] == pytest.approx(sum(expected_ood_flags) / 4)
+    assert ood_metrics["attack_capture_rate"] == pytest.approx(
+        sum(expected_ood_flags[:2]) / 2
     )
-    assert unsafe_metrics["benign_review_rate"] == pytest.approx(
-        sum(expected_flags[2:]) / 2
+    assert ood_metrics["benign_review_rate"] == pytest.approx(
+        sum(expected_ood_flags[2:]) / 2
     )
+    assert "svm_attack_flag" in metrics
     assert metrics["subgroup_metrics"]["collection_mode"]["matched_clean_counterfactual"]["label_counts"] == {
         "attack": 0,
         "benign": 2,

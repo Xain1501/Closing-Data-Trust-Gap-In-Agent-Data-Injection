@@ -299,30 +299,29 @@ they are not fixed by selecting offline-only evaluation.
   tracked. Tagging, graph construction, lineage, XGBoost, and the live
   parser-only path were not changed.
 
-## Classifier unsafe flag and post-tagging handoff
+## Classifier signals and post-tagging handoff
 
-The classifier now exposes `ClassifierResult.unsafe_flag` without changing the
-WL-SVM's trained model or its measured `predicted_label`:
+The classifier exposes separate signals without changing the WL-SVM model or
+OOD threshold:
 
-- `unsafe_flag` is true if the WL-SVM predicts `attack` **or** its graph novelty
-  score is out of distribution.
-- `flag_reasons` preserves which signal fired:
-  `classifier_attack_prediction` and/or `classifier_out_of_distribution`.
-- OOD is treated as an unsafe-to-auto-allow signal so the graph risk gate routes
-  it to human review. It is not proof that the run is malicious. This flag does
-  not automatically block or execute a tool.
-- `classify_and_assess` also makes an SVM attack prediction independently force
-  review, even when the calibrated probability/impact product is small. The
-  risk tier still controls which human actions are allowed. No parser or
-  XGBoost code is involved in this classifier-side change.
+- `ClassifierResult.svm_attack_flag` and `predicted_label` expose the SVM class;
+  `attack_probability` remains available for logging and analysis.
+- `ClassifierResult.ood_flag`, `novelty_score`, and `review_flag` expose the
+  novelty result. The OOD score is based on unseen feature mass; OOD is not proof
+  of an attack.
+- The offline classifier gate routes to review on OOD, structural findings,
+  or the existing risk policy's other independent triggers. The SVM label and
+  probability are retained as evidence but do not influence this gate's
+  decision or risk score.
+- There is no combined `unsafe_flag` rule. Review is not automatic blocking,
+  and this change does not modify parser or XGBoost code.
 
-On the strict ten-group `important_instructions` holdout, the raw SVM predicted
-attack for 2/10 examples and the novelty signal marked 6/10 OOD. The combined
-`unsafe_flag` also marked 6/10 attacks, while marking 5/20 held-out benign runs.
-Thus, for this sample, the attack predictions added no new attack captures
-beyond OOD and did add benign reviews. Four unseen-family attacks still had no
-classifier unsafe flag. The change improves explicit handoff of the existing
-signals; it does not solve unseen attacks.
+On the strict ten-group `important_instructions` holdout, OOD flagged 6/10
+attacks and 1/20 benign runs. The SVM predicted attack for 2/10 attacks and
+4/20 benign runs; those predictions are now logged separately and do not route
+this classifier gate to review. Four unseen-family attacks remain unflagged by
+OOD. This is a conservative routing choice based on one small development
+holdout, not a solution to unseen attacks or evidence of generalization.
 
 ### Data flow after tagging and lineage
 
@@ -364,15 +363,16 @@ signals; it does not solve unseen attacks.
    `predicted_label` and `attack_probability`. Separately, `novelty_score` is
    the fraction of feature mass absent from the fitted vocabulary; the
    training-group-calibrated threshold determines `out_of_distribution`.
-7. **Classifier handoff is explicit.** `unsafe_flag` is the OR of the SVM attack
-   prediction and OOD flag; `flag_reasons` preserves both causes. In
-   `classify_and_assess`, either cause routes to `human_review`. The graph-risk
-   review options are then constrained by risk/impact; `evidence_only` prevents
-   a pre-hop tool call or withholds raw post-hop content.
+7. **Classifier signals remain separate.** The SVM prediction and probability
+   are retained for analysis; only OOD is the classifier novelty signal that
+   routes this offline gate to review. Parser structural findings and the
+   existing risk policy remain independent inputs. There is no combined
+   SVM-OR-OOD flag or automatic blocking action.
 
 **Integration boundary:** this classifier consumes a complete run graph and is
 offline-only. `pipeline.risk_detector.make_risk_detector` deliberately rejects
 using it as a per-interception live detector. The parser-only live path is
-unchanged. The next teammate can consume `unsafe_flag` and `flag_reasons` as
-classifier inputs, but any XGBoost fusion and final live action policy remain
-separate work and must be validated end to end.
+unchanged. The SVM outputs (`predicted_label`, `attack_probability`) and OOD
+outputs (`novelty_score`, `ood_flag`) are available separately; any XGBoost
+fusion and final live action policy remain separate work and must be validated
+end to end.

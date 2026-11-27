@@ -36,16 +36,17 @@ def assess_risk(
     *,
     structural_hits: int = 0,
     classifier_out_of_distribution: bool = False,
-    classifier_predicted_attack: bool = False,
+    classifier_score_affects_risk: bool = True,
 ) -> RiskAssessment:
     """Apply classifier-risk thresholds and independent review triggers.
 
     ``structural_score`` is a parser density heuristic, not a probability, so it
     is retained as evidence but never combined arithmetically with classifier
-    confidence. A classifier attack prediction, counted structural hit, missing
-    classifier, or explicit out-of-distribution signal forces review. The
-    run-level WL-SVM supplies an OOD signal from unseen WL-feature mass; this is
-    a novelty heuristic, not an attack probability or proof of malicious intent.
+    confidence. A counted structural hit, missing classifier, or explicit
+    out-of-distribution signal forces review. Callers may retain a classifier
+    score for evidence while excluding it from risk decisions. The run-level
+    WL-SVM supplies an OOD signal from unseen WL-feature mass; this is a novelty
+    heuristic, not an attack probability or proof of malicious intent.
     """
     structural = _probability(structural_score, "structural_score")
     classifier = None if classifier_score is None else _probability(classifier_score, "classifier_score")
@@ -53,19 +54,17 @@ def assess_risk(
         raise ValueError("structural_hits must be a non-negative integer")
     if not isinstance(classifier_out_of_distribution, bool):
         raise ValueError("classifier_out_of_distribution must be a boolean")
-    if not isinstance(classifier_predicted_attack, bool):
-        raise ValueError("classifier_predicted_attack must be a boolean")
+    if not isinstance(classifier_score_affects_risk, bool):
+        raise ValueError("classifier_score_affects_risk must be a boolean")
     if impact not in (1, 5, 10):
         raise ValueError("impact must be one of 1, 5, or 10")
     confidence = classifier
-    risk = (classifier or 0.0) * impact
+    risk = (classifier or 0.0) * impact if classifier_score_affects_risk else 0.0
     review_reasons = []
     if classifier_score is None:
         review_reasons.append("classifier_unavailable")
     if classifier_out_of_distribution:
         review_reasons.append("classifier_out_of_distribution")
-    if classifier_predicted_attack:
-        review_reasons.append("classifier_attack_prediction")
     # Density is evidence only.  Located parser findings are counted by
     # ``structural_hits``; anomaly density alone must never force review.
     if structural_hits:
@@ -80,7 +79,7 @@ def assess_risk(
         tier = "high"
         options = ("deny", "evidence_only")
     auto_allow = not review_reasons and risk < 1.0
-    if risk >= 1.0:
+    if classifier_score_affects_risk and risk >= 1.0:
         review_reasons.append("classifier_risk_threshold")
     route: Literal["auto_allow", "human_review"] = "auto_allow" if auto_allow else "human_review"
     return RiskAssessment(

@@ -574,21 +574,18 @@ Keep this classifier offline-only, and do not describe an unflagged unfamiliar
 run as definitively benign. No tagging, graph construction, lineage, XGBoost,
 or live parser-only code was changed.
 
-### Explicit classifier unsafe flag
+### Separate classifier outputs and OOD-only review
 
-The classifier now exposes `ClassifierResult.unsafe_flag`, true when either the
-WL-SVM predicts `attack` or the run is OOD; `flag_reasons` records which
-classifier signal fired. `classify_and_assess` routes either signal to human
-review, including an attack prediction with low calibrated probability. This
-does not convert OOD into proof of an attack, automatically block a call, or
-wire the complete-run classifier into live interception.
+The classifier reports the SVM output (`predicted_label`,
+`attack_probability`, and `svm_attack_flag`) separately from novelty
+(`novelty_score`, `ood_flag`). The offline classifier gate routes on OOD, not
+the SVM class or probability. The SVM probability remains available for
+logging/analysis and does not contribute to this gate's risk score. OOD is a
+novelty signal, not proof of an attack; review is not an automatic block, and
+the complete-run classifier is not wired into live interception or XGBoost.
 
-On the same strict holdout, the combined classifier flag marked **6/10 attacks**
-and **5/20 benign runs**. The SVM's two attack predictions were already among
-the six OOD-flagged attacks, so they added no new attack captures in this small
-sample and did add four benign reviews beyond the OOD-only signal. Four unseen
-attacks still received no classifier flag. The result is a clearer conservative
-handoff for a downstream decision-maker, not a complete unseen-attack fix.
-The updated report is
-`out/unseen_family_important_instructions_classifier_flag/FINAL_REPORT.json`.
+Under the prior combined-flag policy on the strict holdout, the SVM predicted
+attack for 2/10 attacks and 4/20 benign runs. The OOD-only policy flags 6/10
+attacks and 1/20 benign runs; four attacks remain unflagged. These are results
+from one small development family, not a guarantee of unseen-family detection.
 

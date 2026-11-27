@@ -183,8 +183,8 @@ def evaluate_unseen_family(
                 prediction.out_of_distribution
                 for prediction in heldout_attack_predictions
             ),
-            "heldout_family_unsafe_flagged_examples": sum(
-                prediction.unsafe_flag
+            "heldout_family_svm_attack_flagged_examples": sum(
+                prediction.svm_attack_flag
                 for prediction in heldout_attack_predictions
             ),
             "heldout_group_benign_examples": len(heldout_benign_predictions),
@@ -192,8 +192,8 @@ def evaluate_unseen_family(
                 prediction.out_of_distribution
                 for prediction in heldout_benign_predictions
             ),
-            "heldout_group_benign_unsafe_flagged_examples": sum(
-                prediction.unsafe_flag
+            "heldout_group_benign_svm_attack_flagged_examples": sum(
+                prediction.svm_attack_flag
                 for prediction in heldout_benign_predictions
             ),
             "metrics": metrics,
@@ -225,13 +225,13 @@ def main() -> None:
         "heldout_task_groups": report["heldout_task_groups"],
         "heldout_attack_recall": report["heldout_family_metrics"]["attack_recall"],
         "heldout_attack_ood_flagged": report["heldout_family_ood_flagged_examples"],
-        "heldout_attack_unsafe_flagged": report["heldout_family_unsafe_flagged_examples"],
+        "heldout_attack_svm_attack_flagged": report["heldout_family_svm_attack_flagged_examples"],
         "heldout_benign_examples": report["heldout_group_benign_examples"],
         "heldout_benign_ood_flagged": (
             report["heldout_group_benign_ood_flagged_examples"]
         ),
-        "heldout_benign_unsafe_flagged": (
-            report["heldout_group_benign_unsafe_flagged_examples"]
+        "heldout_benign_svm_attack_flagged": (
+            report["heldout_group_benign_svm_attack_flagged_examples"]
         ),
     }, indent=2))
     print(f"report: {args.output_dir / 'FINAL_REPORT.json'}")

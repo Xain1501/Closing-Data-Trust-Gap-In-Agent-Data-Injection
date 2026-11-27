@@ -156,19 +156,19 @@ class ClassifierResult:
     out_of_distribution: bool = False
 
     @property
-    def unsafe_flag(self) -> bool:
-        """Fail closed on an attack prediction or OOD result; OOD is not proof of attack."""
-        return self.predicted_label == "attack" or self.out_of_distribution
+    def svm_attack_flag(self) -> bool:
+        """The SVM's categorical prediction, retained as evidence only."""
+        return self.predicted_label == "attack"
 
     @property
-    def flag_reasons(self) -> tuple[str, ...]:
-        reasons = []
-        if self.predicted_label == "attack":
-            reasons.append("classifier_attack_prediction")
-        if self.out_of_distribution:
-            reasons.append("classifier_out_of_distribution")
-        return tuple(reasons)
+    def ood_flag(self) -> bool:
+        """Frozen novelty decision used by the review router."""
+        return self.out_of_distribution
 
+    @property
+    def review_flag(self) -> bool:
+        """Online routing signal. OOD is deliberately the only classifier flag."""
+        return self.ood_flag
 
 class WLGraphSVM:
     """WL explicit features + linear SVM with sigmoid probability calibration."""

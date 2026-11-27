@@ -65,7 +65,7 @@ def evaluate(model_path: str | Path, test_path: str | Path) -> dict[str, object]
     probabilities = [item.attack_probability for item in predictions]
     actual = [int(label == "attack") for label in labels]
     ood_flags = [item.out_of_distribution for item in predictions]
-    unsafe_flags = [item.unsafe_flag for item in predictions]
+    svm_attack_flags = [item.svm_attack_flag for item in predictions]
     ece, calibration_bins = _calibration_bins(actual, probabilities)
     precision, recall, f1, _ = precision_recall_fscore_support(
         labels, predicted_labels, labels=["attack", "benign"], average="binary", pos_label="attack", zero_division=0,
@@ -106,18 +106,30 @@ def evaluate(model_path: str | Path, test_path: str | Path) -> dict[str, object]
                 if "benign" in labels else 0.0
             ),
         },
-        "classifier_unsafe_flag": {
-            "flagged_examples": sum(unsafe_flags),
-            "flagged_rate": sum(unsafe_flags) / len(unsafe_flags),
+        "svm_attack_flag": {
+            "flagged_examples": sum(svm_attack_flags),
+            "flagged_rate": sum(svm_attack_flags) / len(svm_attack_flags),
             "attack_capture_rate": (
-                sum(flag for flag, label in zip(unsafe_flags, labels) if label == "attack")
+                sum(flag for flag, label in zip(svm_attack_flags, labels) if label == "attack")
                 / labels.count("attack")
                 if "attack" in labels else 0.0
             ),
             "benign_review_rate": (
-                sum(flag for flag, label in zip(unsafe_flags, labels) if label == "benign")
+                sum(flag for flag, label in zip(svm_attack_flags, labels) if label == "benign")
                 / labels.count("benign")
                 if "benign" in labels else 0.0
+            ),
+        },
+        "review_route_ood_only": {
+            "flagged_examples": sum(ood_flags),
+            "flagged_rate": sum(ood_flags) / len(ood_flags),
+            "attack_capture_rate": (
+                sum(flag for flag, label in zip(ood_flags, labels) if label == "attack")
+                / labels.count("attack") if "attack" in labels else 0.0
+            ),
+            "benign_review_rate": (
+                sum(flag for flag, label in zip(ood_flags, labels) if label == "benign")
+                / labels.count("benign") if "benign" in labels else 0.0
             ),
         },
     }
